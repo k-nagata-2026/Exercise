@@ -4,7 +4,7 @@ public class Player {
 
     public Player(String name, int hp) {
         this.name = name;
-        this.hp   = hp;
+        this.hp = hp;
     }
 
     public void receiveDamage() {

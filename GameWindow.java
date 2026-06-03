@@ -1,11 +1,13 @@
 import javax.swing.*;
 import java.awt.*;
+
 public class GameWindow extends JFrame {
-    Player player  = new Player("勇者", 5);
+    Player player = new Player("勇者（ゆうしゃ）", 5);
     Player monster = new Player("スライム", 3);
     JLabel statusLabel = new JLabel();
-    JTextArea logArea  = new JTextArea();
-    JButton attackButton = new JButton("攻撃する");
+    JTextArea logArea = new JTextArea();
+    JButton attackButton = new JButton("攻撃（こうげき）する");
+
     public GameWindow() {
         setTitle("シンプルバトル");
         setSize(400, 300);
@@ -13,33 +15,35 @@ public class GameWindow extends JFrame {
         setLayout(new BorderLayout());
         updateStatus();
         logArea.setEditable(false);
-        add(statusLabel,              BorderLayout.NORTH);
+        add(statusLabel, BorderLayout.NORTH);
         add(new JScrollPane(logArea), BorderLayout.CENTER);
-        add(attackButton,             BorderLayout.SOUTH);
+        add(attackButton, BorderLayout.SOUTH);
         attackButton.addActionListener(e -> battleTurn());
     }
+
     private void battleTurn() {
         monster.receiveDamage();
-        logArea.append(player.name + "の攻撃！ " + monster.name + "のHPが1減った！\n");
+        logArea.append(player.name + "の攻撃（こうげき）！ " + monster.name + "のHPが1減（へ）った！\n");
         if (monster.hp <= 0) {
-            logArea.append(monster.name + "を倒した！ゲームクリア！\n");
+            logArea.append(monster.name + "を倒（たお）した！ゲームクリア！\n");
             attackButton.setEnabled(false);
             return;
         }
         player.receiveDamage();
-        logArea.append(monster.name + "の反撃！ " + player.name + "のHPが1減った！\n");
+        logArea.append(monster.name + "の反撃（はんげき）！ " + player.name + "のHPが1減（へ）った！\n");
         if (player.hp <= 0) {
-            logArea.append(player.name + "は力尽きた... GAME OVER\n");
+            logArea.append(player.name + "は力尽（ちからつ）きた... GAME OVER\n");
             attackButton.setEnabled(false);
         }
         updateStatus();
     }
+
     private void updateStatus() {
         statusLabel.setText(
-            " " + player.name  + " HP:" + player.hp  +
-            "  |  " + monster.name + " HP:" + monster.hp
-        );
+                " " + player.name + " HP:" + player.hp +
+                        "  |  " + monster.name + " HP:" + monster.hp);
     }
+
     public static void main(String[] args) {
         new GameWindow().setVisible(true);
     }
