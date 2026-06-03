@@ -18,3 +18,29 @@ public class GameWindow extends JFrame {
         add(attackButton,             BorderLayout.SOUTH);
         attackButton.addActionListener(e -> battleTurn());
     }
+    private void battleTurn() {
+        monster.receiveDamage();
+        logArea.append(player.name + "の攻撃！ " + monster.name + "のHPが1減った！\n");
+        if (monster.hp <= 0) {
+            logArea.append(monster.name + "を倒した！ゲームクリア！\n");
+            attackButton.setEnabled(false);
+            return;
+        }
+        player.receiveDamage();
+        logArea.append(monster.name + "の反撃！ " + player.name + "のHPが1減った！\n");
+        if (player.hp <= 0) {
+            logArea.append(player.name + "は力尽きた... GAME OVER\n");
+            attackButton.setEnabled(false);
+        }
+        updateStatus();
+    }
+    private void updateStatus() {
+        statusLabel.setText(
+            " " + player.name  + " HP:" + player.hp  +
+            "  |  " + monster.name + " HP:" + monster.hp
+        );
+    }
+    public static void main(String[] args) {
+        new GameWindow().setVisible(true);
+    }
+}
