@@ -26,7 +26,7 @@
 敵（Enemy）を10体倒すと、BossEnemyが登場。BossEnemyを倒すとゲームクリア
 
 【GameOver条件】
-自分（Hero）の体力（HitPoint）が０になったらゲームオーバー
+自分（Human）の体力（HitPoint）が０になったらゲームオーバー
   
 【その他ルール】
 ・ターンの先行・後攻は素早さ（Speed）できまる
