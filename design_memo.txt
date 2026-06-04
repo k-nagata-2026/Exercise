@@ -9,24 +9,32 @@
   ・攻撃力（AttackPower）
   ・体力（HitPoint）
   ・素早さ（Speed）
+  . 防御力(Defence)
+  .素早さ(speed)
   
 バトルが始まると、以下の選択肢を選べます
   ・攻撃
   ・逃げる
   ・アイテム
+   .特技(skill)
+. 防御(defend-guard)
+.逃げる(Escape/Run)
+   
   
 【ゲームの流れ】
-１．自分のキャラクターを選ぶ
-２．ゲームスタートボタンを押す
-３．敵（Enemy）と遭遇。バトル開始
-４．勝ったら低確率でアイテムゲット。次の敵（Enemy）に遭遇。負けたらゲームオーバー
-  
-  
+1 キャラクターを選択する
+2 ゲームスタートボタンを押す
+3 次のルート（敵の強さ）を自分で選ぶ 
+4 敵と遭遇。バトル開始
+5 ランダムイベント発生（罠や回復の泉） 
+6 逃げる場合はゴールド減少のペナルティ)
+
+ゲーム終了後にスコア（戦績）を表示  
 【GameClear条件】
 敵（Enemy）を10体倒すと、BossEnemyが登場。BossEnemyを倒すとゲームクリア
 
 【GameOver条件】
-自分（Hero）の体力（HitPoint）が０になったらゲームオーバー
+自分（Human）の体力（HitPoint）が０になったらゲームオーバー
   
 【その他ルール】
 ・ターンの先行・後攻は素早さ（Speed）できまる
@@ -34,15 +42,16 @@
 
 # キャラクター
 【Human】
-  ・Hero（atk:10,hp:50,spd:10）//勇者
-  ・Wizard（atk:8,hp:50,spd:15）//魔法使い
-  ・Knight（atk:10,hp:60,spd:5）//騎士
+  ・Hero (atk:35, hp:180, spd:22, level:1, exp:0, skill:"Critical Strike")
+  ・Wizard (atk:40, hp:150, spd:28, level:1, exp:0, skill:"Heal")
+ ・Knight (atk:30, hp:250, spd:15, def:12, skill:"Shield Bash")
 
 【Enemy】
-  ・Slime（atk:2,hp:10,spd:6）//スライム
-  ・Dragon（atk:8,hp:20,spd:12）//ドラゴン
-  ・Demon（atk:12,hp:30,spd:9）//魔王
+  ・Slime（atk:10,hp:100,spd:20.head shot:25）//スライム
+  ・Dragon（atk:14,hp:150,spd:25.head shot:30）//ドラゴン
+  ・Demon（atk:20,hp:200,spd:30.head shot:40）//魔王
 
 【Item】
-  ・Herb（hpを+15）//薬草
-  ・Bom（自分と敵のhpを-20）//爆弾
+  ・Herb（hpを+100）//薬草
+  ・Bom（自分と敵のhpを-70）//爆弾
+
