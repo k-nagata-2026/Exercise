@@ -16,11 +16,12 @@ public class BattleGame extends JFrame {
     // ★ キャラクターのインスタンスをよういする
     private Player player;
     private Enemy enemy;
+    private int enemyCount = 1;
 
     public BattleGame() {
         // ウィンドウ（Window）のきほんせってい（Basic Setting）
         setTitle("ターンせいコマンドバトル");
-        setSize(720, 550);
+        setSize(1220, 750);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // がめんのまんなかにひょうじ
         setLayout(new BorderLayout()); // ぜんたいのレイアウト（Layout）をせってい
@@ -34,8 +35,8 @@ public class BattleGame extends JFrame {
         enemyImageLabel = new JLabel("", JLabel.CENTER);
 
         // ★はいけいラベルをきじゅん（Base）とした、キャラがぞうラベルの「いち（Position）(x, y)」と「サイズ（Size）(はば（Width）, たかさ（Height））」をしてい（Specify）
-        playerImageLabel.setBounds(20, 20, 300, 300); // ひだりがわにはいち
-        enemyImageLabel.setBounds(360, 20, 300, 300);  // みぎがわにはいち
+        playerImageLabel.setBounds(20, 20, 500, 500); // ひだりがわにはいち
+        enemyImageLabel.setBounds(560, 20, 500, 500);  // みぎがわにはいち
 
         // ★はいけいラベルのなかにキャラがぞうラベルを「add」してかさねる！
         backgroundLabel.add(playerImageLabel);
@@ -73,12 +74,23 @@ public class BattleGame extends JFrame {
 
             // 2. エネミーがたおれたかチェック（Check）
             if (!enemy.isAlive()) {
-             logTextArea.append("★ " + enemy.getName() + " を倒した！ " + player.getName() + "の勝利！\n");
-             enemyImageLabel.setEnabled(false); // てきのがぞうをグレーアウト
-             endGame();
-             return; // てきがたおれたらここでしょりをしゅうりょう（End）
+            logTextArea.append("★ " + enemy.getName() + " をたおした！ " + player.getName() + "のしょうり（Victory）！\n");
+            enemyImageLabel.setEnabled(false);
+            if (enemyCount < 3) {
+               enemyCount++;
+                spawnEnemy();
+                enemyImageLabel.setEnabled(true);
+            updateDisplay();
+            } else {
+              logTextArea.append("すべてのまもの（Monster）をたいじ（Defeat）した！せかい（World）にへいわ（Peace）がおとずれた！【ゲームクリア（Game Clear）】\n");
+               enemyImageLabel.setEnabled(false);
+            endGame();
             }
+             return;
+ }
 
+             
+            
             // 3. エネミーのターン（はんげき）
             String enemyResult = enemy.attack(player);
              logTextArea.append(enemyResult);
@@ -97,16 +109,14 @@ public class BattleGame extends JFrame {
         });
  
         // ★ インスタンスをしょきか（Initialize）
-        player   = new Player("プレイヤー", 100, 20, "yuusya_game.png", 5);
-        enemy    = new Enemy("スライム", 50, 10, "fantasy_game_character_slime.png", 10);
+        choicePlayer();//選択したキャラクターが出てくる
+        spawnEnemy();
 
         // ★ がぞうをがめんのラベルにセットする
         playerImageLabel.setIcon(player.getIcon());
         enemyImageLabel.setIcon(enemy.getIcon());
 
-        // ★ しょきステータスをひょうじする
-        updateDisplay();
-        logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
+      
     }
 
     public static void main(String[] args) {
@@ -128,4 +138,42 @@ public class BattleGame extends JFrame {
     attackButton.setEnabled(false); // ボタンをむこうか（Disable）
     logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
     }
-}
+
+    // キャラクターせんたく（Select）メソッド
+    private void choicePlayer() {
+    // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1 でかえってくる）
+    int choice = JOptionPane.showOptionDialog(
+            this,
+            "しよう（Use）するキャラクターをせんたく（Select）してください",
+            "キャラクターせんたく（Select）",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            new String[] { "勇者", "魔法使い","騎士", "盗賊"},
+            null);
+        if (choice == 0) {
+           player = new Player("勇者", 100, 20, "yuusya_game.png",4);
+        } else if(choice == 1) {
+           player = new Player("魔法使い", 80, 25, "mahoutsukai_man.png",8);
+        } else if(choice == 2) {
+           player = new Player("騎士", 80, 25, "knight.png",8);
+        }else {
+           player = new Player("盗賊", 80, 25, "dorobou_hokkamuri.png",8);
+        }
+    }
+    private void spawnEnemy() {
+    if (enemyCount == 1) {
+        enemy = new Enemy("スライム", 40, 8, "fantasy_game_character_slime.png", 4);
+        logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
+    } else if (enemyCount == 2) {
+        enemy = new Enemy("ゴブリン", 90, 15, "fantasy_goblin.png", 5);
+        logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
+    } else if (enemyCount == 3) {
+        enemy = new Enemy("ドラゴン", 160, 24, "fantasy_dragon.png", 10);
+        logTextArea.append("【さいしゅう（Final）けっせん（Battle）】でんせつ（Legend）の ドラゴン があらわれた！\n");
+    
+    enemyImageLabel.setIcon(enemy.getIcon());
+    logTextArea.append("--------------------------------------------\n");
+    }
+    }
+}      
