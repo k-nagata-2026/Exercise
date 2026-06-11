@@ -7,6 +7,8 @@ public class BattleGame extends JFrame {
     private JLabel statusLabel;       // HPなどをひょうじするラベル（Label）
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
     private JButton attackButton;     // こうげきコマンドボタン（Command Button）
+    private JButton runButton;        // 逃げるコマンドボタン
+    private JButton defenseButton;
     
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // はいけいがぞうようのラベル
@@ -53,14 +55,50 @@ public class BattleGame extends JFrame {
         JScrollPane scrollPane = new JScrollPane(logTextArea); // スクロール（Scroll）できるようにする
 
         attackButton = new JButton(" こうげきする");
+        runButton = new JButton("逃げる");
 
         bottomPanel.add(statusLabel, BorderLayout.NORTH);  
         bottomPanel.add(scrollPane, BorderLayout.CENTER);   
-        bottomPanel.add(attackButton, BorderLayout.SOUTH); 
+        bottomPanel.add(attackButton, BorderLayout.SOUTH);
+        bottomPanel.add(runButton, BorderLayout.EAST);
+        bottomPanel.add(defenseButton,BorderLayout.WEST);
 
         // ぶひん（Parts）をメインウィンドウにはいち
         add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
         add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
+
+        
+        // ★「にげる（Escape）ボタン（Button）」をおした（Press）ときのしょり（Process）をついか（Add）
+        runButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logTextArea.append( player.getName() + " は逃げ出そうとした！\n");
+
+                // Math.random() は 0.0 以上 1.0 未満のランダムな数字を返す
+                // 0.5 未満（50% の確率）なら逃亡成功とする
+                if (Math.random() < 0.5) {
+                    logTextArea.append("うまくにげきれた！\n");
+                    endGame(); // ゲームをしゅうりょう（End）させる
+                } else {
+                    // 逃亡失敗の場合
+                    logTextArea.append("しかし にげきれなかった！\n");
+
+                    // モンスターのターン（ペナルティとして敵の反撃を受ける）
+                    String monsterResult = enemy.attack(player);
+                    logTextArea.append(monsterResult);
+                    updateDisplay();
+
+                    // プレイヤーが倒れたかチェック
+                    if (!player.isAlive()) {
+                        logTextArea.append(player.getName() + " はたおれた… ゲームオーバー\n");
+                        playerImageLabel.setEnabled(false);
+                        endGame();
+                        return;
+                    }
+                    logTextArea.append("--------------------------------------------\n");
+                }
+            }
+        });
 
         // ★ ボタンをおしたときのしょりをついか
         attackButton.addActionListener(new ActionListener() {
@@ -87,9 +125,7 @@ public class BattleGame extends JFrame {
             endGame();
             }
              return;
- }
-
-             
+            }
             
             // 3. エネミーのターン（はんげき）
             String enemyResult = enemy.attack(player);
@@ -105,6 +141,14 @@ public class BattleGame extends JFrame {
             }
 
             logTextArea.append("--------------------------------------------\n");
+            }
+        });
+
+        //ガードボタンの追加
+        defenseButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logTextArea.append( player.getName())
             }
         });
  
@@ -136,6 +180,7 @@ public class BattleGame extends JFrame {
     // ゲームしゅうりょうじにボタンをおせなくするしょり
     private void endGame() {
     attackButton.setEnabled(false); // ボタンをむこうか（Disable）
+    runButton.setEnabled(false);//逃げるボタンを無効化
     logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
     }
 
@@ -144,8 +189,8 @@ public class BattleGame extends JFrame {
     // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1 でかえってくる）
     int choice = JOptionPane.showOptionDialog(
             this,
-            "しよう（Use）するキャラクターをせんたく（Select）してください",
-            "キャラクターせんたく（Select）",
+            "使用するキャラクターを選択してください",
+            "キャラクター選択",
             JOptionPane.DEFAULT_OPTION,
             JOptionPane.QUESTION_MESSAGE,
             null,
@@ -162,18 +207,18 @@ public class BattleGame extends JFrame {
         }
     }
     private void spawnEnemy() {
-    if (enemyCount == 1) {
-        enemy = new Enemy("スライム", 40, 8, "fantasy_game_character_slime.png", 4);
-        logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
-    } else if (enemyCount == 2) {
-        enemy = new Enemy("ゴブリン", 90, 15, "fantasy_goblin.png", 5);
-        logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
-    } else if (enemyCount == 3) {
-        enemy = new Enemy("ドラゴン", 160, 24, "fantasy_dragon.png", 10);
-        logTextArea.append("【さいしゅう（Final）けっせん（Battle）】でんせつ（Legend）の ドラゴン があらわれた！\n");
-    
-    enemyImageLabel.setIcon(enemy.getIcon());
-    logTextArea.append("--------------------------------------------\n");
-    }
+        if (enemyCount == 1) {
+          enemy = new Enemy("スライム", 40, 8, "fantasy_game_character_slime.png", 4);
+          logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
+        } else if (enemyCount == 2) {
+          enemy = new Enemy("ゴブリン", 90, 15, "fantasy_goblin.png", 5);
+          logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
+        } else if (enemyCount == 3) {
+          enemy = new Enemy("ドラゴン", 160, 24, "fantasy_dragon.png", 10);
+          logTextArea.append("【さいしゅう（Final）けっせん（Battle）】でんせつ（Legend）の ドラゴン があらわれた！\n");
+        }
+          enemyImageLabel.setIcon(enemy.getIcon());
+          logTextArea.append("--------------------------------------------\n");
+        
     }
 }      

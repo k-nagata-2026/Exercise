@@ -45,12 +45,12 @@ public class Character {
     // ★ あいてにこうげきするメソッド（Method）
     public String attack(Character target) {
         // あいてのHPをじぶんのこうげきりょくぶんへらす（Decrease）
-        target.hp -= (this.atk - target.defense);
+        target.hp -= Math.max(1, this.atk - target.defense);
         if (target.hp < 0) {
             target.hp = 0; // HPがマイナス（Minus）にならないようにする
         }
         return this.name + " のこうげき！ " + target.getName()
-               + " に " + (this.atk - target.defense) + " のダメージ（Damage）！\n";
+               + " に " + Math.max(1, this.atk - target.defense) + " のダメージ（Damage）！\n";
     }
 
     // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
