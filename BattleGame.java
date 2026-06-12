@@ -156,11 +156,8 @@ public class BattleGame extends JFrame {
             if (player.hp < 0) {
                player.hp = 0; // HPがマイナス（Minus）にならないようにする
             }
-            }
-            // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
-            public boolean isAlive() {
-             return player.hp > 0;
-            }
+            updateDisplay();
+
 
             // 3. エネミーのターン（はんげき）
             String enemyResult = enemy.attack(player);
@@ -176,6 +173,7 @@ public class BattleGame extends JFrame {
             }
 
             logTextArea.append("--------------------------------------------\n");
+            }
         });
  
         // ★ インスタンスをしょきか（Initialize）
@@ -248,4 +246,8 @@ public class BattleGame extends JFrame {
           logTextArea.append("--------------------------------------------\n");
         
     }
+                // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
+            public boolean isAlive() {
+             return player.hp > 0;
+            }
 }      

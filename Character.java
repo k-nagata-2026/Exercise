@@ -44,6 +44,13 @@ public class Character {
 
     // ★ あいてにこうげきするメソッド（Method）
     public String attack(Character target) {
+
+        if (target instanceof Player && target.guardFlg == 1) { // あいてがガードしているばあい
+            target.guardFlg = 0; // ガードフラグをリセット
+            return this.name + " のこうげき！ " + target.getName()
+                   + " はガードしている！ ダメージをうけない！\n";
+        }
+        else {
         // あいてのHPをじぶんのこうげきりょくぶんへらす（Decrease）
         target.hp -= Math.max(1, this.atk - target.defense);
         if (target.hp < 0) {
@@ -51,6 +58,7 @@ public class Character {
         }
         return this.name + " のこうげき！ " + target.getName()
                + " に " + Math.max(1, this.atk - target.defense) + " のダメージ（Damage）！\n";
+    }
     }
 
     // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
