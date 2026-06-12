@@ -56,6 +56,7 @@ public class BattleGame extends JFrame {
 
         attackButton = new JButton(" こうげきする");
         runButton = new JButton("逃げる");
+        defenseButton = new JButton("守る");
 
         bottomPanel.add(statusLabel, BorderLayout.NORTH);  
         bottomPanel.add(scrollPane, BorderLayout.CENTER);   
@@ -148,8 +149,33 @@ public class BattleGame extends JFrame {
         defenseButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                logTextArea.append( player.getName())
+                logTextArea.append( player.getName() + "はガードした！\n");
+
+                //ガードしたら、受けるダメージが半減する
+                player.hp -= Math.max(1, enemy.atk - player.defense)*0.5;
+            if (player.hp < 0) {
+               player.hp = 0; // HPがマイナス（Minus）にならないようにする
             }
+            }
+            // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
+            public boolean isAlive() {
+             return player.hp > 0;
+            }
+
+            // 3. エネミーのターン（はんげき）
+            String enemyResult = enemy.attack(player);
+             logTextArea.append(enemyResult);
+            updateDisplay();
+
+            // 4. プレイヤーがたおれたかチェック
+            if (!player.isAlive()) {
+             logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
+             playerImageLabel.setEnabled(false); // プレイヤーのがぞうをグレーアウト
+             endGame();
+             return;
+            }
+
+            logTextArea.append("--------------------------------------------\n");
         });
  
         // ★ インスタンスをしょきか（Initialize）
@@ -181,6 +207,7 @@ public class BattleGame extends JFrame {
     private void endGame() {
     attackButton.setEnabled(false); // ボタンをむこうか（Disable）
     runButton.setEnabled(false);//逃げるボタンを無効化
+    defenseButton.setEnabled(false);//守るボタンを無効化
     logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
     }
 
