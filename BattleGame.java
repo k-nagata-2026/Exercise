@@ -64,15 +64,15 @@ public class BattleGame extends JFrame {
 
         bottomPanel.add(statusLabel, BorderLayout.NORTH); // ステータスラベルをしたがわのうえにはいち
         bottomPanel.add(scrollPane, BorderLayout.CENTER); // ログテキストエリアをしたがわのしたにはいち 
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
         
         // ぶひん（Parts）をメインウィンドウにはいち
-        add(backgroundLabel, BorderLayout.NORTH); // はいけい（キャラいり）をまんなかにはいち
+        add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
         add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
         buttonPanel.add(attackButton); // こうげきボタンをしたがわのひだりにはいち
         buttonPanel.add(runButton); // にげるボタンをしたがわのひだりにはいち
         buttonPanel.add(defenseButton); // ぼうぎょボタンをしたがわのひだりにはいち
         buttonPanel.add(itemButton); // アイテムボタンをしたがわのひだりにはいち
-        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         // ★「にげる（Escape）ボタン（Button）」をおした（Press）ときのしょり（Process）をついか（Add）
         runButton.addActionListener(new ActionListener() {
@@ -222,9 +222,10 @@ public class BattleGame extends JFrame {
     // がめんこうしんしょり（Screen Update Process）
     private void updateDisplay() {
        statusLabel.setText(String.format(
-            "【%s】 HP: %d/%d  vs  【%s】 HP: %d/%d",
-            player.getName(), player.getHp(), player.getMaxHp(),
-            enemy.getName(), enemy.getHp(), enemy.getMaxHp()));
+            "【%s】 HP: %d/%d atk: %d mgc: %d vs  【%s】 HP: %d/%d atk: %d mgc: %d",
+            player.getName(), player.getHp(), player.getMaxHp(), player.getAtk(), player.getMgc(),
+            enemy.getName(), enemy.getHp(), enemy.getMaxHp(), enemy.getAtk(), enemy.getMgc()
+        ));
     }
 
     // ゲームしゅうりょうじにボタンをおせなくするしょり
@@ -250,19 +251,19 @@ public class BattleGame extends JFrame {
     
     
         if (choice == 0) {
-           player = new Player("勇者", 100, 20, "yuusya_game.png",0);
+           player = new Player("勇者", 60, 20, 20,"yuusya_game.png",0);
         } else if(choice == 1) {
-           player = new Player("魔法使い", 80, 25, "mahoutsukai_man.png", 0);
+           player = new Player("魔法使い", 45, 25, 50,"mahoutsukai_man.png", 0);
         } else if(choice == 2) {
-           player = new Player("騎士", 80, 25, "knight.png",0);
+           player = new Player("騎士", 65, 30, 25,"knight.png",0);
         }else if (choice == 3) {
-           player = new Player("盗賊", 80, 25, "dorobou_hokkamuri.png",0);
+           player = new Player("盗賊", 70, 10, 20,"dorobou_hokkamuri.png",0);
         }else if (choice == 4){
-            player = new Player("召喚士", 80, 25, "mahoutsukai_necromancer.png",0);
+            player = new Player("召喚士", 90, 5, 5,"mahoutsukai_necromancer.png",0);
         }else if (choice == 5){
-            player = new Player("祈祷師", 80, 25, "oharai_kannushi.png",0);
+            player = new Player("祈祷師", 50, 5, 45,"oharai_kannushi.png",0);
         } else {
-            player = new Player("回復術師", 80, 25, "job_doctor_man.png",0);
+            player = new Player("回復術師", 45, 5, 50,"job_doctor_man.png",0);
         }
         playerImageLabel.setIcon(player.getIcon());
 
@@ -270,13 +271,13 @@ public class BattleGame extends JFrame {
     }
     private void spawnEnemy() {
         if (enemyCount == 1) {
-          enemy = new Enemy("スライム", 40, 8, "fantasy_game_character_slime.png");
+          enemy = new Enemy("スライム", 20, 5, 5, "fantasy_game_character_slime.png");
           logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
         } else if (enemyCount == 2) {
-          enemy = new Enemy("ゴブリン", 90, 15, "fantasy_goblin.png");
+          enemy = new Enemy("ゴブリン", 25, 10, 5, "fantasy_goblin.png");
           logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
         } else if (enemyCount == 3) {
-          enemy = new Enemy("ドラゴン", 160, 24, "fantasy_dragon.png");
+          enemy = new Enemy("ドラゴン", 10000, 70, 130, "fantasy_dragon.png");
           logTextArea.append("【さいしゅう（Final）けっせん（Battle）】でんせつ（Legend）の ドラゴン があらわれた！\n");
         }
           enemyImageLabel.setIcon(enemy.getIcon());

@@ -7,17 +7,19 @@ public class Character {
     protected int hp;        // げんざいのHP（Current HP）
     protected int maxHp;     // さいだいHP（Max HP）
     protected int atk;       // こうげきりょく（Attack Power）
+    protected int mgc;       // まほうりょく（Magic Power）
     protected ImageIcon icon; // がぞうデータをほじするフィールド
     protected int defense;   //ぼうぎょりょく（Defense Power）
     protected int guardFlg = 0; // ガードフラグ（0: ガードしていない、1: ガードしている）
 
     // コンストラクタ（Constructor）
     // （しょきか（Initialize）のためのとくべつなメソッド）
-    public Character(String name, int hp, int atk, String imagePath) {
+    public Character(String name, int hp, int atk, int mgc, String imagePath) {
         this.name = name;
         this.hp = hp;
         this.maxHp = hp;
         this.atk = atk;
+        this.mgc = mgc;
         this.icon = new ImageIcon(imagePath); // がぞうファイルのよみこみ（Load）
         this.guardFlg = 0; // ガードフラグをリセット
     }
@@ -33,6 +35,14 @@ public class Character {
 
     public int getMaxHp() {
         return maxHp;
+    }
+    
+    public int getAtk() {
+        return atk;
+    }
+
+    public int getMgc() {
+        return mgc;
     }
 
     public ImageIcon getIcon() {
