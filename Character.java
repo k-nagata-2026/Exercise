@@ -9,16 +9,17 @@ public class Character {
     protected int atk;       // こうげきりょく（Attack Power）
     protected ImageIcon icon; // がぞうデータをほじするフィールド
     protected int defense;   //ぼうぎょりょく（Defense Power）
+    protected int guardFlg = 0; // ガードフラグ（0: ガードしていない、1: ガードしている）
 
     // コンストラクタ（Constructor）
     // （しょきか（Initialize）のためのとくべつなメソッド）
-    public Character(String name, int hp, int atk, String imagePath, int defense) {
+    public Character(String name, int hp, int atk, String imagePath) {
         this.name = name;
         this.hp = hp;
         this.maxHp = hp;
         this.atk = atk;
         this.icon = new ImageIcon(imagePath); // がぞうファイルのよみこみ（Load）
-        this.defense = defense;
+        this.guardFlg = 0; // ガードフラグをリセット
     }
     
     // そとからあんぜん（Safe）にデータをしゅとく（Get）するためのゲッター（Getter）
@@ -38,10 +39,6 @@ public class Character {
         return icon;
     }
 
-    public int getDefense() {
-        return defense;
-    }
-
     // ★ あいてにこうげきするメソッド（Method）
     public String attack(Character target) {
 
@@ -52,12 +49,12 @@ public class Character {
         }
         else {
         // あいてのHPをじぶんのこうげきりょくぶんへらす（Decrease）
-        target.hp -= Math.max(1, this.atk - target.defense);
+        target.hp -= this.atk;
         if (target.hp < 0) {
             target.hp = 0; // HPがマイナス（Minus）にならないようにする
         }
         return this.name + " のこうげき！ " + target.getName()
-               + " に " + Math.max(1, this.atk - target.defense) + " のダメージ（Damage）！\n";
+               + " に " +  this.atk + " のダメージ（Damage）！\n";
     }
     }
 

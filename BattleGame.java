@@ -8,7 +8,8 @@ public class BattleGame extends JFrame {
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
     private JButton attackButton;     // こうげきコマンドボタン（Command Button）
     private JButton runButton;        // 逃げるコマンドボタン
-    private JButton defenseButton;
+    private JButton defenseButton;    // ぼうぎょコマンドボタン
+    private JButton itemButton;       // アイテムコマンドボタン
     
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // はいけいがぞうようのラベル
@@ -18,7 +19,8 @@ public class BattleGame extends JFrame {
     // ★ キャラクターのインスタンスをよういする
     private Player player;
     private Enemy enemy;
-    private int enemyCount = 1;
+    private int enemyCount = 1; // たいじするてきのかずをかぞえるためのフィールド
+    private int guardFlg = 0; // ガードフラグ（0: ガードしていない、1: ガードしている）
 
     public BattleGame() {
         // ウィンドウ（Window）のきほんせってい（Basic Setting）
@@ -30,7 +32,7 @@ public class BattleGame extends JFrame {
 
         // 【うえはんぶん：キャラクターたいじエリア（はいけいのなかにキャラをいれる）】
         // ※はいけいがぞうファイル（bg.png）をよみこみます
-        backgroundLabel = new JLabel(new ImageIcon(".Background1.png"));
+        backgroundLabel = new JLabel(new ImageIcon("Background1.png"));
         backgroundLabel.setLayout(null); // ★じゅうよう（Important）：じゆうはいち（Free Layout）にするためにnullにする
 
         playerImageLabel = new JLabel("", JLabel.CENTER);
@@ -46,6 +48,7 @@ public class BattleGame extends JFrame {
         
         // 【したはんぶん：そうさ・ログエリア】
         JPanel bottomPanel = new JPanel(new BorderLayout());
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0)); // ボタンをならべるためのパネル（Panel）
         
         statusLabel = new JLabel("ここにステータスがひょうじされます", JLabel.CENTER);
         statusLabel.setFont(new Font("MS ゴシック", Font.BOLD, 14));
@@ -53,22 +56,24 @@ public class BattleGame extends JFrame {
         logTextArea = new JTextArea(8, 30);
         logTextArea.setEditable(false); // プレイヤーがちょくせつもじにゅうりょくできないようにする
         JScrollPane scrollPane = new JScrollPane(logTextArea); // スクロール（Scroll）できるようにする
-
-        attackButton = new JButton(" こうげきする");
+        
+        attackButton = new JButton("こうげき");
         runButton = new JButton("逃げる");
         defenseButton = new JButton("守る");
+        itemButton = new JButton("アイテム");
 
-        bottomPanel.add(statusLabel, BorderLayout.NORTH);  
-        bottomPanel.add(scrollPane, BorderLayout.CENTER);   
-        bottomPanel.add(attackButton, BorderLayout.SOUTH);
-        bottomPanel.add(runButton, BorderLayout.EAST);
-        bottomPanel.add(defenseButton,BorderLayout.WEST);
-
-        // ぶひん（Parts）をメインウィンドウにはいち
-        add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
-        add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
-
+        bottomPanel.add(statusLabel, BorderLayout.NORTH); // ステータスラベルをしたがわのうえにはいち
+        bottomPanel.add(scrollPane, BorderLayout.CENTER); // ログテキストエリアをしたがわのしたにはいち 
         
+        // ぶひん（Parts）をメインウィンドウにはいち
+        add(backgroundLabel, BorderLayout.NORTH); // はいけい（キャラいり）をまんなかにはいち
+        add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
+        buttonPanel.add(attackButton); // こうげきボタンをしたがわのひだりにはいち
+        buttonPanel.add(runButton); // にげるボタンをしたがわのひだりにはいち
+        buttonPanel.add(defenseButton); // ぼうぎょボタンをしたがわのひだりにはいち
+        buttonPanel.add(itemButton); // アイテムボタンをしたがわのひだりにはいち
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+
         // ★「にげる（Escape）ボタン（Button）」をおした（Press）ときのしょり（Process）をついか（Add）
         runButton.addActionListener(new ActionListener() {
             @Override
@@ -151,28 +156,47 @@ public class BattleGame extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 logTextArea.append( player.getName() + "はガードした！\n");
 
-                //ガードしたら、受けるダメージが半減する
-                player.hp -= Math.max(1, enemy.atk - player.defense)*0.5;
-            if (player.hp < 0) {
-               player.hp = 0; // HPがマイナス（Minus）にならないようにする
-            }
-            updateDisplay();
+                //ガードしたら、ダメージを受けないようにするためのフラグをたてる
+                player.guard(); // プレイヤーのガードフラグをたてる
+                 guardFlg = 1; // ガードフラグをたてる
+                updateDisplay();
+                    // エネミーのターン（反撃）
+                String enemyResult = enemy.attack(player);
+                logTextArea.append(enemyResult);    
+                updateDisplay();
+                // プレイヤーが倒れたかチェック
+                if (!player.isAlive()) {
+                    logTextArea.append(player.getName() + " はたおれた… ゲームオーバー\n");
+                    playerImageLabel.setEnabled(false);
+                    endGame();
+                    return;
+                }       
+                logTextArea.append("--------------------------------------------\n");
+                }
+        });
 
+        itemButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logTextArea.append(player.getName() + " はアイテムをつかった！ HPが20かいふくした！\n");
+                player.hp += 20; // HPを20かいふくする
+                if (player.hp > player.maxHp) {
+                    player.hp = player.maxHp; // HPがさいだいHPをこえないようにする
+                }
+                updateDisplay();
 
-            // 3. エネミーのターン（はんげき）
-            String enemyResult = enemy.attack(player);
-             logTextArea.append(enemyResult);
-            updateDisplay();
-
-            // 4. プレイヤーがたおれたかチェック
-            if (!player.isAlive()) {
-             logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
-             playerImageLabel.setEnabled(false); // プレイヤーのがぞうをグレーアウト
-             endGame();
-             return;
-            }
-
-            logTextArea.append("--------------------------------------------\n");
+                // エネミーのターン（反撃）
+                String enemyResult = enemy.attack(player);
+                logTextArea.append(enemyResult);    
+                updateDisplay();
+                // プレイヤーが倒れたかチェック
+                if (!player.isAlive()) {
+                    logTextArea.append(player.getName() + " はたおれた… ゲームオーバー\n");
+                    playerImageLabel.setEnabled(false);
+                    endGame();
+                    return;
+                }       
+                logTextArea.append("--------------------------------------------\n");
             }
         });
  
@@ -183,6 +207,8 @@ public class BattleGame extends JFrame {
         // ★ がぞうをがめんのラベルにセットする
         playerImageLabel.setIcon(player.getIcon());
         enemyImageLabel.setIcon(enemy.getIcon());
+
+        //updateDisplay();
 
       
     }
@@ -196,9 +222,9 @@ public class BattleGame extends JFrame {
     // がめんこうしんしょり（Screen Update Process）
     private void updateDisplay() {
        statusLabel.setText(String.format(
-            "【%s】 HP: %d/%d防御%d  vs  【%s】 HP: %d/%d防御%d",
-            player.getName(), player.getHp(), player.getMaxHp(), player.getDefense(),
-            enemy.getName(), enemy.getHp(), enemy.getMaxHp(), enemy.getDefense()));
+            "【%s】 HP: %d/%d  vs  【%s】 HP: %d/%d",
+            player.getName(), player.getHp(), player.getMaxHp(),
+            enemy.getName(), enemy.getHp(), enemy.getMaxHp()));
     }
 
     // ゲームしゅうりょうじにボタンをおせなくするしょり
@@ -206,12 +232,12 @@ public class BattleGame extends JFrame {
     attackButton.setEnabled(false); // ボタンをむこうか（Disable）
     runButton.setEnabled(false);//逃げるボタンを無効化
     defenseButton.setEnabled(false);//守るボタンを無効化
+    itemButton.setEnabled(false);//アイテムボタンを無効化
     logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
     }
 
     // キャラクターせんたく（Select）メソッド
     private void choicePlayer() {
-    // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1 でかえってくる）
     int choice = JOptionPane.showOptionDialog(
             this,
             "使用するキャラクターを選択してください",
@@ -219,27 +245,38 @@ public class BattleGame extends JFrame {
             JOptionPane.DEFAULT_OPTION,
             JOptionPane.QUESTION_MESSAGE,
             null,
-            new String[] { "勇者", "魔法使い","騎士", "盗賊"},
+            new String[] { "勇者", "魔法使い","騎士", "盗賊", "召喚士", "祈祷師", "回復術師" },
             null);
+    
+    
         if (choice == 0) {
-           player = new Player("勇者", 100, 20, "yuusya_game.png",4);
+           player = new Player("勇者", 100, 20, "yuusya_game.png",0);
         } else if(choice == 1) {
-           player = new Player("魔法使い", 80, 25, "mahoutsukai_man.png",8);
+           player = new Player("魔法使い", 80, 25, "mahoutsukai_man.png", 0);
         } else if(choice == 2) {
-           player = new Player("騎士", 80, 25, "knight.png",8);
-        }else {
-           player = new Player("盗賊", 80, 25, "dorobou_hokkamuri.png",8);
+           player = new Player("騎士", 80, 25, "knight.png",0);
+        }else if (choice == 3) {
+           player = new Player("盗賊", 80, 25, "dorobou_hokkamuri.png",0);
+        }else if (choice == 4){
+            player = new Player("召喚士", 80, 25, "mahoutsukai_necromancer.png",0);
+        }else if (choice == 5){
+            player = new Player("祈祷師", 80, 25, "oharai_kannushi.png",0);
+        } else {
+            player = new Player("回復術師", 80, 25, "job_doctor_man.png",0);
         }
+        playerImageLabel.setIcon(player.getIcon());
+
+    
     }
     private void spawnEnemy() {
         if (enemyCount == 1) {
-          enemy = new Enemy("スライム", 40, 8, "fantasy_game_character_slime.png", 4);
+          enemy = new Enemy("スライム", 40, 8, "fantasy_game_character_slime.png");
           logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
         } else if (enemyCount == 2) {
-          enemy = new Enemy("ゴブリン", 90, 15, "fantasy_goblin.png", 5);
+          enemy = new Enemy("ゴブリン", 90, 15, "fantasy_goblin.png");
           logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
         } else if (enemyCount == 3) {
-          enemy = new Enemy("ドラゴン", 160, 24, "fantasy_dragon.png", 10);
+          enemy = new Enemy("ドラゴン", 160, 24, "fantasy_dragon.png");
           logTextArea.append("【さいしゅう（Final）けっせん（Battle）】でんせつ（Legend）の ドラゴン があらわれた！\n");
         }
           enemyImageLabel.setIcon(enemy.getIcon());
@@ -250,4 +287,5 @@ public class BattleGame extends JFrame {
             public boolean isAlive() {
              return player.hp > 0;
             }
+
 }      
