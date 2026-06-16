@@ -7,6 +7,7 @@ public class BattleGame extends JFrame {
     private JLabel statusLabel;       // HPなどをひょうじするラベル（Label）
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
     private JButton attackButton;     // こうげきコマンドボタン（Command Button）
+    private JButton runButton;
     
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // はいけいがぞうようのラベル
@@ -20,22 +21,22 @@ private Enemy enemy;
     public BattleGame() {
         // ウィンドウ（Window）のきほんせってい（Basic Setting）
         setTitle("ターンせいコマンドバトル");
-        setSize(720, 550);
+        setSize(1300, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // がめんのまんなかにひょうじ
         setLayout(new BorderLayout()); // ぜんたいのレイアウト（Layout）をせってい
 
         // 【うえはんぶん：キャラクターたいじエリア（はいけいのなかにキャラをいれる）】
         // ※はいけいがぞうファイル（bg.png）をよみこみます
-        backgroundLabel = new JLabel(new ImageIcon(".Background1.png"));
+        backgroundLabel = new JLabel(new ImageIcon("background.png"));
         backgroundLabel.setLayout(null); // ★じゅうよう（Important）：じゆうはいち（Free Layout）にするためにnullにする
 
         playerImageLabel = new JLabel("", JLabel.CENTER);
         enemyImageLabel = new JLabel("", JLabel.CENTER);
 
         // ★はいけいラベルをきじゅん（Base）とした、キャラがぞうラベルの「いち（Position）(x, y)」と「サイズ（Size）(はば（Width）, たかさ（Height））」をしてい（Specify）
-        playerImageLabel.setBounds(20, 20, 300, 300); // ひだりがわにはいち
-        enemyImageLabel.setBounds(360, 20, 300, 300);  // みぎがわにはいち
+        playerImageLabel.setBounds(200, 10, 500, 700); // ひだりがわにはいち
+        enemyImageLabel.setBounds(700, 10, 500, 700);  // みぎがわにはいち
 
         // ★はいけいラベルのなかにキャラがぞうラベルを「add」してかさねる！
         backgroundLabel.add(playerImageLabel);
@@ -43,6 +44,7 @@ private Enemy enemy;
         
         // 【したはんぶん：そうさ・ログエリア】
         JPanel bottomPanel = new JPanel(new BorderLayout());
+        runButton = new JButton("にげる");
         
         statusLabel = new JLabel("ここにステータスがひょうじされます", JLabel.CENTER);
         statusLabel.setFont(new Font("MS ゴシック", Font.BOLD, 14));
@@ -56,6 +58,7 @@ private Enemy enemy;
         bottomPanel.add(statusLabel, BorderLayout.NORTH);  
         bottomPanel.add(scrollPane, BorderLayout.CENTER);   
         bottomPanel.add(attackButton, BorderLayout.SOUTH); 
+        bottomPanel.add(runButton, BorderLayout.EAST);
 
         // ぶひん（Parts）をメインウィンドウにはいち
         add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
@@ -93,9 +96,40 @@ private Enemy enemy;
     logTextArea.append("--------------------------------------------\n");
         }
     });
+    // ★「にげる（Escape）ボタン（Button）」をおした（Press）ときのしょり（Process）をついか（Add）
+        runButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logTextArea.append( player.getName() + " は逃げ出そうとした！\n");
+
+                
+                // 0.5 未満（50% の確率）なら逃亡成功とする
+                if (Math.random() < 0.5) {
+                    logTextArea.append("うまくにげきれた！\n");
+                    endGame(); // ゲームをしゅうりょう（End）させる
+                } else {
+                    // 逃亡失敗の場合
+                    logTextArea.append("しかし にげきれなかった！\n");
+
+                    // モンスターのターン（ペナルティとして敵の反撃を受ける）
+                    String monsterResult = enemy.attack(player);
+                    logTextArea.append(monsterResult);
+                    updateDisplay();
+
+                    // プレイヤーが倒れたかチェック
+                    if (!player.isAlive()) {
+                        logTextArea.append(player.getName() + " はたおれた… ゲームオーバー\n");
+                        playerImageLabel.setEnabled(false);
+                        endGame();
+                        return;
+                    }
+                    logTextArea.append("-----------// Math.random() は 0.0 以上 1.0 未満のランダムな数字を返す---------------------------------\n");
+                }
+            }
+        });
     // ★ インスタンスをしょきか（Initialize）
-player   = new Player("プレイヤー", 100, 20, "Player1.png");
-enemy    = new Enemy("スライム", 50, 10, "Enemy1.png");
+choicePlayer();
+enemy    = new Enemy("スライム", 50, 10,10, "Picture5.png");
 
 // ★ がぞうをがめんのラベルにセットする
 playerImageLabel.setIcon(player.getIcon());
@@ -120,5 +154,24 @@ private void updateDisplay() {
 private void endGame() {
  attackButton.setEnabled(false); // ボタンをむこうか（Disable）
  logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
+}
+// キャラクターせんたく（Select）メソッド
+private void choicePlayer() {
+    // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1 でかえってくる）
+    int choice = JOptionPane.showOptionDialog(
+            this,
+            "しよう（Use）するキャラクターをせんたく（Select）してください",
+            "キャラクターせんたく（Select）",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            new String[] { "ゆうしゃ（Hero）", "まほうつかい（Mage）", "ninja"},
+            null);
+    if (choice == 0) {
+        player = new Player("ゆうしゃ（Hero）", 100, 20, 10, "sagar.png");
+    } else if (choice == 1)
+        player = new Player("まほうつかい（Mage）", 80, 25, 10, "Aelina.png");
+
+       else if (choice == 2) player = new Player("ninja（ninja）", 80, 25, 10, "ninja.png");
 }
 }

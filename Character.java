@@ -7,13 +7,15 @@ public class Character {
     protected int maxHp;     // さいだいHP（Max HP）
     protected int atk;       // こうげきりょく（Attack Power）
     protected ImageIcon icon; // がぞうデータをほじするフィールド
-
+    protected int deffence;
     // コンストラクタ（Constructor）
     // （しょきか（Initialize）のためのとくべつなメソッド）
-    public Character(String name, int hp, int atk, String imagePath) {
+    public Character(String name, int hp, int atk , int deffence,String imagePath) {
         this.name = name;
         this.hp = hp;
+        this.maxHp=hp;
         this.atk = atk;
+        this.deffence = deffence;
         this.icon = new ImageIcon(imagePath); // がぞうファイルのよみこみ（Load）
     }
     
@@ -36,12 +38,12 @@ public class Character {
     // ★ あいてにこうげきするメソッド（Method）
     public String attack(Character target) {
         // あいてのHPをじぶんのこうげきりょくぶんへらす（Decrease）
-        target.hp -= this.atk;
+        target.hp -= Math.max(1 ,this.atk - target.deffence );
         if (target.hp < 0) {
             target.hp = 0; // HPがマイナス（Minus）にならないようにする
         }
         return this.name + " のこうげき！ " + target.getName()
-               + " に " + this.atk + " のダメージ（Damage）！\n";
+               + " に " + Math.max(1 ,this.atk - target.deffence ) + " のダメージ（Damage）！\n";
     }
 
     // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
