@@ -297,15 +297,17 @@ public class BattleGame extends JFrame {
         }
         party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
 
-        //4人選び終わったら、最初のキャラクターをプレイヤーとしてセットする
+        
+    
+    }
+
+    //4人選び終わったら、最初のキャラクターをプレイヤーとしてセットする
         player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
         playerImageLabel.setIcon(party.get(0).getIcon()); // プレイヤーのがぞうをせっていする
         
         JOptionPane.showMessageDialog(this,  " 4人パーティが結成されました。" ,"パーティ結成", JOptionPane.INFORMATION_MESSAGE); // 選んだキャラクターをひょうじする
         }
 
-    
-    }
     private void spawnEnemy() {
         if (enemyCount == 1) {
           enemy = new Enemy("スライム", 20, 5, 5, "fantasy_game_character_slime.png");
