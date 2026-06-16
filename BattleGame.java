@@ -327,5 +327,16 @@ public class BattleGame extends JFrame {
             public boolean isAlive() {
              return player.hp > 0;
             }
-
+    private void switchNextPlayer() {
+        for (Player p : party) {
+            if (member.getHp() > 0) {
+                player = member; // 次のプレイヤーにきりかえる
+                playerImageLabel.setIcon(player.getIcon()); // プレイヤーのがぞうをせっていする
+                playerImageLabel.setEnabled(true); // プレイヤーのがぞうのクレーアウトを解除
+                logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
+                updateDisplay();
+                return;
+            }
+        }
+    }
 }      
