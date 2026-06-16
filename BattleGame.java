@@ -1,6 +1,8 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
+
 import javax.swing.*;
 
 public class BattleGame extends JFrame {
@@ -18,6 +20,7 @@ public class BattleGame extends JFrame {
 
     // ★ キャラクターのインスタンスをよういする
     private Player player;
+    private java.util.List<Player> party = new java.util.ArrayList<>();//チームにするためのコード（ArrayListは可変式の配列）
     private Enemy enemy;
     private int enemyCount = 1; // たいじするてきのかずをかぞえるためのフィールド
     private int guardFlg = 0; // ガードフラグ（0: ガードしていない、1: ガードしている）
@@ -205,7 +208,7 @@ public class BattleGame extends JFrame {
         spawnEnemy();
 
         // ★ がぞうをがめんのラベルにセットする
-        playerImageLabel.setIcon(player.getIcon());
+        //playerImageLabel.setIcon(player.getIcon());
         enemyImageLabel.setIcon(enemy.getIcon());
 
         //updateDisplay();
@@ -221,11 +224,16 @@ public class BattleGame extends JFrame {
 
     // がめんこうしんしょり（Screen Update Process）
     private void updateDisplay() {
-       statusLabel.setText(String.format(
-            "【%s】 HP: %d/%d atk: %d mgc: %d vs  【%s】 HP: %d/%d atk: %d mgc: %d",
-            player.getName(), player.getHp(), player.getMaxHp(), player.getAtk(), player.getMgc(),
-            enemy.getName(), enemy.getHp(), enemy.getMaxHp(), enemy.getAtk(), enemy.getMgc()
-        ));
+       //4人のステータスを表示する
+       StringBuilder statusText = new StringBuilder();
+       for (Player member : party) {
+           statusText.append(String.format("%s HP: %d/%d atk: %d mgc: %d | ", member.getName(), member.getHp(), member.getMaxHp(), member.getAtk(), member.getMgc()));
+       }
+
+       //組み立てたステータス＋敵のステータスを表示する
+         statusText.append(String.format("  | %s HP: %d/%d atk: %d mgc: %d", enemy.getName(), enemy.getHp(), enemy.getMaxHp(), enemy.getAtk(), enemy.getMgc()));
+         statusLabel.setText(statusText.toString());
+
     }
 
     // ゲームしゅうりょうじにボタンをおせなくするしょり
@@ -239,33 +247,62 @@ public class BattleGame extends JFrame {
 
     // キャラクターせんたく（Select）メソッド
     private void choicePlayer() {
-    int choice = JOptionPane.showOptionDialog(
-            this,
-            "使用するキャラクターを選択してください",
-            "キャラクター選択",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            new String[] { "勇者", "魔法使い","騎士", "盗賊", "召喚士", "祈祷師", "回復術師" },
-            null);
-    
-    
+        String[] options = { "勇者", "魔法使い", "騎士", "盗賊", "召喚士", "祈祷師", "回復術師" };
+        party.clear(); // 選択前にパーティーをクリアする
+        //４人選ばれるまでループする
+        while (party.size() < 4) {
+            int correctMemberNom = party.size() + 1; // 正しいメンバー番号（1から始まる）
+
+            int choice = JOptionPane.showOptionDialog(
+                this,
+                "キャラクターを選んでください（" + correctMemberNom + "人目）",
+                "キャラクター選択",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                null
+            );
+
+            String selectedCharacter = options[choice];
+
+            //同じキャラクターが選ばれてないかのチェック
+            boolean isDuplicate = false;
+            for (Player member : party) {
+                if (member.getName().equals(selectedCharacter)) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            if (isDuplicate) {
+                JOptionPane.showMessageDialog(this, "すでに選ばれたキャラクターです。別のキャラクターを選んでください。");
+                continue; // もう一度選択させる
+            }
+
+        Player newPlayer = null;    
         if (choice == 0) {
-           player = new Player("勇者", 60, 20, 20,"yuusya_game.png",0);
+           newPlayer = new Player("勇者", 60, 20, 20,"yuusya_game.png",0);
         } else if(choice == 1) {
-           player = new Player("魔法使い", 45, 25, 50,"mahoutsukai_man.png", 0);
+           newPlayer = new Player("魔法使い", 45, 25, 50,"mahoutsukai_man.png", 0);
         } else if(choice == 2) {
-           player = new Player("騎士", 65, 30, 25,"knight.png",0);
+           newPlayer = new Player("騎士", 65, 30, 25,"knight.png",0);
         }else if (choice == 3) {
-           player = new Player("盗賊", 70, 10, 20,"dorobou_hokkamuri.png",0);
+           newPlayer = new Player("盗賊", 70, 10, 20,"dorobou_hokkamuri.png",0);
         }else if (choice == 4){
-            player = new Player("召喚士", 90, 5, 5,"mahoutsukai_necromancer.png",0);
+            newPlayer = new Player("召喚士", 90, 5, 5,"mahoutsukai_necromancer.png",0);
         }else if (choice == 5){
-            player = new Player("祈祷師", 50, 5, 45,"oharai_kannushi.png",0);
+            newPlayer = new Player("祈祷師", 50, 5, 45,"oharai_kannushi.png",0);
         } else {
-            player = new Player("回復術師", 45, 5, 50,"job_doctor_man.png",0);
+            newPlayer = new Player("回復術師", 45, 5, 50,"job_doctor_man.png",0);
         }
-        playerImageLabel.setIcon(player.getIcon());
+        party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
+
+        //4人選び終わったら、最初のキャラクターをプレイヤーとしてセットする
+        player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
+        playerImageLabel.setIcon(party.get(0).getIcon()); // プレイヤーのがぞうをせっていする
+        
+        JOptionPane.showMessageDialog(this,  " 4人パーティが結成されました。" ,"パーティ結成", JOptionPane.INFORMATION_MESSAGE); // 選んだキャラクターをひょうじする
+        }
 
     
     }
