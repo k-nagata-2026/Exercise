@@ -19,7 +19,14 @@ public class BattleGame extends JFrame {
     private JProgressBar playerHpBar;
     private JProgressBar enemyHpBar;
 
+    
+
     JPanel hPanel = new JPanel(new GridLayout(2, 1));
+
+    private void showVictoryScreen() {
+        JOptionPane.showMessageDialog(this,
+        "ITS YOUR TIME!\nYou defeated all enemies!" );
+    }
 
     // ★ キャラクターのインスタンスをよういする
 private Player player;
@@ -135,20 +142,32 @@ addKeyListener(new java.awt.event.KeyAdapter() {
         // 2. エネミーがたおれたかチェック（Check）
         if (!enemy.isAlive()) {
             player.gainExp(50);
-    logTextArea.append("★ " + enemy.getName() + " をたおした！ " + player.getName() + "のしょうり（Victory）！\n");
-    enemyImageLabel.setEnabled(false);
-    if (enemyCount < 4) {
-        enemyCount++;
-        spawnEnemy();
-        enemyImageLabel.setEnabled(true);
-        updateDisplay();
-    } else {
-        logTextArea.append("すべてのまもの（Monster）をたいじ（Defeat）した！せかい（World）にへいわ（Peace）がおとずれた！【ゲームクリア（Game Clear）】\n");
-        enemyImageLabel.setEnabled(false);
-        endGame();
-    }
-    return;
-}
+            logTextArea.append("★ " + enemy.getName() + " をたおした！ " + player.getName() + "のしょうり（Victory）！\n");
+            enemyImageLabel.setEnabled(false);
+            if (enemyCount < 4) {
+                enemyCount++;
+                spawnEnemy();
+                enemyImageLabel.setEnabled(true);
+                updateDisplay();
+                if (enemy.getHp() <= 0) {
+                    if (enemyCount >= 4) { 
+                        javax.swing.JOptionPane.showMessageDialog(BattleGame.this,
+                            "GAME CLEAR! \nYou defeated all monsters!","VICTORY",
+                                javax.swing.JOptionPane.INFORMATION_MESSAGE
+                        );
+                        showVictoryScreen();
+                    }
+                }
+            }
+            else { 
+            logTextArea.append("すべてのまもの（Monster）をたいじ（Defeat）した！せかい（World）にへいわ（Peace）がおとずれた！【ゲームクリア（Game Clear）】\n");
+            enemyImageLabel.setEnabled(false);
+            endGame();
+            return;
+        }
+    
+        
+
        skillButton.addActionListener(a -> {
         int damage = player.getAtk() * 2;
         enemy.setHp(enemy.getHp() - damage);
@@ -161,6 +180,10 @@ addKeyListener(new java.awt.event.KeyAdapter() {
         String enemyResult = enemy.attack(player);
         logTextArea.append(enemyResult);
         updateDisplay();
+
+        if (enemy.getHp() <= 0) {
+            showVictoryScreen();
+        }
 
         // 4. プレイヤーがたおれたかチェック
         if (!player.isAlive()) {
@@ -260,7 +283,7 @@ private void spawnEnemy() {
          logTextArea.append("WARNING\\nLAGARTHA IS COMMING! \n");
     }
    
-    
+
 
 
 
