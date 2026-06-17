@@ -172,6 +172,6 @@ private void choicePlayer() {
     } else if (choice == 1)
         player = new Player("まほうつかい（Mage）", 80, 25, 10, "Aelina.png");
 
-       else if (choice == 2) player = new Player("ninja（ninja）", 80, 25, 10, "ninja.png");
+       else if (choice == 2) player = new Player("ninja（ninja）", 80, 25, 10, "Picture2.png");
 }
 }
