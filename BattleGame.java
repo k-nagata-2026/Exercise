@@ -134,7 +134,7 @@ public class BattleGame extends JFrame {
             }
             });
 
-        // ★ ボタンをおしたときのしょりをついか
+        // ★ 攻撃ボタンをおしたときのしょりをついか
         attackButton.addActionListener(new ActionListener() {
           @Override
            public void actionPerformed(ActionEvent e) {
@@ -166,12 +166,18 @@ public class BattleGame extends JFrame {
              return;
             }
             
-            // 3. エネミーのターン（はんげき）
+            currentPlayerIndex++; // 次のプレイヤーにきりかえるためにインデックスをふやす
+             if (currentPlayerIndex >= party.size()) {
+                currentPlayerIndex = 0; // インデックスがパーティーのサイズをこえたら、最初のプレイヤーにきりかえる
+            
+                // 3. エネミーのターン（はんげき）
             String enemyResult = enemy.attack(player);
              logTextArea.append(enemyResult);
+             currentPlayerIndex = 0; // 次のプレイヤーにきりかえるためにインデックスをリセット
             updateDisplay();
+             }
 
-            // 4. プレイヤーがたおれたかチェック
+                // 4. プレイヤーがたおれたかチェック
             if (!player.isAlive()) {
              logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
              playerImageLabel.setEnabled(false); // プレイヤーのがぞうをグレーアウト
@@ -197,8 +203,14 @@ public class BattleGame extends JFrame {
                 }
 
              return;
+
+            
+
+            
             }
 
+            player = party.get(currentPlayerIndex); // 次のプレイヤーにきりかえる
+            playerImageLabel.setIcon(player.getIcon()); // プレイヤーのがぞうをせっていする
                
             logTextArea.append("--------------------------------------------\n");
             }
@@ -288,6 +300,7 @@ public class BattleGame extends JFrame {
                     return;
                 } else {
                     switchNextPlayer(); // 次のプレイヤーにきりかえる
+                    logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
                 }
 
                     return;
@@ -341,13 +354,19 @@ public class BattleGame extends JFrame {
     }
 
     private void switchNextPlayer() {
+        logTextArea.append("debug: switchNextPlayerが呼び出されました！\n");
+        //現在のプレイヤーが倒れているか覚えておく
+         boolean currentPlayerDefeated = !player.isAlive();
+
         for (Player p : party) {
             if (p.getHp() > 0) {
                 player = p; // 次のプレイヤーにきりかえる
                 playerImageLabel.setIcon(player.getIcon()); // プレイヤーのがぞうをせっていする
                 playerImageLabel.setEnabled(true); // プレイヤーのがぞうのクレーアウトを解除
-                logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
                 updateDisplay();
+                if (currentPlayerDefeated) {
+                    logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
+                }
                 return;
             }
         }
