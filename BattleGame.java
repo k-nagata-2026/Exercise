@@ -165,11 +165,14 @@ public class BattleGame extends JFrame {
                 return;
             }
             
+            //チェンジする前に今のプレイヤーのインデックスを覚えておく
+            int oldIndex = currentPlayerIndex;
+
             //３．次のプレイヤーにチェンジ
             switchNextPlayer();
 
             //４．敵のターン
-            if (currentPlayerIndex == 0){
+            if (currentPlayerIndex <= oldIndex){
                 String enemyResult = enemy.attack(player);
                 logTextArea.append(enemyResult);
                 updateDisplay();
@@ -178,16 +181,13 @@ public class BattleGame extends JFrame {
             // ５. プレイヤーがたおれたかチェック
             if (!player.isAlive()) {
                 logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
-                playerImageLabels[currentPlayerIndex].setEnabled(false); // プレイヤーのがぞうをグレーアウト
-
+        
                //６．パーティーが全滅してないかチェック
                boolean allMembersDefeated = true;
                for (Player member : party) {
-                    if (member.isAlive()) {
-                        if (member.getHp() > 0) {
-                          allMembersDefeated = false;
-                          break;
-                        }
+                    if (member.isAlive() && member.getHp() > 0) { 
+                        allMembersDefeated = false;
+                        break;
                     }
                 }
 
@@ -196,13 +196,11 @@ public class BattleGame extends JFrame {
                     endGame();
                     return;
                 } else {
-                    switchNextPlayer(); // 次のプレイヤーにきりかえる
+                    //全員死んでいないなら、生きているキャラクターと交代
+                    switchNextPlayer(); 
+                    updatePlayerVisuals();
                 }
             }
-
-            player = party.get(currentPlayerIndex); // 次のプレイヤーにきりかえる
-            updatePlayerVisuals();
-               
             logTextArea.append("--------------------------------------------\n");
             }
         });
@@ -215,24 +213,32 @@ public class BattleGame extends JFrame {
 
                 //ガードしたら、ダメージを受けないようにするためのフラグをたてる
                 player.guard(); // プレイヤーのガードフラグをたてる
-                 guardFlg = 1; // ガードフラグをたてる
+                guardFlg = 1; // ガードフラグをたてる
                 updateDisplay();
-                    // エネミーのターン（反撃）
-                String enemyResult = enemy.attack(player);
-                logTextArea.append(enemyResult);    
-                updateDisplay();
-                // プレイヤーが倒れたかチェック
-                if (!player.isAlive()) {
-                    logTextArea.append(player.getName() + " はたおれた… ゲームオーバー\n");
 
-                    //パーティーが全滅してないかチェック
+                //チェンジする前に今のプレイヤーのインデックスを覚えておく
+                int oldIndex = currentPlayerIndex;
+
+                //３．次のプレイヤーにチェンジ
+                switchNextPlayer();
+
+                //４．敵のターン
+                if (currentPlayerIndex <= oldIndex){
+                    String enemyResult = enemy.attack(player);
+                    logTextArea.append(enemyResult);
+                    updateDisplay();
+                }
+
+                // ５. プレイヤーがたおれたかチェック
+                if (!player.isAlive()) {
+                    logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
+        
+                    //６．パーティーが全滅してないかチェック
                     boolean allMembersDefeated = true;
                     for (Player member : party) {
-                        if (member.isAlive()) {
-                            if (member.getHp() > 0) {
-                                allMembersDefeated = false;
-                                break;
-                            }
+                        if (member.isAlive() && member.getHp() > 0) { 
+                            allMembersDefeated = false;
+                            break;
                         }
                     }
 
@@ -241,15 +247,13 @@ public class BattleGame extends JFrame {
                         endGame();
                         return;
                     } else {
-                    switchNextPlayer(); // 次のプレイヤーにきりかえる
-                    logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
+                        //全員死んでいないなら、生きているキャラクターと交代
+                        switchNextPlayer(); 
+                        updatePlayerVisuals();
                     }
-                    return;
-                }       
-
-               
-                logTextArea.append("--------------------------------------------\n");
                 }
+                logTextArea.append("--------------------------------------------\n");
+            }
         });
 
         //アイテムボタンの追加
@@ -263,21 +267,29 @@ public class BattleGame extends JFrame {
                 }
                 updateDisplay();
 
-                // エネミーのターン（反撃）
-                String enemyResult = enemy.attack(player);
-                logTextArea.append(enemyResult);    
-                updateDisplay();
-                // プレイヤーが倒れたかチェック
+                //チェンジする前に今のプレイヤーのインデックスを覚えておく
+                int oldIndex = currentPlayerIndex;
+
+                //３．次のプレイヤーにチェンジ
+                switchNextPlayer();
+
+                //４．敵のターン
+                if (currentPlayerIndex <= oldIndex){
+                    String enemyResult = enemy.attack(player);
+                    logTextArea.append(enemyResult);
+                    updateDisplay();
+                }   
+
+                // ５. プレイヤーがたおれたかチェック
                 if (!player.isAlive()) {
-                    logTextArea.append(player.getName() + " はたおれた… ゲームオーバー\n");
-                    //パーティーが全滅してないかチェック
+                    logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
+        
+                    //６．パーティーが全滅してないかチェック
                     boolean allMembersDefeated = true;
                     for (Player member : party) {
-                        if (member.isAlive()) {
-                            if (member.getHp() > 0) {
-                                allMembersDefeated = false;
-                                break;
-                            }
+                        if (member.isAlive() && member.getHp() > 0) { 
+                            allMembersDefeated = false;
+                            break;
                         }
                     }
 
@@ -286,12 +298,12 @@ public class BattleGame extends JFrame {
                         endGame();
                         return;
                     } else {
-                        switchNextPlayer(); // 次のプレイヤーにきりかえる
-                        logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
+                        //全員死んでいないなら、生きているキャラクターと交代
+                        switchNextPlayer(); 
+                        updatePlayerVisuals();
                     }
-                    return;
-                }       
-                logTextArea.append("--------------------------------------------\n");
+                }
+            logTextArea.append("--------------------------------------------\n");
             }
         });
  
@@ -344,9 +356,7 @@ public class BattleGame extends JFrame {
             //０人目の勇者がたおれたら、（０人目＋１）％（割った余りの数）４＝１人目の魔法使いにきりかえる。
             Player p = party.get(currentPlayerIndex);
                 if (p.getHp() > 0) {
-                    //player = p; // 次のプレイヤーにきりかえる
-                    //playerImageLabel.setIcon(player.getIcon()); // プレイヤーのがぞうをせっていする
-                    //playerImageLabel.setEnabled(true); // プレイヤーのがぞうのクレーアウトを解除
+                    player = p; // 次のプレイヤーにきりかえる
                     updatePlayerVisuals();
                     updateDisplay();                
                         if (currentPlayerDefeated) {
@@ -454,7 +464,7 @@ public class BattleGame extends JFrame {
             } else if (i == currentPlayerIndex){
                 //現在ターンが回ってきたキャラは少し上がる
                 playerImageLabels[i].setEnabled(true);
-                playerImageLabels[i].setBounds(20 + (i * 140), 70, 130, 400);
+                playerImageLabels[i].setBounds(20 + (i * 140), 40, 130, 400);
             } else {
                 //待機中の生存キャラは通常位置
                 playerImageLabels[i].setEnabled(true);
