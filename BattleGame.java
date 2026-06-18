@@ -105,15 +105,15 @@ public class BattleGame extends JFrame {
                         //endGame();
 
                         //パーティーが全滅してないかチェック
-                    boolean allMembersDefeated = true;
-                      for (Player member : party) {
-                        if (member.isAlive()) {
-                          if (member.getHp() > 0) {
-                            allMembersDefeated = false;
-                             break;
-                     }
-                }
-            }
+                        boolean allMembersDefeated = true;
+                            for (Player member : party) {
+                                if (member.isAlive()) {
+                                    if (member.getHp() > 0) {
+                                        allMembersDefeated = false;
+                                        break;
+                                    }
+                                }
+                            }
         
                         if (allMembersDefeated) {
                          logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
@@ -121,7 +121,8 @@ public class BattleGame extends JFrame {
                          endGame();
                           return;
                         } else {
-                          switchNextPlayer(); // 次のプレイヤーにきりかえる
+                            switchNextPlayer(); // 次のプレイヤーにきりかえる
+                            logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
                         }
                         return;
                     
@@ -132,81 +133,67 @@ public class BattleGame extends JFrame {
                     logTextArea.append("--------------------------------------------\n");
                 }
             }
-            });
+        });
 
         // ★ 攻撃ボタンをおしたときのしょりをついか
         attackButton.addActionListener(new ActionListener() {
           @Override
            public void actionPerformed(ActionEvent e) {
-            //攻撃する前に生存チェック
-            if (player.getHp() <=0) {
-                switchNextPlayer(); // 次のプレイヤーにきりかえる
-                return;
-            }
-            // ボタンがおされたらじっこうされるしょり。つぎのステップでかく
             // 1. プレイヤーのターン（Turn）
             String playerResult = player.attack(enemy);
-             logTextArea.append(playerResult);
+            logTextArea.append(playerResult);
             updateDisplay();
 
             // 2. エネミーがたおれたかチェック（Check）
             if (!enemy.isAlive()) {
-            logTextArea.append("★ " + enemy.getName() + " をたおした！ " + player.getName() + "のしょうり（Victory）！\n");
-            enemyImageLabel.setEnabled(false);
-            if (enemyCount < 3) {
-               enemyCount++;
-                spawnEnemy();
-                enemyImageLabel.setEnabled(true);
-            updateDisplay();
-            } else {
-              logTextArea.append("すべてのまもの（Monster）をたいじ（Defeat）した！せかい（World）にへいわ（Peace）がおとずれた！【ゲームクリア（Game Clear）】\n");
-               enemyImageLabel.setEnabled(false);
-            endGame();
-            }
-             return;
+                logTextArea.append("★ " + enemy.getName() + " をたおした！ " + player.getName() + "のしょうり（Victory）！\n");
+                enemyImageLabel.setEnabled(false);
+                if (enemyCount < 3) {
+                    enemyCount++;
+                    spawnEnemy();
+                    enemyImageLabel.setEnabled(true);
+                    updateDisplay();
+                } else {
+                    logTextArea.append("すべてのまもの（Monster）をたいじ（Defeat）した！せかい（World）にへいわ（Peace）がおとずれた！【ゲームクリア（Game Clear）】\n");                        
+                    enemyImageLabel.setEnabled(false);
+                    endGame();
+                }
+                return;
             }
             
-            currentPlayerIndex++; // 次のプレイヤーにきりかえるためにインデックスをふやす
-             if (currentPlayerIndex >= party.size()) {
-                currentPlayerIndex = 0; // インデックスがパーティーのサイズをこえたら、最初のプレイヤーにきりかえる
-            
-                // 3. エネミーのターン（はんげき）
-            String enemyResult = enemy.attack(player);
-             logTextArea.append(enemyResult);
-             currentPlayerIndex = 0; // 次のプレイヤーにきりかえるためにインデックスをリセット
-            updateDisplay();
-             }
+            //３．次のプレイヤーにチェンジ
+            switchNextPlayer();
 
-                // 4. プレイヤーがたおれたかチェック
+            //４．敵のターン
+            if (currentPlayerIndex == 0){
+                String enemyResult = enemy.attack(player);
+                logTextArea.append(enemyResult);
+                updateDisplay();
+            }
+
+            // ５. プレイヤーがたおれたかチェック
             if (!player.isAlive()) {
-             logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
-             playerImageLabel.setEnabled(false); // プレイヤーのがぞうをグレーアウト
-             //endGame();
+                logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
+                playerImageLabel.setEnabled(false); // プレイヤーのがぞうをグレーアウト
 
-             //パーティーが全滅してないかチェック
+               //６．パーティーが全滅してないかチェック
                boolean allMembersDefeated = true;
-                for (Player member : party) {
-                     if (member.isAlive()) {
+               for (Player member : party) {
+                    if (member.isAlive()) {
                         if (member.getHp() > 0) {
                           allMembersDefeated = false;
                           break;
-                     }
+                        }
+                    }
                 }
-            }
+
                 if (allMembersDefeated) {
                     logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
-                    playerImageLabel.setEnabled(false);
                     endGame();
                     return;
                 } else {
                     switchNextPlayer(); // 次のプレイヤーにきりかえる
                 }
-
-             return;
-
-            
-
-            
             }
 
             player = party.get(currentPlayerIndex); // 次のプレイヤーにきりかえる
@@ -237,24 +224,25 @@ public class BattleGame extends JFrame {
                     //endGame();
 
                      //パーティーが全滅してないかチェック
-               boolean allMembersDefeated = true;
-                for (Player member : party) {
-                     if (member.isAlive()) {
-                        if (member.getHp() > 0) {
-                          allMembersDefeated = false;
-                          break;
-                     }
-                }
-            }
-                if (allMembersDefeated) {
-                    logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
-                    playerImageLabel.setEnabled(false);
-                    endGame();
-                    return;
-                } else {
-                    switchNextPlayer(); // 次のプレイヤーにきりかえる
-                }
+                    boolean allMembersDefeated = true;
+                    for (Player member : party) {
+                        if (member.isAlive()) {
+                            if (member.getHp() > 0) {
+                                allMembersDefeated = false;
+                                break;
+                            }
+                        }
+                    }
 
+                    if (allMembersDefeated) {
+                        logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
+                        playerImageLabel.setEnabled(false);
+                        endGame();
+                        return;
+                    } else {
+                    switchNextPlayer(); // 次のプレイヤーにきりかえる
+                    logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
+                    }
                     return;
                 }       
 
@@ -263,6 +251,7 @@ public class BattleGame extends JFrame {
                 }
         });
 
+        //アイテムボタンの追加
         itemButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -352,23 +341,28 @@ public class BattleGame extends JFrame {
     itemButton.setEnabled(false);//アイテムボタンを無効化
     logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
     }
-
+    
+    // 次のプレイヤーにきりかえるしょり
     private void switchNextPlayer() {
-        logTextArea.append("debug: switchNextPlayerが呼び出されました！\n");
         //現在のプレイヤーが倒れているか覚えておく
-         boolean currentPlayerDefeated = !player.isAlive();
+        boolean currentPlayerDefeated = !player.isAlive();
 
-        for (Player p : party) {
-            if (p.getHp() > 0) {
-                player = p; // 次のプレイヤーにきりかえる
-                playerImageLabel.setIcon(player.getIcon()); // プレイヤーのがぞうをせっていする
-                playerImageLabel.setEnabled(true); // プレイヤーのがぞうのクレーアウトを解除
-                updateDisplay();
-                if (currentPlayerDefeated) {
-                    logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
+        //生きているプレイヤーを探す（最大4回ループする）
+        for (int i = 0; i < party.size(); i++) {
+            currentPlayerIndex = (currentPlayerIndex + 1) % party.size(); 
+            //例　０人目が勇者で、１人目が魔法使い、２人目が騎士、３人目が盗賊だったとする。
+            //０人目の勇者がたおれたら、（０人目＋１）％（割った余りの数）４＝１人目の魔法使いにきりかえる。
+            Player p = party.get(currentPlayerIndex);
+                if (p.getHp() > 0) {
+                    player = p; // 次のプレイヤーにきりかえる
+                    playerImageLabel.setIcon(player.getIcon()); // プレイヤーのがぞうをせっていする
+                    playerImageLabel.setEnabled(true); // プレイヤーのがぞうのクレーアウトを解除
+                    updateDisplay();                
+                        if (currentPlayerDefeated) {
+                            logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
+                        }
+                    return;
                 }
-                return;
-            }
         }
     }
 
@@ -406,32 +400,33 @@ public class BattleGame extends JFrame {
                 continue; // もう一度選択させる
             }
 
-        Player newPlayer = null;    
-        if (choice == 0) {
-           newPlayer = new Player("勇者", 60, 20, 20,"yuusya_game.png",0);
-        } else if(choice == 1) {
-           newPlayer = new Player("魔法使い", 45, 25, 50,"mahoutsukai_man.png", 0);
-        } else if(choice == 2) {
-           newPlayer = new Player("騎士", 65, 30, 25,"knight.png",0);
-        }else if (choice == 3) {
-           newPlayer = new Player("盗賊", 70, 10, 20,"dorobou_hokkamuri.png",0);
-        }else if (choice == 4){
-            newPlayer = new Player("召喚士", 90, 5, 5,"mahoutsukai_necromancer.png",0);
-        }else if (choice == 5){
-            newPlayer = new Player("祈祷師", 50, 5, 45,"oharai_kannushi.png",0);
-        } else {
-            newPlayer = new Player("回復術師", 45, 5, 50,"job_doctor_man.png",0);
+            Player newPlayer = null;    
+            if (choice == 0) {
+                newPlayer = new Player("勇者", 60, 20, 20,"yuusya_game.png",0);
+            } else if(choice == 1) {
+                newPlayer = new Player("魔法使い", 45, 25, 50,"mahoutsukai_man.png", 0);
+            } else if(choice == 2) {
+                newPlayer = new Player("騎士", 65, 30, 25,"knight.png",0);
+            }else if (choice == 3) {
+                newPlayer = new Player("盗賊", 70, 10, 20,"dorobou_hokkamuri.png",0);
+            }else if (choice == 4){
+                newPlayer = new Player("召喚士", 90, 5, 5,"mahoutsukai_necromancer.png",0);
+            }else if (choice == 5){
+                newPlayer = new Player("祈祷師", 50, 5, 45,"oharai_kannushi.png",0);
+            } else {
+                newPlayer = new Player("回復術師", 45, 5, 50,"job_doctor_man.png",0);
+            }
+            party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
         }
-        party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
-    }
 
-    //4人選び終わったら、最初のキャラクターをプレイヤーとしてセットする
+        //4人選び終わったら、最初のキャラクターをプレイヤーとしてセットする
         player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
         playerImageLabel.setIcon(party.get(0).getIcon()); // プレイヤーのがぞうをせっていする
         
         JOptionPane.showMessageDialog(this,  " 4人パーティが結成されました。" ,"パーティ結成", JOptionPane.INFORMATION_MESSAGE); // 選んだキャラクターをひょうじする
-        }
+    }
 
+    //敵のスポーンメソッド
     private void spawnEnemy() {
         if (enemyCount == 1) {
           enemy = new Enemy("スライム", 20, 5, 5, "fantasy_game_character_slime.png");
@@ -447,9 +442,9 @@ public class BattleGame extends JFrame {
           logTextArea.append("--------------------------------------------\n");
         
     }
-                // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
-            public boolean isAlive() {
-             return player.hp > 0;
-            }
+    // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
+    public boolean isAlive() {
+        return player.hp > 0;
+    }
     
 }
