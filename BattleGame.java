@@ -176,6 +176,7 @@ public class BattleGame extends JFrame {
                 String enemyResult = enemy.attack(player);
                 logTextArea.append(enemyResult);
                 updateDisplay();
+                updatePlayerVisuals();
             }
 
             // ５. プレイヤーがたおれたかチェック
@@ -227,6 +228,7 @@ public class BattleGame extends JFrame {
                     String enemyResult = enemy.attack(player);
                     logTextArea.append(enemyResult);
                     updateDisplay();
+                    updatePlayerVisuals();
                 }
 
                 // ５. プレイヤーがたおれたかチェック
@@ -278,6 +280,7 @@ public class BattleGame extends JFrame {
                     String enemyResult = enemy.attack(player);
                     logTextArea.append(enemyResult);
                     updateDisplay();
+                    updatePlayerVisuals();
                 }   
 
                 // ５. プレイヤーがたおれたかチェック
