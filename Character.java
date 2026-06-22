@@ -26,6 +26,7 @@ public class Character {
         this.speed = speed;
         this.levelup = 1;
         this.icon = new ImageIcon(imagePath); // がぞうファイルのよみこみ（Load）
+        
 
     }
     
@@ -50,13 +51,27 @@ public class Character {
     }
 
    
-    public void setHp(int hp) {
+    public void getHp(int hp) {
             this.hp = Math.max(0, hp);
         }
     
     public int getAtk() {
         return atk;
     }
+
+    public void setAtk(int atk) {
+        this.atk = atk;
+    }
+
+    public void setHp(int hp) {
+        this.hp = hp;
+    }
+
+    public void setMaxHp(int maxHp) {
+        this.maxHp = maxHp;
+    }
+
+    
 
     public void gainExp(int amount) {
         exp += amount;

@@ -1,294 +1,285 @@
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import javax.swing.*;
 
 public class BattleGame extends JFrame {
-    private JLabel statusLabel;       // HPなどをひょうじするラベル（Label）
-    private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
-    private JButton attackButton;
-    private JButton speedButton;     // こうげきコマンドボタン（Command Button）
-    private JButton skillButton;
-    private JButton potionButton;
-    private int playerX = 150;
-    private int playerY = 250;
-    // ★ がぞうをひょうじするためのラベル
-    private JLabel backgroundLabel;   // はいけいがぞうようのラベル
-    private JLabel playerImageLabel;  // プレイヤーがぞうようのラベル
-    private JLabel enemyImageLabel;   // てきがぞうようのラベル
-    private JProgressBar playerHpBar;
-    private JProgressBar enemyHpBar;
+    final private JLabel statusLabel;
+    private JTextArea logTextArea;
+   final  private JButton attackButton;
+   final  private JButton speedButton;
+   final  private JButton skillButton;
+   final  private JButton potionButton;
+          private int playerX = 150;
+          private int playerY = 250;
+   final  private JLabel backgroundLabel;
+   final  private JLabel playerImageLabel;
+   final  private JLabel enemyImageLabel;
+   final  private JProgressBar playerHpBar;
+   final  private JProgressBar enemyHpBar;
+
+    private Player player;
+    private Enemy enemy;
+    private int enemyCount = 0; // 0から開始するように修正
+
+    private void showVictoryScreen() {
+    
+        JFrame victoryFrame = new JFrame("GAME CLEAR!");
+
+
+    victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+    victoryFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    ImageIcon icon = new ImageIcon("GAME CALER.png");
+        
+          Image img = icon.getImage();
+          Image resizedImg = img.getScaledInstance(1450, 700, Image.SCALE_SMOOTH);
+
+          JLabel label = new JLabel(new ImageIcon(resizedImg));
+
+          JButton nextButton = new JButton("NEXT LEVEL");
+          nextButton.addActionListener(e -> { 
+            victoryFrame.dispose();  //VictoryScreen banda
+                 
+                  enemyCount++;     //Next level
+                  spawnEnemy();    //new enemy
+                  updateDisplay();   //Screen update
+                
+                  setVisible(true);     // Battle Screen fari dekhau
+
+          });
+
+          victoryFrame.add(label,BorderLayout.CENTER);
+          victoryFrame.add(nextButton,BorderLayout.SOUTH);
+
+
+
+          victoryFrame.add(label);
+    victoryFrame.setVisible(true);
+    this.setVisible(false);
+    }
+
+    private void showGameOverScreen() {
+      
+        JFrame gameOverFrame = new JFrame("GAME OVER");
+
+        gameOverFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+        gameOverFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        ImageIcon icon = new ImageIcon("GAME OVER.png");
+
+        Image img = icon.getImage();
+        Image resizedImg = img.getScaledInstance(1420, 700, Image.SCALE_SMOOTH);
+
+        JLabel label = new JLabel(new ImageIcon(resizedImg));
+
+        label.setHorizontalAlignment(JLabel.CENTER);
+
+        gameOverFrame.add(label);
+        gameOverFrame.setVisible(true);
+        this.dispose();
+
+    }
 
     
 
-    JPanel hPanel = new JPanel(new GridLayout(2, 1));
-
-    private void showVictoryScreen() {
-        JOptionPane.showMessageDialog(this,
-        "ITS YOUR TIME!\nYou defeated all enemies!" );
-    }
-
-    // ★ キャラクターのインスタンスをよういする
-private Player player;
-private Enemy enemy;
-private int enemyCount = 1;
-
     public BattleGame() {
-        playerImageLabel = new JLabel();
-        add(playerImageLabel);
-        playerImageLabel.setBounds(playerX, playerY, 200, 200);
-
-setFocusable(true);
-
-addKeyListener(new java.awt.event.KeyAdapter() {
-    @Override
-    public void keyPressed(java.awt.event.KeyEvent e) {
-
-        switch (e.getKeyCode()) {
-            case java.awt.event.KeyEvent.VK_LEFT:
-                playerX -= 10;
-                break;
-
-            case java.awt.event.KeyEvent.VK_RIGHT:
-                playerX += 10;
-                break;
-
-            case java.awt.event.KeyEvent.VK_UP:
-                playerY -= 10;
-                break;
-
-            case java.awt.event.KeyEvent.VK_DOWN:
-                playerY += 10;
-                break;
-        }
-
-        playerImageLabel.setBounds(
-            playerX,
-            playerY,
-            200,
-            200
-        );
-    }
-});
-        // ウィンドウ（Window）のきほんせってい（Basic Setting）
-        setTitle("ターンせいコマンドバトル");
+        // ウィンドウの基本設定
+        setTitle("ターン制コマンドバトル");
         setSize(1200, 750);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // がめんのまんなかにひょうじ
-        setLayout(new BorderLayout()); // ぜんたいのレイアウト（Layout）をせってい
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
 
-        // 【うえはんぶん：キャラクターたいじエリア（はいけいのなかにキャラをいれる）】
-        // ※はいけいがぞうファイル（bg.png）をよみこみます
+
+        // コンポーネントの初期化
         backgroundLabel = new JLabel(new ImageIcon("battlebackround.png"));
-        backgroundLabel.setLayout(null); // ★じゅうよう（Important）：じゆうはいち（Free Layout）にするためにnullにする
+        backgroundLabel.setLayout(null);
 
         playerImageLabel = new JLabel("", JLabel.CENTER);
         enemyImageLabel = new JLabel("", JLabel.CENTER);
-
-        // ★はいけいラベルをきじゅん（Base）とした、キャラがぞうラベルの「いち（Position）(x, y)」と「サイズ（Size）(はば（Width）, たかさ（Height））」をしてい（Specify）
-        playerImageLabel.setBounds(40, 50, 500, 500); // ひだりがわにはいち
-        enemyImageLabel.setBounds(550, 50, 500, 500);  // みぎがわにはいち
-
-        // ★はいけいラベルのなかにキャラがぞうラベルを「add」してかさねる！
+        playerImageLabel.setBounds(40, 50, 500, 500);
+        enemyImageLabel.setBounds(550, 50, 500, 500);
         backgroundLabel.add(playerImageLabel);
         backgroundLabel.add(enemyImageLabel);
-        
-        // 【したはんぶん：そうさ・ログエリア】
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        
-        statusLabel = new JLabel("ここにステータスがひょうじされます", JLabel.CENTER);
+
+        statusLabel = new JLabel("ステータス表示", JLabel.CENTER);
         statusLabel.setFont(new Font("MS ゴシック", Font.BOLD, 14));
 
         logTextArea = new JTextArea(8, 30);
-        logTextArea.setEditable(false); // プレイヤーがちょくせつもじにゅうりょくできないようにする
-        JScrollPane scrollPane = new JScrollPane(logTextArea); // スクロール（Scroll）できるようにする
+        logTextArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(logTextArea);
 
-        attackButton = new JButton(" こうげきする");
+        attackButton = new JButton("こうげき");
         speedButton = new JButton("speed");
         skillButton = new JButton("skill");
         potionButton = new JButton("potion");
+
         playerHpBar = new JProgressBar();
         enemyHpBar = new JProgressBar();
-
         playerHpBar.setStringPainted(true);
         enemyHpBar.setStringPainted(true);
 
-         JPanel hpPanel = new JPanel(new GridLayout(2, 1));
-
+        JPanel hpPanel = new JPanel(new GridLayout(2, 1));
         hpPanel.add(playerHpBar);
         hpPanel.add(enemyHpBar);
 
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(statusLabel, BorderLayout.NORTH);
+        bottomPanel.add(scrollPane, BorderLayout.CENTER);
+        
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(attackButton);
+        buttonPanel.add(speedButton);
+        buttonPanel.add(skillButton);
+        buttonPanel.add(potionButton);
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+
         add(hpPanel, BorderLayout.NORTH);
+        add(backgroundLabel, BorderLayout.CENTER);
+        add(bottomPanel, BorderLayout.SOUTH);
 
-        bottomPanel.add(statusLabel, BorderLayout.NORTH);  
-        bottomPanel.add(scrollPane, BorderLayout.CENTER);   
-        bottomPanel.add(attackButton, BorderLayout.SOUTH);
-        bottomPanel.add(speedButton, BorderLayout.EAST); 
-        bottomPanel.add(skillButton, BorderLayout.NORTH);
-        bottomPanel.add(potionButton, BorderLayout.WEST);
-        // ぶひん（Parts）をメインウィンドウにはいち
-        add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
-        add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
-        // ★ ボタンをおしたときのしょりをついか
-        attackButton.addActionListener(new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            // ボタンがおされたらじっこうされるしょり。つぎのステップでかく
-              // 1. プレイヤーのターン（Turn）
-        String playerResult = player.attack(enemy);
-        logTextArea.append(playerResult);
-        updateDisplay();
+        // ボタンの処理
+        attackButton.addActionListener(e -> {
+            String playerResult = player.attack(enemy);
+            logTextArea.append(playerResult);
+            updateDisplay();
 
-        // 2. エネミーがたおれたかチェック（Check）
-        if (!enemy.isAlive()) {
-            player.gainExp(50);
-            logTextArea.append("★ " + enemy.getName() + " をたおした！ " + player.getName() + "のしょうり（Victory）！\n");
-            enemyImageLabel.setEnabled(false);
-            if (enemyCount < 4) {
-                enemyCount++;
-                spawnEnemy();
-                enemyImageLabel.setEnabled(true);
+            if (!enemy.isAlive()) {
+                handleEnemyDefeat();
+            } else {
+                String enemyResult = enemy.attack(player);
+                logTextArea.append(enemyResult);
                 updateDisplay();
-                if (enemy.getHp() <= 0) {
-                    if (enemyCount >= 4) { 
-                        javax.swing.JOptionPane.showMessageDialog(BattleGame.this,
-                            "GAME CLEAR! \nYou defeated all monsters!","VICTORY",
-                                javax.swing.JOptionPane.INFORMATION_MESSAGE
-                        );
-                        showVictoryScreen();
-                    }
+                if (!player.isAlive()) {
+                    logTextArea.append(player.getName() + " はたおれた…     ゲームオーバー(GAME OVER)\n");
+                    playerImageLabel.setEnabled(false);
+
+                    showGameOverScreen();
+
+                    return;
+                    
                 }
             }
-            else { 
-            logTextArea.append("すべてのまもの（Monster）をたいじ（Defeat）した！せかい（World）にへいわ（Peace）がおとずれた！【ゲームクリア（Game Clear）】\n");
-            enemyImageLabel.setEnabled(false);
-            endGame();
-            return;
-        }
-    
-        
+        });
 
-       skillButton.addActionListener(a -> {
-        int damage = player.getAtk() * 2;
-        enemy.setHp(enemy.getHp() - damage);
+        skillButton.addActionListener(e -> {
+            int damage = player.getAtk() * 2;
+            enemy.setHp(enemy.getHp() - damage);
+            logTextArea.append("Fire Ball! -" + damage + " HP\n");
+            updateDisplay();
+            if (!enemy.isAlive()) {
+                handleEnemyDefeat();
+            }
+        });
 
-        logTextArea.append("Fire Ball -" + damage + " HP\n");
+        potionButton.addActionListener(e -> { 
+            int heal = 30;  //
+
+            player.setHp(Math.min(player.getHp() + heal,
+            player.getMaxHp())
+            );
+            logTextArea.append("potion used! +" + heal + " HP\n");
+
+               updateDisplay();
+        });
+
+        // 初期化
+        choicePlayer();
+        spawnEnemy();
+        playerImageLabel.setIcon(player.getIcon());
+        enemyImageLabel.setIcon(enemy.getIcon());
         updateDisplay();
-       });
+        logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
+    }
 
-        // 3. エネミーのターン（はんげき）
-        String enemyResult = enemy.attack(player);
-        logTextArea.append(enemyResult);
-        updateDisplay();
-
-        if (enemy.getHp() <= 0) {
-            showVictoryScreen();
+    private void handleEnemyDefeat() {
+        player.gainExp(50);
+        logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
+          //Final boss ho bhane game Clear
+        if (enemyCount < 6){
+         showVictoryScreen();
+         return;  
         }
-
-        // 4. プレイヤーがたおれたかチェック
-        if (!player.isAlive()) {
-            logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
-            playerImageLabel.setEnabled(false); // プレイヤーのがぞうをグレーアウト
+        else {
+            logTextArea.append("世界に平和が訪れた！【ゲームクリア】\n");
             endGame();
-            return;
+            showVictoryScreen();  // last enemy maryapaxi next level ko thauma end game bottum
         }
 
+        // {
+        //     showVictoryScreen();  //
+        //     return;
+        // }
+    }
+
+    // 他メソッド（updateDisplay, endGame, choicePlayer, spawnEnemy 等）はそのまま記述
+    private void updateDisplay() {
+        statusLabel.setText(String.format(
+                "【%s】Lv.%d HP: %d/%d  vs  【%s】 Lv.%d HP: %d/%d",
+                player.getName(), player.getLevel(), player.getHp(), player.getMaxHp(),
+                enemy.getName(), enemy.getLevel(), enemy.getHp(), enemy.getMaxHp()));
+    }
+
+    private void endGame() {
+        attackButton.setEnabled(false); // ボタンをむこうか
+        logTextArea.append("【ゲームしゅうりょう】ウィンドウをとじてください。\n");
+    }
+
+    private void choicePlayer() {
+        // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1
+
+        // でかえってくる）
+
+        int choice = JOptionPane.showOptionDialog(
+
+                this,
+                "しよう（Use）するキャラクターをせんたく（Select）してください",
+                "キャラクターせんたく（Select）",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                new String[] { "BHOLA（Hero）", "BIYON（Mage）", "ladyboss", "bigboss" },
+                null);
+
+        if (choice == 0) {
+            player = new Player("BHOLA（Hero）", 100, 20, 10, 10, 30, "BHOLA.png");
+        } else if (choice == 1) {
+            player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
+        } else if (choice == 2) {
+            player = new Player("LedyBoss", 100, 15, 20, 10, 30, "ladyboss.png");
+        } else if (choice == 3) {
+            player = new Player("boss", 150, 25, 10, 15, 30, "bigboss.png");
+        }
+    }
+
+    private void spawnEnemy() {
+        if (enemyCount == 0) {
+            enemy = new Enemy("chotu", 100, 8, 5, 5, 10, "chotuenemy.png");
+            logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
+        } else if (enemyCount == 1) {
+            enemy = new Enemy("boss", 90, 15, 5, 5, 10, "enemyboss.png");
+            logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
+        } else if (enemyCount == 2) {
+            enemy = new Enemy("tiger", 160, 24, 5, 5, 10, "tiger.png");
+            logTextArea.append("⚠ WARNING ⚠\\nFINAL BOSS APPEARED! \n");
+        } else if (enemyCount == 3) {
+            enemy = new Enemy("lagartha", 180, 30, 10, 10, 10, "lagartha.png");
+            logTextArea.append("WARNING\\nLAGARTHA IS COMMING! \n");
+        } else if (enemyCount == 4) {
+            enemy = new Enemy("IRONBOSS", 200, 20, 10, 7, 15, "ironman.png");
+            logTextArea.append("WARNING\\nIRONMAN AAGAYA! \n");
+        } else if (enemyCount == 5) {
+            enemy = new Enemy("MONSTAR", 200, 15, 15, 8, 10, "MONSTAR.png");
+            logTextArea.append("IM THE MONSTAR! \n");
+        }
+        enemyImageLabel.setIcon(enemy.getIcon());
         logTextArea.append("--------------------------------------------\n");
-        }
-
-        
-    });
-    // ★ インスタンスをしょきか（Initialize）
-choicePlayer();
-spawnEnemy();
-
-// ★ がぞうをがめんのラベルにセットする
-playerImageLabel.setIcon(player.getIcon());
-enemyImageLabel.setIcon(enemy.getIcon());
-
-// ★ しょきステータスをひょうじする
-updateDisplay();
-logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
     }
+
     public static void main(String[] args) {
-       BattleGame game = new BattleGame();
- game.setVisible(true); // がめんをひょうじ（Display）する
+        BattleGame game = new BattleGame();
+        game.setVisible(true);
     }
-    // がめんこうしんしょり（Screen Update Process）
-private void updateDisplay() {
-    statusLabel.setText(String.format(
-            "【%s】Lv.%d HP: %d/%d  vs  【%s】 HP: %d/%d",
-          player.getName(),
-          player.getLevel(),
-          player.getHp(),
-          player.getMaxHp(),
-          enemy.getName(),
-          enemy.getHp(),
-          enemy.getMaxHp()
-            ));
-
-            playerHpBar.setMaximum(player.getMaxHp());
-            playerHpBar.setValue(player.getHp());
-            playerHpBar.setString(
-                player.getHp() + "/" + player.getMaxHp()
-            );
-
-            enemyHpBar.setMaximum(enemy.getMaxHp());
-            enemyHpBar.setValue(enemy.getHp());
-            enemyHpBar.setString(
-                enemy.getHp() + "/" + enemy.getMaxHp()
-            );
-}
-// ゲームしゅうりょうじにボタンをおせなくするしょり
-private void endGame() {
- attackButton.setEnabled(false); // ボタンをむこうか（Disable）
- logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
-}
-// キャラクターせんたく（Select）メソッド
-private void choicePlayer() {
-    // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1 でかえってくる）
-    int choice = JOptionPane.showOptionDialog(
-            this,
-            "しよう（Use）するキャラクターをせんたく（Select）してください",
-            "キャラクターせんたく（Select）",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            new String[] { "BHOLA（Hero）", "BIYON（Mage）" , "ladyboss" , "bigboss"},
-            null);
-    if (choice == 0) {
-        player = new Player("BHOLA（Hero）", 100, 20, 10, 10, 30, "BHOLA.png");
-    } else if (choice == 1) {
-        player = new Player("BIYON（Mage）", 100, 25, 10, 15, 30, "BIYON.png");
-    }
-    else if (choice == 2){
-        player = new Player("LedyBoss", 100, 15, 20, 10, 30, "ladyboss.png");
-    }
-    else if (choice == 3) {
-        player = new Player("boss", 100, 25, 10, 15, 30, "bigboss.png");
-    }
-}
-private void spawnEnemy() {
-    if (enemyCount == 0)  {
-        enemy = new Enemy("chotu", 40, 8, 5, 5, 10, "chotuenemy.png");
-        logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
-    } else if (enemyCount == 1) {
-        enemy = new Enemy("boss", 90, 15, 5, 5, 10,  "enemyboss.png");
-        logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
-    } else if (enemyCount == 2) {
-        enemy = new Enemy("tiger", 160, 24, 5, 5, 10,  "tiger.png");
-        logTextArea.append("⚠ WARNING ⚠\\nFINAL BOSS APPEARED! \n");
-    } else if (enemyCount == 3) {
-         enemy = new Enemy("lagartha", 180, 30, 10, 10, 10, "lagartha.png");
-         logTextArea.append("WARNING\\nLAGARTHA IS COMMING! \n");
-    }
-   
-
-
-
-
-    enemyImageLabel.setIcon(enemy.getIcon());
-    logTextArea.append("--------------------------------------------\n");
-}
-
 }
