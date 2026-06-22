@@ -14,15 +14,16 @@ public class BattleGame extends JFrame {
     private JButton itemButton;       // アイテムコマンドボタン
     
     // ★ がぞうをひょうじするためのラベル
-    private JLabel backgroundLabel;   // はいけいがぞうようのラベル
-    private JLabel[] playerImageLabels = new JLabel[4];  // プレイヤーがぞうようのラベル
-    private JLabel enemyImageLabel;   // てきがぞうようのラベル
+    private JLabel backgroundLabel;   // 背景画像のラベル
+    private JLabel[] playerImageLabels = new JLabel[4];  // プレイヤー画像用のラベル
+    private JLabel[] enemyImageLabels = new JLabel[5];//敵の画像用ラベル
 
     // ★ キャラクターのインスタンスをよういする
     private Player player;
     private java.util.List<Player> party = new java.util.ArrayList<>();//チームにするためのコード（ArrayListは可変式の配列）
     private Enemy enemy;
-    private int enemyCount = 1; // たいじするてきのかずをかぞえるためのフィールド
+    private java.util.List<Enemy> enemyParty = new java.util.ArrayList<>();//敵をチーム（複数体）にするためのコード
+    private int enemyCount = 1; // 対峙する敵の数を数えるためのフィールド
     private int guardFlg = 0; // ガードフラグ（0: ガードしていない、1: ガードしている）
     private int currentPlayerIndex = 0; // 今何人目のプレイヤーのターンかを数えるためのフィールド（０から３）
 
@@ -39,17 +40,6 @@ public class BattleGame extends JFrame {
         backgroundLabel = new JLabel(new ImageIcon("Background1.png"));
         backgroundLabel.setLayout(null); // ★じゅうよう（Important）：じゆうはいち（Free Layout）にするためにnullにする
 
-        //playerImageLabel = new JLabel("", JLabel.CENTER);
-        enemyImageLabel = new JLabel("", JLabel.CENTER);
-
-        // ★はいけいラベルをきじゅん（Base）とした、キャラがぞうラベルの「いち（Position）(x, y)」と「サイズ（Size）(はば（Width）, たかさ（Height））」をしてい（Specify）
-        //playerImageLabel.setBounds(20, 20, 500, 500); // ひだりがわにはいち
-        enemyImageLabel.setBounds(560, 20, 500, 500);  // みぎがわにはいち
-
-        // ★はいけいラベルのなかにキャラがぞうラベルを「add」してかさねる！
-        //backgroundLabel.add(playerImageLabel);
-        backgroundLabel.add(enemyImageLabel);
-
         //for文で横にずらしながらプレイヤーの画像をセットする
         for (int i = 0; i < 4; i++ ){
             playerImageLabels[i] = new JLabel("",JLabel.CENTER);
@@ -57,6 +47,13 @@ public class BattleGame extends JFrame {
             backgroundLabel.add(playerImageLabels[i]);
         }
         
+        //for文で横にずらしながら敵の画像をセットする
+        for (int i = 0; i < 5; i++ ){
+            enemyImageLabels[i] = new JLabel("",JLabel.CENTER);
+            enemyImageLabels[i].setBounds(600 + (i * 110), 100, 100, 400);
+            backgroundLabel.add(enemyImageLabels[i]);
+        }
+
         // 【したはんぶん：そうさ・ログエリア】
         JPanel bottomPanel = new JPanel(new BorderLayout());
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0)); // ボタンをならべるためのパネル（Panel）
@@ -141,68 +138,101 @@ public class BattleGame extends JFrame {
 
         // ★ 攻撃ボタンをおしたときのしょりをついか
         attackButton.addActionListener(new ActionListener() {
-          @Override
-           public void actionPerformed(ActionEvent e) {
-            // 1. プレイヤーのターン（Turn）
-            String playerResult = player.attack(enemy);
-            logTextArea.append(playerResult);
-            updateDisplay();
-
-            // 2. エネミーがたおれたかチェック（Check）
-            if (!enemy.isAlive()) {
-                logTextArea.append("★ " + enemy.getName() + " をたおした！ " + player.getName() + "のしょうり（Victory）！\n");
-                enemyImageLabel.setEnabled(false);
-                if (enemyCount < 3) {
-                    enemyCount++;
-                    spawnEnemy();
-                    enemyImageLabel.setEnabled(true);
-                    updateDisplay();
-                } else {
-                    logTextArea.append("すべてのまもの（Monster）をたいじ（Defeat）した！せかい（World）にへいわ（Peace）がおとずれた！【ゲームクリア（Game Clear）】\n");                        
-                    enemyImageLabel.setEnabled(false);
-                    endGame();
-                }
-                return;
-            }
-            
-            //チェンジする前に今のプレイヤーのインデックスを覚えておく
-            int oldIndex = currentPlayerIndex;
-
-            //３．次のプレイヤーにチェンジ
-            switchNextPlayer();
-
-            //４．敵のターン
-            if (currentPlayerIndex <= oldIndex){
-                String enemyResult = enemy.attack(player);
-                logTextArea.append(enemyResult);
-                updateDisplay();
-                updatePlayerVisuals();
-            }
-
-            // ５. プレイヤーがたおれたかチェック
-            if (!player.isAlive()) {
-                logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
-        
-               //６．パーティーが全滅してないかチェック
-               boolean allMembersDefeated = true;
-               for (Player member : party) {
-                    if (member.isAlive() && member.getHp() > 0) { 
-                        allMembersDefeated = false;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //生きている敵を探す
+                Enemy aliveEnemy = null;
+                for(Enemy enemyInside : enemyParty) {
+                    if(enemyInside.isAlive()){
+                        aliveEnemy = enemyInside;
                         break;
                     }
                 }
 
-                if (allMembersDefeated) {
-                    logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
-                    endGame();
-                    return;
-                } else {
-                    //全員死んでいないなら、生きているキャラクターと交代
-                    switchNextPlayer(); 
-                    updatePlayerVisuals();
+                //敵が全滅している場合は何もしない
+                if(aliveEnemy == null) return;
+
+                // 1. プレイヤーのターン（Turn）
+                String playerResult = player.attack(aliveEnemy);
+                logTextArea.append(playerResult);
+                
+                //攻撃された敵が倒れたらその敵をグレーアウト
+                if(!aliveEnemy.isAlive()){
+                    logTextArea.append(aliveEnemy.getName() + "をたおした！\n");
+                    //倒した敵のインデックスを調べてグレーにする
+                    int index = enemyParty.indexOf(aliveEnemy);
+                    enemyImageLabels[index].setEnabled(false);
                 }
-            }
-            logTextArea.append("--------------------------------------------\n");
+
+                // 2. エネミーがたおれたかチェック（Check）
+                //敵が全員倒れたかチェック
+                boolean allEnemiesDefeated = true;
+                for (Enemy enemyInside : enemyParty){
+                    if (enemyInside.isAlive()){
+                        allEnemiesDefeated = false;
+                        break;
+                    }
+                }
+
+                if(allEnemiesDefeated){
+                    logTextArea.append("敵の群れを倒した！\n");
+                    if(enemyCount < 3){
+                        enemyCount++;
+                        spawnEnemy();
+                        updateDisplay();
+                        return;
+                    } else {
+                        logTextArea.append("すべての魔物を倒した！\n");
+                        endGame();
+                    }
+                }
+            
+                //３．次のプレイヤーにチェンジ
+                boolean isEnemyTrun = switchNextPlayer();
+
+                //４．敵のターン
+                if (isEnemyTrun){
+                    Enemy currentEnemy = null;
+                    for (Enemy enemyInside : enemyParty){
+                        if(enemyInside.isAlive()){
+                            currentEnemy = enemyInside;
+                            break;
+                        }
+                    }
+
+                    if (currentEnemy != null){
+                        String aliveEnemyResult = currentEnemy.attack(player);
+                        logTextArea.append(aliveEnemyResult);
+                        updateDisplay();
+                        updatePlayerVisuals();
+                    }
+                    
+                }
+
+                // ５. プレイヤーがたおれたかチェック
+                if (!player.isAlive()) {
+                    logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
+        
+                    //６．パーティーが全滅してないかチェック
+                    boolean allMembersDefeated = true;
+                    for (Player member : party) {
+                        if (member.isAlive() && member.getHp() > 0) { 
+                            allMembersDefeated = false;
+                            break;
+                        }
+                    }
+
+                    if (allMembersDefeated) {
+                        logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
+                        endGame();
+                        return;
+                    } else {
+                        //全員死んでいないなら、生きているキャラクターと交代
+                        switchNextPlayer(); 
+                        updatePlayerVisuals();
+                    }
+                }
+                logTextArea.append("--------------------------------------------\n");
             }
         });
 
@@ -314,8 +344,6 @@ public class BattleGame extends JFrame {
         choicePlayer();//選択したキャラクターが出てくる
         spawnEnemy();
 
-        // ★ がぞうをがめんのラベルにセットする
-        enemyImageLabel.setIcon(enemy.getIcon());
     }
 
     public static void main(String[] args) {
@@ -332,8 +360,17 @@ public class BattleGame extends JFrame {
            statusText.append(String.format("%s HP: %d/%d atk: %d mgc: %d | ", member.getName(), member.getHp(), member.getMaxHp(), member.getAtk(), member.getMgc()));
        }
 
+       //生きている敵を探す
+       Enemy showEnemy = null;
+       for (Enemy enemyInside : enemyParty){
+        if (enemyInside.isAlive()){
+            showEnemy = enemyInside;
+            break;
+        }
+       }
+
        //組み立てたステータス＋敵のステータスを表示する
-         statusText.append(String.format("  | %s HP: %d/%d atk: %d mgc: %d", enemy.getName(), enemy.getHp(), enemy.getMaxHp(), enemy.getAtk(), enemy.getMgc()));
+         statusText.append(String.format("  | %s HP: %d/%d atk: %d mgc: %d", showEnemy.getName(), showEnemy.getHp(), showEnemy.getMaxHp(), showEnemy.getAtk(), showEnemy.getMgc()));
          statusLabel.setText(statusText.toString());
 
     }
@@ -348,26 +385,33 @@ public class BattleGame extends JFrame {
     }
     
     // 次のプレイヤーにきりかえるしょり
-    private void switchNextPlayer() {
+    private boolean switchNextPlayer() {
         //現在のプレイヤーが倒れているか覚えておく
         boolean currentPlayerDefeated = !player.isAlive();
+        //1周したかどうかの判定のフラグ
+        boolean turnedOver = false;
 
         //生きているプレイヤーを探す（最大4回ループする）
         for (int i = 0; i < party.size(); i++) {
+            int oldIndex = currentPlayerIndex;
             currentPlayerIndex = (currentPlayerIndex + 1) % party.size(); 
-            //例　０人目が勇者で、１人目が魔法使い、２人目が騎士、３人目が盗賊だったとする。
-            //０人目の勇者がたおれたら、（０人目＋１）％（割った余りの数）４＝１人目の魔法使いにきりかえる。
+
+            //インデックスが前の値より小さくなった、または0になったら一周したとみなす
+            if (currentPlayerIndex <= oldIndex){
+                turnedOver = true;
+            }
+            
             Player p = party.get(currentPlayerIndex);
-                if (p.getHp() > 0) {
-                    player = p; // 次のプレイヤーにきりかえる
-                    updatePlayerVisuals();
-                    updateDisplay();                
-                        if (currentPlayerDefeated) {
-                            logTextArea.append("次のプレイヤーは " + player.getName() + " だ！\n");
-                        }
-                    return;
+            if (p.getHp() > 0){
+                player = p;//次のプレイヤーに切り替える
+                updatePlayerVisuals();
+                if(currentPlayerDefeated){
+                    logTextArea.append("次のプレイヤーは" + player.getName() + "だ！\n");
                 }
+                return turnedOver;
+            }
         }
+        return turnedOver;
     }
 
     // キャラクターせんたく（Select）メソッド
@@ -436,18 +480,43 @@ public class BattleGame extends JFrame {
 
     //敵のスポーンメソッド
     private void spawnEnemy() {
-        if (enemyCount == 1) {
-          enemy = new Enemy("スライム", 20, 5, 5, "fantasy_game_character_slime.png");
-          logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
-        } else if (enemyCount == 2) {
-          enemy = new Enemy("ゴブリン", 25, 10, 5, "fantasy_goblin.png");
-          logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
-        } else if (enemyCount == 3) {
-          enemy = new Enemy("ドラゴン", 10000, 70, 130, "fantasy_dragon.png");
-          logTextArea.append("【さいしゅう（Final）けっせん（Battle）】でんせつ（Legend）の ドラゴン があらわれた！\n");
+        //戦いの前に敵パーティをクリア
+        enemyParty.clear();
+        for (int i = 0; i < 5; i++){
+            enemyImageLabels[i].setIcon(null);
         }
-          enemyImageLabel.setIcon(enemy.getIcon());
-          logTextArea.append("--------------------------------------------\n");
+
+        int numberOfEnemies = 1;//出現する敵の数
+
+        if (enemyCount == 1) {
+            numberOfEnemies = (int)(Math.random() * 5) + 1;
+            logTextArea.append("第一戦　スライムが" + numberOfEnemies + "体あらわれた！\n");
+
+            for (int i = 0; i < numberOfEnemies; i++){
+                //スライムA、スライムB…と名付ける
+                char suffix = (char)('A' + i);
+                enemyParty.add(new Enemy("スライム" + suffix, 20, 5, 5,"fantasy_game_character_slime.png"));
+            }
+        } else if (enemyCount == 2) {
+            numberOfEnemies = (int)(Math.random() * 5) + 1;
+            logTextArea.append("第二戦　ゴブリンが" + numberOfEnemies + "体あらわれた！\n");
+
+            for (int i = 0; i < numberOfEnemies; i++){
+                char suffix = (char)('A' + i);
+                enemyParty.add(new Enemy("ゴブリン" + suffix, 25, 10, 5, "fantasy_goblin.png"));
+            }
+        } else if (enemyCount == 3) {
+            //ドラゴンは一体だけに固定
+            numberOfEnemies = 1;
+            logTextArea.append("最終決戦　伝説の ドラゴン があらわれた！\n");
+            enemyParty.add(new Enemy("ドラゴン" ,10000, 70, 130, "fantasy_dragon.png"));
+        }
+        
+        for (int i = 0; i < enemyParty.size(); i++){
+            enemyImageLabels[i].setIcon(enemyParty.get(i).getIcon());
+            enemyImageLabels[i].setEnabled(true);
+        }
+        logTextArea.append("--------------------------------------------\n");
         
     }
     // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
@@ -476,4 +545,5 @@ public class BattleGame extends JFrame {
         }
         backgroundLabel.repaint();//画面をリフレッシュする
     }
+
 }
