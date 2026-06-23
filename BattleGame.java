@@ -8,6 +8,7 @@ public class BattleGame extends JFrame {
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
     private JButton attackButton;     // こうげきコマンドボタン（Command Button）
     private JButton runButton;
+    private JButton healButton;
     
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // はいけいがぞうようのラベル
@@ -15,8 +16,9 @@ public class BattleGame extends JFrame {
     private JLabel enemyImageLabel;   // てきがぞうようのラベル
 
     // ★ キャラクターのインスタンスをよういする
-private Player player;
-private Enemy enemy;
+    private Player player;
+    private Enemy enemy;
+    private static int currentplayerlevel = 1;
 
     public BattleGame() {
         // ウィンドウ（Window）のきほんせってい（Basic Setting）
@@ -34,7 +36,7 @@ private Enemy enemy;
         playerImageLabel = new JLabel("", JLabel.CENTER);
         enemyImageLabel = new JLabel("", JLabel.CENTER);
 
-        // ★はいけいラベルをきじゅん（Base）とした、キャラがぞうラベルの「いち（Position）(x, y)」と「サイズ（Size）(はば（Width）, たかさ（Height））」をしてい（Specify）
+        // ★はいけいラベルをきじゅん（Base）とした、キャラがぞうラベルの「いち（Position）(x, y)」と「サイズ（Size）（はば（Width）, たかさ（Height））」をしてい（Specify）
         playerImageLabel.setBounds(200, 10, 500, 700); // ひだりがわにはいち
         enemyImageLabel.setBounds(700, 10, 500, 700);  // みぎがわにはいち
 
@@ -44,7 +46,16 @@ private Enemy enemy;
         
         // 【したはんぶん：そうさ・ログエリア】
         JPanel bottomPanel = new JPanel(new BorderLayout());
+        
+        // ★ 3つのボタンをきれいに配置（Layout）するためのパネルをつくる
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 3)); 
+        attackButton = new JButton(" こうげきする");
+        healButton = new JButton("回復する");   // ★ かいふくボタン
         runButton = new JButton("にげる");
+
+        buttonPanel.add(attackButton);
+        buttonPanel.add(healButton);
+        buttonPanel.add(runButton);
         
         statusLabel = new JLabel("ここにステータスがひょうじされます", JLabel.CENTER);
         statusLabel.setFont(new Font("MS ゴシック", Font.BOLD, 14));
@@ -53,55 +64,80 @@ private Enemy enemy;
         logTextArea.setEditable(false); // プレイヤーがちょくせつもじにゅうりょくできないようにする
         JScrollPane scrollPane = new JScrollPane(logTextArea); // スクロール（Scroll）できるようにする
 
-        attackButton = new JButton(" こうげきする");
-
         bottomPanel.add(statusLabel, BorderLayout.NORTH);  
         bottomPanel.add(scrollPane, BorderLayout.CENTER);   
-        bottomPanel.add(attackButton, BorderLayout.SOUTH); 
-        bottomPanel.add(runButton, BorderLayout.EAST);
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         // ぶひん（Parts）をメインウィンドウにはいち
         add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
         add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
+        
         // ★ ボタンをおしたときのしょりをついか
-    attackButton.addActionListener(new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            // 1. プレイヤーのターン（Turn）
-    String playerResult = player.attack(enemy);
-    logTextArea.append(playerResult);
-     updateDisplay();
+        attackButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // 1. プレイヤーのターン（Turn）
+                String playerResult = player.attack(enemy);
+                logTextArea.append(playerResult);
+                updateDisplay();
 
-    // 2. エネミーがたおれたかチェック（Check）
-    if (!enemy.isAlive()) {
-        logTextArea.append("★ " + enemy.getName() + " を倒した！ " + player.getName() + "の勝利！\n");
-        enemyImageLabel.setEnabled(false); // てきのがぞうをグレーアウト
-        endGame();
-        return; // てきがたおれたらここでしょりをしゅうりょう（End）
-    }
+                // 2. エネミーがたおれたかチェック（Check）
+                if (!enemy.isAlive()) {
+                    logTextArea.append("★ " + enemy.getName() + " を倒した！ " + player.getName() + "の勝利！\n");
+                    enemyImageLabel.setEnabled(false); // てきのがぞうをグレーアウト
+                    player.levelUp(); 
+                    logTextArea.append(" レベルアップ！ レベル " + player.getLevel() + " になりました！\n");
+                    updateDisplay();
+                    endGame();
+                    return; // てきがたおれたらここでしょりをしゅうりょう（End）
+                }
 
-    // 3. エネミーのターン（はんげき）
-    String enemyResult = enemy.attack(player);
-    logTextArea.append(enemyResult);
-    updateDisplay();
+                // 3. エネミーのターン（はんげき）
+                String enemyResult = enemy.attack(player);
+                logTextArea.append(enemyResult);
+                updateDisplay();
 
-    // 4. プレイヤーがたおれたかチェック
-    if (!player.isAlive()) {
-        logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
-        playerImageLabel.setEnabled(false); // プレイヤーのがぞうをグレーアウト
-        endGame();
-        return;
-    }
+                // 4. プレイヤーがたおれたかチェック
+                if (!player.isAlive()) {
+                    logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
+                    playerImageLabel.setEnabled(false); // プレイヤーのがぞうをグレーアウト
+                    endGame();
+                    return;
+                }
 
-    logTextArea.append("--------------------------------------------\n");
-        }
-    });
-    // ★「にげる（Escape）ボタン（Button）」をおした（Press）ときのしょり（Process）をついか（Add）
+                logTextArea.append("--------------------------------------------\n");
+            }
+        });
+
+        // ★「回復（Heal）ボタン」をおしたときのしょりを独立したブロックでついか
+        healButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String healResult = player.heal(); 
+                logTextArea.append(healResult);
+                updateDisplay();
+
+                // エネミーのターン（はんげき）
+                String enemyResult = enemy.attack(player);
+                logTextArea.append(enemyResult);
+                updateDisplay();
+
+                // プレイヤーがたおれたかチェック
+                if (!player.isAlive()) {
+                    logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー\n");
+                    playerImageLabel.setEnabled(false);
+                    endGame();
+                    return;
+                }
+                logTextArea.append("--------------------------------------------\n");
+            }
+        });
+
+        // ★「にげる（Escape）ボタン（Button）」をおした（Press）ときのしょり（Process）をついか（Add）
         runButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                logTextArea.append( player.getName() + " は逃げ出そうとした！\n");
-
+                logTextArea.append(player.getName() + " は逃げ出そうとした！\n");
                 
                 // 0.5 未満（50% の確率）なら逃亡成功とする
                 if (Math.random() < 0.5) {
@@ -127,51 +163,59 @@ private Enemy enemy;
                 }
             }
         });
-    // ★ インスタンスをしょきか（Initialize）
-choicePlayer();
-enemy    = new Enemy("スライム", 50, 10,10, "Picture5.png");
 
-// ★ がぞうをがめんのラベルにセットする
-playerImageLabel.setIcon(player.getIcon());
-enemyImageLabel.setIcon(enemy.getIcon());
+        // ★ インスタンスをしょきか（Initialize）
+        choicePlayer();
+        enemy = new Enemy("スライム", 50, 10, 10, "Picture5.png");
 
-// ★ しょきステータスをひょうじする
-updateDisplay();
-logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
+        // ★ がぞうをがめんのラベルにセットする
+        playerImageLabel.setIcon(player.getIcon());
+        enemyImageLabel.setIcon(enemy.getIcon());
+
+        // ★ しょきステータスをひょうじする
+        updateDisplay();
+        logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
     }
+
     public static void main(String[] args) {
         BattleGame game = new BattleGame();
- game.setVisible(true); // がめんをひょうじ（Display）する
+        game.setVisible(true); // がめんをひょうじ（Display）する
     }
-    // がめんこうしんしょり（Screen Update Process）
-private void updateDisplay() {
-    statusLabel.setText(String.format(
-            "【%s】 HP: %d/%d  vs  【%s】 HP: %d/%d",
-            player.getName(), player.getHp(), player.getMaxHp(),
-            enemy.getName(), enemy.getHp(), enemy.getMaxHp()));
-}
-// ゲームしゅうりょうじにボタンをおせなくするしょり
-private void endGame() {
- attackButton.setEnabled(false); // ボタンをむこうか（Disable）
- logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
-}
-// キャラクターせんたく（Select）メソッド
-private void choicePlayer() {
-    // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1 でかえってくる）
-    int choice = JOptionPane.showOptionDialog(
-            this,
-            "しよう（Use）するキャラクターをせんたく（Select）してください",
-            "キャラクターせんたく（Select）",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            new String[] { "ゆうしゃ（Hero）", "まほうつかい（Mage）", "ninja"},
-            null);
-    if (choice == 0) {
-        player = new Player("ゆうしゃ（Hero）", 100, 20, 10, "sagar.png");
-    } else if (choice == 1)
-        player = new Player("まほうつかい（Mage）", 80, 25, 10, "Aelina.png");
 
-       else if (choice == 2) player = new Player("ninja（ninja）", 80, 25, 10, "Picture2.png");
-}
+    // がめんこうしんしょり（Screen Update Process）
+    private void updateDisplay() {
+        statusLabel.setText(String.format(
+                "【%s】 LV: %d | HP: %d/%d  vs  【%s】 HP: %d/%d", 
+                player.getName(), player.getLevel(), player.getHp(), player.getMaxHp(), 
+                enemy.getName(), enemy.getHp(), enemy.getMaxHp()));
+    }
+
+    // ゲームしゅうりょうじにボタンをおせなくするしょり
+    private void endGame() {
+        attackButton.setEnabled(false); // ボタンをむこうか（Disable）
+        healButton.setEnabled(false);   // 回復ボタンもむこうか
+        runButton.setEnabled(false);    // 逃げるボタンもむこうか
+        logTextArea.append("【ゲームしゅうりょう（Game End）】ウィンドウをとじてください。\n");
+    }
+
+    // キャラクターせんたく（Select）メソッド
+    private void choicePlayer() {
+        // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1, 2 でかえってくる）
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                "しよう（Use）するキャラクターをせんたく（Select）してください",
+                "キャラクターせんたく（Select）",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                new String[] { "ゆうしゃ（Hero）", "まほうつかい（Mage）", "ninja"},
+                null);
+        if (choice == 0) {
+            player = new Player("ゆうしゃ（Hero）", 100, 20, 10, "sagar.png");
+        } else if (choice == 1) {
+            player = new Player("まほうつかい（Mage）", 80, 25, 10, "Aelina.png");
+        } else if (choice == 2) {
+            player = new Player("ninja（ninja）", 80, 25, 10, "Picture2.png");
+        }
+    }
 }
