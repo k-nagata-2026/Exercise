@@ -105,7 +105,7 @@ public class BattleGame extends JFrame implements KeyListener {
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
 
-        statusLabel = new JLabel("【操作】 ←/→ : 移動 | SPACE : 攻撃 | D : 防御 | H : 回復 | R : 逃げる", JLabel.CENTER);
+        statusLabel = new JLabel("【操作】 SPACE : 攻撃 | D : 防御 | H : 回復 | R : 逃げる", JLabel.CENTER);
         statusLabel.setFont(new Font("MS ゴシック", Font.BOLD, 16));
         statusLabel.setForeground(Color.BLUE);
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5,0,5,0));
@@ -196,12 +196,8 @@ public class BattleGame extends JFrame implements KeyListener {
         SwingUtilities.invokeLater(() -> requestFocusInWindow());
     }
 
-    private void updateMovement() {
-        if (isGameOverState) return;
-        if (moveLeft && playerX > 0) playerX -= SPEED;
-        if (moveRight && playerX < enemyX - 200) playerX += SPEED;
-        playerImageLabel.setLocation(playerX, playerY);
-    }
+    private void updateMovement() {}
+       
 
     private void updateAnimation() {
         if (shakeFrame > 0) {
@@ -243,17 +239,12 @@ public class BattleGame extends JFrame implements KeyListener {
     @Override
     public void keyTyped(KeyEvent e) {}
 
-    private void handleAttackAction() {
-        if (isGameOverState) return;
-        if (!isAttacking) {
-            int distance = Math.abs((playerX + 250) - enemyX); 
-            if (distance < 350) { 
-                executePlayerTurn();
-            } else {
-                logTextArea.append("❌ 敵が遠すぎます！もっと近づいてください！\n");
-            }
-        }
+  private void handleAttackAction() {
+    if (isGameOverState) return;
+    if (!isAttacking) {
+        executePlayerTurn(); 
     }
+}
 
     private void handleDefendAction() {
         if (isGameOverState) return;
