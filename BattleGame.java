@@ -23,39 +23,18 @@ public class BattleGame extends JFrame {
     private void showVictoryScreen() {
     
         JFrame victoryFrame = new JFrame("GAME CLEAR!");
-
-
-    victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-
-    victoryFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-    ImageIcon icon = new ImageIcon("GAME CALER.png");
-        
-          Image img = icon.getImage();
+      victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+      victoryFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        ImageIcon icon = new ImageIcon("GAME CALER.png");
+         Image img = icon.getImage();
           Image resizedImg = img.getScaledInstance(1450, 700, Image.SCALE_SMOOTH);
-
           JLabel label = new JLabel(new ImageIcon(resizedImg));
 
-          JButton nextButton = new JButton("NEXT LEVEL");
-          nextButton.addActionListener(e -> { 
-            victoryFrame.dispose();  //VictoryScreen banda
-                 
-                  enemyCount++;     //Next level
-                  spawnEnemy();    //new enemy
-                  updateDisplay();   //Screen update
-                
-                  setVisible(true);     // Battle Screen fari dekhau
+        label.setHorizontalAlignment(JLabel.CENTER);
 
-          });
-
-          victoryFrame.add(label,BorderLayout.CENTER);
-          victoryFrame.add(nextButton,BorderLayout.SOUTH);
-
-
-
-          victoryFrame.add(label);
-    victoryFrame.setVisible(true);
-    this.setVisible(false);
+        victoryFrame.add(label);
+        victoryFrame.setVisible(true);
+        this.dispose();
     }
 
     private void showGameOverScreen() {
@@ -80,10 +59,7 @@ public class BattleGame extends JFrame {
         this.dispose();
 
     }
-
-    
-
-    public BattleGame() {
+  public BattleGame() {
         // ウィンドウの基本設定
         setTitle("ターン制コマンドバトル");
         setSize(1200, 750);
@@ -194,26 +170,29 @@ public class BattleGame extends JFrame {
         logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
     }
 
-    private void handleEnemyDefeat() {
-        player.gainExp(50);
-        logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
-          //Final boss ho bhane game Clear
-        if (enemyCount < 6){
-         showVictoryScreen();
-         return;  
-        }
-        else {
-            logTextArea.append("世界に平和が訪れた！【ゲームクリア】\n");
-            endGame();
-            showVictoryScreen();  // last enemy maryapaxi next level ko thauma end game bottum
-        }
+   private void handleEnemyDefeat() {
+    player.gainExp(50);
+    logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
 
-        // {
-        //     showVictoryScreen();  //
-        //     return;
-        // }
+    enemyCount++;
+
+    // Last enemy defeated
+    if (enemyCount >= 6) {
+        logTextArea.append("世界に平和が訪れた！【ゲームクリア】\n");
+        endGame();
+        showVictoryScreen();
+        return;
     }
 
+    // Next level unlock
+    javax.swing.JOptionPane.showMessageDialog(
+        this,
+        "LEVEL " + (enemyCount + 1) + " UNLOCKED!"
+    );
+
+    spawnEnemy();
+    updateDisplay();
+}
     // 他メソッド（updateDisplay, endGame, choicePlayer, spawnEnemy 等）はそのまま記述
     private void updateDisplay() {
         statusLabel.setText(String.format(
@@ -244,7 +223,7 @@ public class BattleGame extends JFrame {
                 null);
 
         if (choice == 0) {
-            player = new Player("BHOLA（Hero）", 100, 20, 10, 10, 30, "BHOLA.png");
+            player = new Player("BHOLA（Hero）", 1000, 120, 10, 10, 30, "BHOLA.png");
         } else if (choice == 1) {
             player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
         } else if (choice == 2) {
