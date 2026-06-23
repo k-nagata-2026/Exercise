@@ -50,9 +50,9 @@ public class BattleGame extends JFrame {
         //for文で横にずらしながら敵の画像をセットする
         for (int i = 0; i < 5; i++ ){
             enemyImageLabels[i] = new JLabel("",JLabel.CENTER);
-            enemyImageLabels[i].setBounds(600 + (i * 110), 100, 100, 400);
             backgroundLabel.add(enemyImageLabels[i]);
         }
+        enemyIcon();
 
         // 【したはんぶん：そうさ・ログエリア】
         JPanel bottomPanel = new JPanel(new BorderLayout());
@@ -179,6 +179,7 @@ public class BattleGame extends JFrame {
                     if(enemyCount < 3){
                         enemyCount++;
                         spawnEnemy();
+                        enemyIcon();
                         updateDisplay();
                         return;
                     } else {
@@ -509,7 +510,7 @@ public class BattleGame extends JFrame {
             //ドラゴンは一体だけに固定
             numberOfEnemies = 1;
             logTextArea.append("最終決戦　伝説の ドラゴン があらわれた！\n");
-            enemyParty.add(new Enemy("ドラゴン" ,10000, 70, 130, "fantasy_dragon.png"));
+            enemyParty.add(new Enemy("ドラゴン" ,500, 30, 130, "fantasy_dragon.png"));
         }
         
         for (int i = 0; i < enemyParty.size(); i++){
@@ -546,4 +547,20 @@ public class BattleGame extends JFrame {
         backgroundLabel.repaint();//画面をリフレッシュする
     }
 
+    //敵の画像の切り替えメソッド
+    public void enemyIcon(){
+        //for文で横にずらしながら敵の画像をセットする
+        for (int i = 0; i < 5; i++ ){
+            if (enemyCount == 3){
+                enemyImageLabels[i].setBounds(600 + (i * 110), 50, 550, 500);
+                if (i == 0){
+                    break;
+                }
+            }else{
+                enemyImageLabels[i].setBounds(600 + (i * 110), 100, 100, 400);
+            }
+            backgroundLabel.revalidate();
+            backgroundLabel.repaint();
+        }
+    }
 }
