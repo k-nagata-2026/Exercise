@@ -223,7 +223,7 @@ public class BattleGame extends JFrame {
                 null);
 
         if (choice == 0) {
-            player = new Player("BHOLA（Hero）", 1000, 120, 10, 10, 30, "BHOLA.png");
+            player = new Player("BHOLA（Hero）", 150, 20, 10, 10, 30, "BHOLA.png");
         } else if (choice == 1) {
             player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
         } else if (choice == 2) {
