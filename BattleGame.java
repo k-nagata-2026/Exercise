@@ -3,7 +3,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import javax.swing.*;
 
-
 public class BattleGame extends JFrame implements KeyListener {
     private JLabel statusLabel; 
     private JTextArea logTextArea; 
@@ -11,7 +10,6 @@ public class BattleGame extends JFrame implements KeyListener {
     private JLabel backgroundLabel; 
     private JLabel playerImageLabel; 
     private JLabel enemyImageLabel; 
-
 
     private JButton bigGameClearButton;
     private JButton bigGameOverButton;
@@ -63,7 +61,8 @@ public class BattleGame extends JFrame implements KeyListener {
         setLocationRelativeTo(null); 
         setLayout(new BorderLayout()); 
 
-        backgroundLabel = new JLabel(new ImageIcon("fristbackgroud.png"));
+        // पृष्ठभूमि मिलाइएको छ
+        backgroundLabel = new JLabel(new ImageIcon("first_background.png"));
         backgroundLabel.setLayout(null); 
 
         playerImageLabel = new JLabel("", JLabel.CENTER);
@@ -72,8 +71,8 @@ public class BattleGame extends JFrame implements KeyListener {
         playerImageLabel.setBounds(playerX, playerY, 500, 500); 
         enemyImageLabel.setBounds(enemyX, enemyY, 500, 500); 
 
-      try {
-            ImageIcon clearIcon = new ImageIcon(" game clear.png");
+        try {
+            ImageIcon clearIcon = new ImageIcon("game_clear.png");
             Image scaledClear = clearIcon.getImage().getScaledInstance(600, 250, Image.SCALE_SMOOTH);
             bigGameClearButton = new JButton(new ImageIcon(scaledClear));
         } catch (Exception e) {
@@ -86,7 +85,7 @@ public class BattleGame extends JFrame implements KeyListener {
         bigGameClearButton.setVisible(false);
 
         try {
-            ImageIcon overIcon = new ImageIcon("game over.png");
+            ImageIcon overIcon = new ImageIcon("game_over.png");
             Image scaledOver = overIcon.getImage().getScaledInstance(800, 250, Image.SCALE_SMOOTH);
             bigGameOverButton = new JButton(new ImageIcon(scaledOver));
         } catch (Exception e) {
@@ -107,40 +106,42 @@ public class BattleGame extends JFrame implements KeyListener {
 
         statusLabel = new JLabel("【操作】 SPACE : 攻撃 | D : 防御 | H : 回復 | R : 逃げる", JLabel.CENTER);
         statusLabel.setFont(new Font("MS ゴシック", Font.BOLD, 16));
-        statusLabel.setForeground(Color.BLUE);
+        statusLabel.setForeground(Color.DARK_GRAY);
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5,0,5,0));
 
-        logTextArea = new JTextArea(8, 30);
+        logTextArea = new JTextArea(10, 30); // 
         logTextArea.setEditable(false); 
-        logTextArea.setFont(new Font("MS ゴシック", Font.PLAIN, 14));
+        logTextArea.setFont(new Font("MS ゴシック", Font.PLAIN, 15));
+        logTextArea.setBackground(Color.BLACK); 
+        logTextArea.setForeground(Color.WHITE);
         JScrollPane scrollPane = new JScrollPane(logTextArea); 
 
         JPanel buttonPanel = new JPanel(new GridLayout(1, 4, 10, 10));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         attackButton = new JButton("⚔️ 攻撃");
-        attackButton.setBackground(Color.RED);
+        attackButton.setBackground(Color.decode("#A30000")); 
         attackButton.setForeground(Color.WHITE);
 
         defendButton = new JButton("🛡️ 防御");
-        defendButton.setBackground(Color.BLUE);
+        defendButton.setBackground(Color.decode("#004080")); 
         defendButton.setForeground(Color.WHITE);
 
-        healButton = new JButton("💚 回復");
-        healButton.setBackground(Color.GREEN);
+        healButton = new JButton("💚 回復 (残り: " + itemUsesLeft + ")");
+        healButton.setBackground(Color.decode("#006400")); 
         healButton.setForeground(Color.WHITE);
 
         runButton = new JButton("🏃 逃げる");
-        runButton.setBackground(Color.GRAY);
+        runButton.setBackground(Color.decode("#5A5A5A")); // ग्र
         runButton.setForeground(Color.WHITE);
 
         nextStageButton = new JButton("⏭️ 次のステージへ");
-        nextStageButton.setBackground(Color.ORANGE);
-        nextStageButton.setForeground(Color.BLACK);
+        nextStageButton.setBackground(Color.decode("#D2691E")); 
+        nextStageButton.setForeground(Color.WHITE);
         nextStageButton.setVisible(false);
 
         restartButton = new JButton("🔄 タイトルに戻る");
-        restartButton.setBackground(Color.DARK_GRAY);
+        restartButton.setBackground(Color.decode("#2F4F4F"));
         restartButton.setForeground(Color.WHITE);
         restartButton.setVisible(false);
 
@@ -190,15 +191,31 @@ public class BattleGame extends JFrame implements KeyListener {
         });
         gameLoop.start();
 
+        showRulesDialog(); 
         choicePlayer(); 
         initGameSession(false); 
         
         SwingUtilities.invokeLater(() -> requestFocusInWindow());
     }
 
-    private void updateMovement() {}
-       
+    private void showRulesDialog() {
+        String rules = "【ゲームのルールと操作方法】\n\n"
+                     + "1. ターン制のバトルシステムです。\n"
+                     + "2. 攻撃(SPACE)を続けるとコンボが繋がり、大ダメージ！\n"
+                     + "3. 防御(D)をすると敵のダメージを減らし、MPが+20回復します。\n"
+                     + "4. 回復(H)はHPを100回復しますが、回数制限(3回)があります。\n"
+                     + "5. キャラクターのレベルが上がると、新しい英雄がアンロックされます！\n"
+                     + "※ レベルはゲームオーバーになっても保持されます。";
+        JOptionPane.showMessageDialog(this, rules, "📢 遊び方ガイド", JOptionPane.INFORMATION_MESSAGE);
+    }
 
+    private void updateMovement() {
+        if (isGameOverState) return;
+        if (moveLeft && playerX > 10) playerX -= SPEED;
+        if (moveRight && playerX < 600) playerX += SPEED;
+        playerImageLabel.setLocation(playerX, playerY);
+    }
+        
     private void updateAnimation() {
         if (shakeFrame > 0) {
             shakeFrame--;
@@ -239,12 +256,12 @@ public class BattleGame extends JFrame implements KeyListener {
     @Override
     public void keyTyped(KeyEvent e) {}
 
-  private void handleAttackAction() {
-    if (isGameOverState) return;
-    if (!isAttacking) {
-        executePlayerTurn(); 
+    private void handleAttackAction() {
+        if (isGameOverState) return;
+        if (!isAttacking) {
+            executePlayerTurn(); 
+        }
     }
-}
 
     private void handleDefendAction() {
         if (isGameOverState) return;
@@ -268,8 +285,9 @@ public class BattleGame extends JFrame implements KeyListener {
         }
 
         itemUsesLeft--;
+        healButton.setText("💚 回復 (残り: " + itemUsesLeft + ")"); 
         player.setHp(Math.min(player.getMaxHp(), player.getHp() + 100));
-        logTextArea.append("💚 アイテムを使用！ " + player.getName() + " のHPが 100 回復した！(残り:" + itemUsesLeft + ")\n");
+        logTextArea.append("💚 アイテムを使用！ " + player.getName() + " のHPが 100 回復した！\n");
         triggerFlashEffect(Color.GREEN); 
         comboCount = 0; 
         updateDisplay();
@@ -278,8 +296,8 @@ public class BattleGame extends JFrame implements KeyListener {
 
     private void triggerRunDialog() {
         if (isGameOverState) return;
-        logTextArea.append(player.getName() + " は逃げ出そうとした！\n");
-        showGameClearOrEndScreen(true, "🏃 戦場から離脱しました！タイトルに戻ります。");
+        logTextArea.append("🏃 " + player.getName() + " は戦場から離脱した！\n");
+        showGameClearOrEndScreen(false, "🏃 戦場から離脱しました！タイトルに戻って仕切り直しましょう。");
     }
 
     private void executePlayerTurn() {
@@ -291,7 +309,7 @@ public class BattleGame extends JFrame implements KeyListener {
         double critChance = player.getName().contains("human") ? 0.30 : 0.15; 
         boolean isCritical = Math.random() < critChance;
         comboCount++; 
-        int baseDamage = (int)(player.atk * (0.9 + Math.random() * 0.2));
+        int baseDamage = (int)(player.getAtk() * (0.9 + Math.random() * 0.2));
         int finalDamage = isCritical ? baseDamage * 2 : baseDamage;
 
         enemy.setHp(Math.max(0, enemy.getHp() - finalDamage));
@@ -306,8 +324,11 @@ public class BattleGame extends JFrame implements KeyListener {
         updateDisplay();
 
         if (!enemy.isAlive()) {
-            logTextArea.append("★ " + enemy.getName() + " を倒した！\n");
+            logTextArea.append("\n★━━━━━━━━━━━━━━━━━━━━★\n");
+            logTextArea.append("★ " + enemy.getName() + " を完全に見事に倒した！\n");
+            logTextArea.append("★━━━━━━━━━━━━━━━━━━━━★\n\n");
             playerWins++;
+            
             player.levelUp();
             player.levelUp(); 
 
@@ -315,10 +336,10 @@ public class BattleGame extends JFrame implements KeyListener {
             else if (currentSelectedType.equals("wizard")) wizardLevel = player.getLevel();
             else if (currentSelectedType.equals("human")) humanLevel = player.getLevel();
 
-            logTextArea.append("✨ レベルアップ！ レベル: " + player.getLevel() + " になった！\n");
+            logTextArea.append("✨✨【LEVEL UP】✨✨\n" + player.getName() + " は レベル: " + player.getLevel() + " に上がった！\n\n");
 
             checkUnlockConditions();
-            showGameClearOrEndScreen(true, "🎉 STAGE CLEAR! 次へ進めます！");
+            showGameClearOrEndScreen(true, "🎉 STAGE CLEAR! 次のステージのロックが解除されました！");
             isAttacking = false;
             return;
         }
@@ -332,12 +353,12 @@ public class BattleGame extends JFrame implements KeyListener {
         if (heroLevel >= 3 && !isWizardUnlocked) {
             isWizardUnlocked = true;
             triggerFlashEffect(Color.CYAN); 
-            logTextArea.append("\n👑 【UNLOCK】 ゆうしゃのレベルが3に達した！\n✨ 新たな英雄『wizard』が覚醒した！\n\n");
+            logTextArea.append("\n👑 【UNLOCK】 ゆうしゃのレベルが3に達したため『wizard』が解放されました！\n\n");
         }
         if (wizardLevel >= 4 && !isHumanUnlocked) {
             isHumanUnlocked = true;
             triggerFlashEffect(new Color(255, 215, 0)); 
-            logTextArea.append("\n👑 【UNLOCK】 wizardのレベルが4に達した！\n✨ 伝説の戦士『human』が覚醒した！\n\n");
+            logTextArea.append("\n👑 【UNLOCK】 wizardのレベルが4に達したため『human』が解放されました！\n\n");
         }
     }
 
@@ -357,11 +378,12 @@ public class BattleGame extends JFrame implements KeyListener {
             if (retryCount == 1) {
                 logTextArea.append("💀 覚醒：最後の希望として human が参戦する！\n");
                 player = new Player("human (human)", 300, 130, 10, 50, "human.png");
-                enemy = new Enemy("裏ボス (BOSS)", 1200, 32, 10, 50, "dargon.png"); 
+                player.setLevel(humanLevel); 
+                enemy = new Enemy("裏ボス (BOSS)", 1200, 32, 10, 50, "dragon.png"); 
                 playerX = 80;
                 updateDisplay();
             } else {
-                showGameClearOrEndScreen(false, "💀 GAME OVER... 敗北しました。"); 
+                showGameClearOrEndScreen(false, "💀 GAME OVER... 敗北しました。タイトルに戻ってレベルを確認しましょう。"); 
             }
         }
     }
@@ -419,7 +441,7 @@ public class BattleGame extends JFrame implements KeyListener {
         healButton.setVisible(true);
         runButton.setVisible(true);
 
-        initGameSession(true);
+        initGameSession(true); 
         requestFocusInWindow();
     }
 
@@ -436,6 +458,8 @@ public class BattleGame extends JFrame implements KeyListener {
 
     private void initGameSession(boolean needToChooseCharacter) {
         playerX = 80; itemUsesLeft = 3; retryCount = 0; isPlayerDefending = false; comboCount = 0; 
+        healButton.setText("💚 回復 (残り: " + itemUsesLeft + ")"); 
+
         if (needToChooseCharacter) choicePlayer(); 
         spawnEnemy();
         updateDisplay();
@@ -462,11 +486,13 @@ public class BattleGame extends JFrame implements KeyListener {
             
             if (choice == JOptionPane.CLOSED_OPTION || choice == 0) {
                 player = new Player("ゆうしゃ（Hero）", 100, 120, 10, 10, "hero.png");
+                player.setLevel(heroLevel); 
                 currentSelectedType = "hero";
                 break;
             } else if (choice == 1) {
                 if (isWizardUnlocked) {
-                    player = new Player("wizard（wizard）", 80, 125, 10, 10, "wizard player.png");
+                    player = new Player("wizard（wizard）", 80, 125, 10, 10, "wizard_player.png");
+                    player.setLevel(wizardLevel); 
                     currentSelectedType = "wizard";
                     break;
                 } else {
@@ -475,6 +501,7 @@ public class BattleGame extends JFrame implements KeyListener {
             } else if (choice == 2) {
                 if (isHumanUnlocked) {
                     player = new Player("human (human)", 300, 130, 10, 50, "human.png");
+                    player.setLevel(humanLevel); 
                     currentSelectedType = "human";
                     break;
                 } else {
@@ -483,26 +510,34 @@ public class BattleGame extends JFrame implements KeyListener {
             }
         }
 
-        ImageIcon playerIcon = (ImageIcon) player.getIcon();
-        playerImageLabel.setIcon(new ImageIcon(playerIcon.getImage().getScaledInstance(500, 500, Image.SCALE_SMOOTH)));
+        try {
+            ImageIcon playerIcon = new ImageIcon(player.getImagePath());
+            playerImageLabel.setIcon(new ImageIcon(playerIcon.getImage().getScaledInstance(500, 500, Image.SCALE_SMOOTH)));
+        } catch (Exception e) {
+            System.out.println("Player image load failed!");
+        }
     }
 
     private void spawnEnemy() {
         if (enemyCount == 1) {
-            enemy = new Enemy("スライム", 100, 12, 25, 20, "smile enamy.png");
-            backgroundLabel.setIcon(new ImageIcon("fristbackgroud.png"));
+            enemy = new Enemy("スライム", 100, 12, 25, 20, "slime_enemy.png");
+            backgroundLabel.setIcon(new ImageIcon("first_background.png"));
         } else if (enemyCount == 2) {
-            enemy = new Enemy("dragon", 160, 18, 10, 25, "dargon enamy.png");
-            backgroundLabel.setIcon(new ImageIcon("second backgroud.png"));
+            enemy = new Enemy("フォレストドラゴン", 160, 18, 10, 25, "dragon_enemy.png");
+            backgroundLabel.setIcon(new ImageIcon("second_background.png"));
         } else if (enemyCount == 3) {
-            enemy = new Enemy("ドラゴン", 220, 24, 10, 30, "Demon enamy.png");
+            enemy = new Enemy("デーモン", 220, 24, 10, 30, "demon_enemy.png");
         } else if (enemyCount == 4) {
-            enemy = new Enemy("ボス", 1200, 30, 10, 50, "dargon.png");
-            backgroundLabel.setIcon(new ImageIcon("final backgroud.png"));
+            enemy = new Enemy("裏ボス (ドラゴングランド)", 1200, 30, 10, 50, "dragon.png");
+            backgroundLabel.setIcon(new ImageIcon("final_background.png"));
         }
 
-        ImageIcon enemyIcon = (ImageIcon) enemy.getIcon();
-        enemyImageLabel.setIcon(new ImageIcon(enemyIcon.getImage().getScaledInstance(500, 500, Image.SCALE_SMOOTH)));
+        try {
+            ImageIcon enemyIcon = new ImageIcon(enemy.getImagePath());
+            enemyImageLabel.setIcon(new ImageIcon(enemyIcon.getImage().getScaledInstance(500, 500, Image.SCALE_SMOOTH)));
+        } catch (Exception e) {
+            System.out.println("Enemy image load failed!");
+        }
     }
 
     public static void main(String[] args) {
