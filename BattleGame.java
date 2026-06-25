@@ -19,46 +19,110 @@ public class BattleGame extends JFrame {
     private Player player;
     private Enemy enemy;
     private int enemyCount = 0; // 0から開始するように修正
-
-    private void showVictoryScreen() {
     
-        JFrame victoryFrame = new JFrame("GAME CLEAR!");
-      victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
-      victoryFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        ImageIcon icon = new ImageIcon("GAME CALER.png");
-         Image img = icon.getImage();
-          Image resizedImg = img.getScaledInstance(1450, 700, Image.SCALE_SMOOTH);
-          JLabel label = new JLabel(new ImageIcon(resizedImg));
 
-        label.setHorizontalAlignment(JLabel.CENTER);
 
-        victoryFrame.add(label);
-        victoryFrame.setVisible(true);
-        this.dispose();
-    }
+    
+     private void showVictoryScreen() {
 
-    private void showGameOverScreen() {
+    JFrame victoryFrame = new JFrame("GAME CLEAR!");
+    victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+    victoryFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    JLabel bg = new JLabel(new ImageIcon("GAME CALER.png"));
+    bg.setBounds(0, 0, 1920, 1080);
+    bg.setLayout(null);
+
+    JButton homeButton = new JButton();
+    homeButton.setBounds(820, 500, 300, 70);
+
+    JButton nextButton = new JButton();
+    nextButton.setBounds(820, 600, 300, 70);
+
+    homeButton.setOpaque(false);
+    homeButton.setContentAreaFilled(false);
+    homeButton.setBorderPainted(false);
+
+    nextButton.setOpaque(false);
+    nextButton.setContentAreaFilled(false);
+    nextButton.setBorderPainted(false);
+
+    homeButton.addActionListener(e -> {
+        System.exit(0);
+    });
+
+    nextButton.addActionListener(e -> {
+        victoryFrame.dispose();
+        enemyCount = 0;
+        player.setHp(player.getMaxHp());
+        spawnEnemy();
+        updateDisplay();
+        this.setVisible(true);
+    });
+
+    bg.add(homeButton);
+    bg.add(nextButton);
+
+    victoryFrame.add(bg);
+    victoryFrame.setVisible(true);
+
+    this.setVisible(false);
+}
+
       
-        JFrame gameOverFrame = new JFrame("GAME OVER");
+ private void showGameOverScreen() {
 
-        gameOverFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+    JFrame gameOverFrame = new JFrame("GAME OVER");
+    gameOverFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+    gameOverFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        gameOverFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    ImageIcon icon = new ImageIcon("GAME OVER.png");
+    Image img = icon.getImage();
+    Image resizedImg = img.getScaledInstance(1420, 700, Image.SCALE_SMOOTH);
 
-        ImageIcon icon = new ImageIcon("GAME OVER.png");
+    JLabel label = new JLabel(new ImageIcon(resizedImg));
+    label.setHorizontalAlignment(JLabel.CENTER);
+    label.setLayout(null);
 
-        Image img = icon.getImage();
-        Image resizedImg = img.getScaledInstance(1420, 700, Image.SCALE_SMOOTH);
+    // BACK TO HOME button
+    JButton homeButton = new JButton();
+    homeButton.setBounds(780, 500, 400, 70);
+    homeButton.setOpaque(false);
+    homeButton.setContentAreaFilled(false);
+    homeButton.setBorderPainted(false);
 
-        JLabel label = new JLabel(new ImageIcon(resizedImg));
+    // RETRY button
+    JButton retryButton = new JButton();
+    retryButton.setBounds(780, 500, 400, 70);
+    retryButton.setOpaque(false);
+    retryButton.setContentAreaFilled(false);
+    retryButton.setBorderPainted(false);
 
-        label.setHorizontalAlignment(JLabel.CENTER);
+    // Button actions
+    homeButton.addActionListener(e -> {
+        System.exit(0);
+    });
 
-        gameOverFrame.add(label);
-        gameOverFrame.setVisible(true);
-        this.dispose();
+    retryButton.addActionListener(e -> {
+        gameOverFrame.dispose();
 
-    }
+        enemyCount = 0;
+        player.setHp(player.getMaxHp());
+
+        spawnEnemy();
+        updateDisplay();
+
+        this.setVisible(true);
+    });
+
+    label.add(homeButton);
+    label.add(retryButton);
+
+    gameOverFrame.add(label);
+    gameOverFrame.setVisible(true);
+
+    this.dispose();
+}
   public BattleGame() {
         // ウィンドウの基本設定
         setTitle("ターン制コマンドバトル");
@@ -223,7 +287,7 @@ public class BattleGame extends JFrame {
                 null);
 
         if (choice == 0) {
-            player = new Player("BHOLA（Hero）", 150, 20, 10, 10, 30, "BHOLA.png");
+            player = new Player("BHOLA（Hero）", 10, 10, 10, 10, 30, "BHOLA.png");
         } else if (choice == 1) {
             player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
         } else if (choice == 2) {
@@ -235,7 +299,7 @@ public class BattleGame extends JFrame {
 
     private void spawnEnemy() {
         if (enemyCount == 0) {
-            enemy = new Enemy("chotu", 100, 8, 5, 5, 10, "chotuenemy.png");
+            enemy = new Enemy("chotu", 100, 20, 5, 5, 10, "chotuenemy.png");
             logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
         } else if (enemyCount == 1) {
             enemy = new Enemy("boss", 90, 15, 5, 5, 10, "enemyboss.png");
