@@ -86,33 +86,51 @@ public class BattleGame extends JFrame {
 
     // BACK TO HOME button
     JButton homeButton = new JButton();
-    homeButton.setBounds(780, 500, 400, 70);
+    homeButton.setBounds(780, 520, 350, 55);
     homeButton.setOpaque(false);
     homeButton.setContentAreaFilled(false);
     homeButton.setBorderPainted(false);
-
-    // RETRY button
+    homeButton.setFocusPainted(false);
+    homeButton.setBorder(null);
+     // RETRY button
     JButton retryButton = new JButton();
-    retryButton.setBounds(780, 500, 400, 70);
+    retryButton.setBounds(780, 420, 350, 55);
     retryButton.setOpaque(false);
     retryButton.setContentAreaFilled(false);
     retryButton.setBorderPainted(false);
+    retryButton.setFocusPainted(false);
+    retryButton.setBorder(null);
+    retryButton.addActionListener(e -> {
+    gameOverFrame.dispose();
 
+    // Player reset
+    player.setHp(player.getMaxHp());
+    player.setLevel(1);
+    player.setExp(0);
+
+    // Enemy reset
+    enemyCount = 0;
+    spawnEnemy();
+
+    // UI reset
+    logTextArea.setText("");
+    playerImageLabel.setEnabled(true);
+    enemyImageLabel.setEnabled(true);
+
+    updateDisplay();
+    this.setVisible(true);
+});
     // Button actions
     homeButton.addActionListener(e -> {
         System.exit(0);
     });
-
     retryButton.addActionListener(e -> {
         gameOverFrame.dispose();
-
-        enemyCount = 0;
+       enemyCount = 0;
         player.setHp(player.getMaxHp());
-
-        spawnEnemy();
+         spawnEnemy();
         updateDisplay();
-
-        this.setVisible(true);
+     this.setVisible(true);
     });
 
     label.add(homeButton);
@@ -122,6 +140,31 @@ public class BattleGame extends JFrame {
     gameOverFrame.setVisible(true);
 
     this.dispose();
+}
+
+private void shakePlayer() {
+    int x = playerImageLabel.getX();
+    int y = playerImageLabel.getY();
+
+    javax.swing.Timer timer = new javax.swing.Timer(40, null);
+    final int[] count = {0};
+
+    timer.addActionListener(e -> {
+        if (count[0] % 2 == 0) {
+            playerImageLabel.setLocation(x + 10, y);
+        } else {
+            playerImageLabel.setLocation(x - 10, y);
+        }
+
+        count[0]++;
+
+        if (count[0] >= 8) {
+            playerImageLabel.setLocation(x, y);
+            timer.stop();
+        }
+    });
+
+    timer.start();
 }
   public BattleGame() {
         // ウィンドウの基本設定
@@ -183,6 +226,7 @@ public class BattleGame extends JFrame {
         // ボタンの処理
         attackButton.addActionListener(e -> {
             String playerResult = player.attack(enemy);
+           shakePlayer();
             logTextArea.append(playerResult);
             updateDisplay();
 
@@ -224,6 +268,7 @@ public class BattleGame extends JFrame {
 
                updateDisplay();
         });
+        
 
         // 初期化
         choicePlayer();
@@ -287,7 +332,7 @@ public class BattleGame extends JFrame {
                 null);
 
         if (choice == 0) {
-            player = new Player("BHOLA（Hero）", 10, 10, 10, 10, 30, "BHOLA.png");
+            player = new Player("BHOLA（Hero）", 100, 10, 10, 10, 30, "BHOLA.png");
         } else if (choice == 1) {
             player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
         } else if (choice == 2) {
@@ -319,10 +364,7 @@ public class BattleGame extends JFrame {
         }
         enemyImageLabel.setIcon(enemy.getIcon());
         logTextArea.append("--------------------------------------------\n");
+    }    public static void main(String[] args) {
+    new HomeScreen().setVisible(true);
+   }
     }
-
-    public static void main(String[] args) {
-        BattleGame game = new BattleGame();
-        game.setVisible(true);
-    }
-}

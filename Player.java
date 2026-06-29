@@ -27,4 +27,11 @@ public class Player extends Character {
     public int getExp() {
         return exp;
     }
+    public void setLevel(int level) {
+    this.levelup = level;
+}
+
+public void setExp(int exp) {
+    this.exp = exp;
+}
 }
