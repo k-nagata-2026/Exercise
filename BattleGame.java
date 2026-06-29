@@ -26,8 +26,41 @@ public class BattleGame extends JFrame {
     private int enemyCount = 1; // 対峙する敵の数を数えるためのフィールド
     private int guardFlg = 0; // ガードフラグ（0: ガードしていない、1: ガードしている）
     private int currentPlayerIndex = 0; // 今何人目のプレイヤーのターンかを数えるためのフィールド（０から３）
+    private CardLayout cardLayout;//画面の切り替えに必要な部品
+    private JPanel mainPanel;//画面の切り替えに必要な部品
 
     public BattleGame() {
+        setTitle("ターン制コマンドバトル");
+        setSize(1220,750);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        //カードレイアウトを準備する
+        cardLayout = new CardLayout();
+        mainPanel = new JPanel(cardLayout);
+
+        //各画面のパネルを作る
+        JPanel titlePanel = createTitlePanel();        //タイトル画面
+        JPanel battlePanel = createBattlePanel();      //バトル画面
+        JPanel gameOverPanel = createGameOverPanel();  //ゲームオーバーの画面
+        JPanel gameClearPanel = createGameClearPanel();//ゲームクリアの画面
+
+        //メインパネルに名前を付けて重ねる
+        mainPanel.add(titlePanel,"TITLE");
+        mainPanel.add(battlePanel,"BATTLE");
+        mainPanel.add(gameOverPanel,"GAMEOVER");
+        mainPanel.add(gameClearPanel,"GAMECLEAR");
+
+        //全体をウィンドウに追加
+        add(mainPanel);
+
+        //最初はタイトル画面を表示する
+        cardLayout.show(mainPanel,"TITLE");
+    }
+
+    private JPanel createBattlePanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
         // ウィンドウ（Window）のきほんせってい（Basic Setting）
         setTitle("ターンせいコマンドバトル");
         setSize(1220, 750);
@@ -65,10 +98,10 @@ public class BattleGame extends JFrame {
         logTextArea.setEditable(false); // プレイヤーがちょくせつもじにゅうりょくできないようにする
         JScrollPane scrollPane = new JScrollPane(logTextArea); // スクロール（Scroll）できるようにする
         
-        attackButton = new JButton("こうげき");
-        runButton = new JButton("逃げる");
-        defenseButton = new JButton("守る");
-        itemButton = new JButton("アイテム");
+        attackButton = new JButton("攻撃(ATTACK)");
+        runButton = new JButton("逃げる(RUN)");
+        defenseButton = new JButton("防御(DEFENSE)");
+        itemButton = new JButton("アイテム(ITEM)");
 
         bottomPanel.add(statusLabel, BorderLayout.NORTH); // ステータスラベルをしたがわのうえにはいち
         bottomPanel.add(scrollPane, BorderLayout.CENTER); // ログテキストエリアをしたがわのしたにはいち 
@@ -104,7 +137,7 @@ public class BattleGame extends JFrame {
 
                     // プレイヤーが倒れたかチェック
                     if (!player.isAlive()) {
-                        logTextArea.append(player.getName() + " はたおれた… ゲームオーバー\n");
+                        logTextArea.append(player.getName() + " はたおれた… \n");
 
                         //パーティーが全滅してないかチェック
                         boolean allMembersDefeated = true;
@@ -118,7 +151,7 @@ public class BattleGame extends JFrame {
                             }
         
                         if (allMembersDefeated) {
-                         logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
+                         logTextArea.append("パーティーは全滅した… \n");
                          endGame();
                           return;
                         } else {
@@ -184,7 +217,7 @@ public class BattleGame extends JFrame {
                         return;
                     } else {
                         logTextArea.append("すべての魔物を倒した！\n");
-                        endGame();
+                        gameScreen(2);
                     }
                 }
             
@@ -225,7 +258,7 @@ public class BattleGame extends JFrame {
 
                     if (allMembersDefeated) {
                         logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
-                        endGame();
+                        gameScreen(3);
                         return;
                     } else {
                         //全員死んでいないなら、生きているキャラクターと交代
@@ -344,7 +377,9 @@ public class BattleGame extends JFrame {
         // ★ インスタンスをしょきか（Initialize）
         choicePlayer();//選択したキャラクターが出てくる
         spawnEnemy();
+        gameScreen(1);
 
+        return panel;
     }
 
     public static void main(String[] args) {
@@ -562,5 +597,104 @@ public class BattleGame extends JFrame {
             backgroundLabel.revalidate();
             backgroundLabel.repaint();
         }
+    }
+
+    //ゲームの画面切り替えメソッド
+    public void gameScreen (int state) {
+        switch (state) {
+            case 1 :
+                //ゲームのスタート画面
+                logTextArea.append("ゲームスタート(START)\n");
+                break;
+            case 2 :
+                //ゲームクリアの画面
+                logTextArea.append("ゲームクリア(CLEAR)\n");
+                endGame();
+                break;
+            case 3 :
+                //ゲームオーバーの画面
+                logTextArea.append("ゲームオーバー(GAME OVER)\n");
+                endGame();
+                break;
+            default:
+                break;
+        }
+    }
+
+    //タイトル画面のメソッド
+    private JPanel createTitlePanel(){
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.BLACK);
+
+        JPanel titleLabel = new JLabel("ターン制コマンドバトル", JLabel.CENTER);
+        titleLabel.setFont(new Font("MS　ゴシック",Font.BOLD,36));
+        titleLabel.setForeground(Color.WHITE); // 白文字
+
+        JButton starButton = new JButton("start");
+        startButton.setFont(new Font("Ariai",Font.PLAIN,24));
+
+        //スタートボタンを押したらバトル画面（キャラクター選択画面）に移動する
+        startButton.addActionListener(e -> {
+            choicePlayer();
+            cardLayout.show(mainPanel,"BATTLE");//バトル画面に切り替え
+        });
+
+        return panel;
+    }
+
+    //ゲームオーバーの画面のメソッド
+    private JPanel createGameOverPanel(){
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.BLACK);
+
+        JLabel label = new JLabel("あなたのチームは力尽きた",JLabel.CENTER);
+        label.setFont(new Font("MS　ゴシック",Font.BOLD,32));
+        label.setForeground(Color.WHITE);
+
+        JButton retryButton = new JButton("さっきの戦闘をやり直す(RETRY)");
+        JButton restartButton = new JButton("最初から始める(RESTART)");
+        JButton quitButton = new JButton("諦める(GIVE UP)");
+
+        //諦めるボタンを押したら、ウィンドウごと閉じる
+        quitButton.addActionListener(e -> System.exit(0));
+
+        //縦に並べる
+        JPanel menu = new JPanel(new GridLayout(4,1,0,20));
+        menu.setBackground(Color.BLACK);
+        menu.add(label);
+        menu.add(retryButton);
+        menu.add(restartButton);
+        menu.add(quitButton);
+        panel.add(menu);
+
+        return panel;
+    }
+
+    //ゲームクリアの画面のメソッド
+    private JPanel createGameClearPanel(){
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(Color.WHITE);
+
+        JLabel label1 = new JLabel("あなたのおかげで世界は平和になった",JLabel.CENTER);
+        JLabel label2 = new JLabel("感謝");
+        label1.setFont(new Font("MS ゴシック",Font.BOLD,28));
+        label2.setFont(new Font("MS ゴシック",Font.BOLD,48));
+
+        JButton continueButton = new JButton("まだ冒険を続ける？(CONTINUE)");
+        JButton replayButton = new JButton("もう一回世界を救う？(PLAY AGAIN)");
+        JButton endButton = new JButton("終わる(FINISH)");
+
+        endButton.addActionListener(e -> System.exit(0));
+
+        JPanel menu = new JPanel(new GridLayout(5,1,0,15));
+        menu.setBackground(Color.WHITE);
+        menu.add(label1);
+        menu.add(label2);
+        menu.add(continueButton);
+        menu.add(replayButton);
+        menu.add(endButton);
+        panel.add(menu);
+
+        return panel;
     }
 }
