@@ -61,7 +61,6 @@ public class BattleGame extends JFrame implements KeyListener {
         setLocationRelativeTo(null); 
         setLayout(new BorderLayout()); 
 
-        // पृष्ठभूमि मिलाइएको छ
         backgroundLabel = new JLabel(new ImageIcon("first_background.png"));
         backgroundLabel.setLayout(null); 
 
@@ -109,7 +108,7 @@ public class BattleGame extends JFrame implements KeyListener {
         statusLabel.setForeground(Color.DARK_GRAY);
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5,0,5,0));
 
-        logTextArea = new JTextArea(10, 30); // 
+        logTextArea = new JTextArea(10, 30); 
         logTextArea.setEditable(false); 
         logTextArea.setFont(new Font("MS ゴシック", Font.PLAIN, 15));
         logTextArea.setBackground(Color.BLACK); 
@@ -132,7 +131,7 @@ public class BattleGame extends JFrame implements KeyListener {
         healButton.setForeground(Color.WHITE);
 
         runButton = new JButton("🏃 逃げる");
-        runButton.setBackground(Color.decode("#5A5A5A")); // ग्र
+        runButton.setBackground(Color.decode("#5A5A5A")); 
         runButton.setForeground(Color.WHITE);
 
         nextStageButton = new JButton("⏭️ 次のステージへ");
@@ -491,7 +490,7 @@ public class BattleGame extends JFrame implements KeyListener {
                 break;
             } else if (choice == 1) {
                 if (isWizardUnlocked) {
-                    player = new Player("wizard（wizard）", 80, 125, 10, 10, "wizard_player.png");
+                    player = new Player("wizard（wizard）", 80, 125, 10, 10, "wizard player.png");
                     player.setLevel(wizardLevel); 
                     currentSelectedType = "wizard";
                     break;
@@ -520,16 +519,16 @@ public class BattleGame extends JFrame implements KeyListener {
 
     private void spawnEnemy() {
         if (enemyCount == 1) {
-            enemy = new Enemy("スライム", 100, 12, 25, 20, "slime_enemy.png");
-            backgroundLabel.setIcon(new ImageIcon("first_background.png"));
+            enemy = new Enemy("スライム", 100, 12, 25, 20, "smile enamy.png");
+            backgroundLabel.setIcon(new ImageIcon("fristbackgroud.png"));
         } else if (enemyCount == 2) {
-            enemy = new Enemy("フォレストドラゴン", 160, 18, 10, 25, "dragon_enemy.png");
-            backgroundLabel.setIcon(new ImageIcon("second_background.png"));
+            enemy = new Enemy("フォレストドラゴン", 160, 18, 10, 25, "dargon enamy.png");
+            backgroundLabel.setIcon(new ImageIcon("second backgroud.png"));
         } else if (enemyCount == 3) {
-            enemy = new Enemy("デーモン", 220, 24, 10, 30, "demon_enemy.png");
+            enemy = new Enemy("デーモン", 220, 24, 10, 30, "Demon enamy.png");
         } else if (enemyCount == 4) {
-            enemy = new Enemy("裏ボス (ドラゴングランド)", 1200, 30, 10, 50, "dragon.png");
-            backgroundLabel.setIcon(new ImageIcon("final_background.png"));
+            enemy = new Enemy("裏ボス (ドラゴングランド)", 1200, 30, 10, 50, "dargon.png");
+            backgroundLabel.setIcon(new ImageIcon("final backgroud.png"));
         }
 
         try {

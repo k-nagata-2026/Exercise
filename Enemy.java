@@ -6,10 +6,6 @@ public class Enemy extends Character {
         this.maxHp = hp; // 初期HPを最大HPとして設定
     }
 
-    public void setHp(int hp) {
-        this.hp = hp;
-    }
-
     // BattleGame.javaのライン289のエラーを解決するためのゲッターメソッド
     public int getMaxHp() {
         return this.maxHp; 
@@ -31,7 +27,7 @@ public class Enemy extends Character {
             this.hp += 35;
             return "💚 スライムは体力を 35 回復した！\n";
         } 
-        else if ((this.name.equals("dragon") || this.name.equals("ドラゴン")) && chance > 0.70) {
+        else if ((this.name.contains("dragon") || this.name.contains("ドラゴン")) && chance > 0.70) {
             finalDamage = (int)(this.atk * 2.3);
             if (isPlayerDefending) {
                 finalDamage = (int)(finalDamage * 0.5); 
@@ -41,7 +37,7 @@ public class Enemy extends Character {
             player.setHp(player.getHp() - finalDamage);
             return "🔥 " + this.name + " の直撃火炎放射！！！ " + player.getName() + " は " + finalDamage + " の大ダメージを受けた！\n";
         }
-        else if (this.name.equals("ボス") && this.hp <= 500) {
+        else if (this.name.contains("ボス") && this.hp <= 500) {
             // ボスの体力が500以下でレイジモード（怒り状態）が発動
             finalDamage = (int)(this.atk * 2.5);
             if (isPlayerDefending) finalDamage = (int)(finalDamage * 0.3);

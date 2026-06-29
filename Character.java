@@ -8,6 +8,7 @@ public class Character {
     protected int defenc;
     protected int speed;
     protected Icon icon;
+    protected String imagePath; 
 
     // スーパークラスのコンストラクタ
     public Character(String name, int hp, int atk, int defenc, int speed, String imagePath) {
@@ -16,6 +17,7 @@ public class Character {
         this.atk = atk;
         this.defenc = defenc;
         this.speed = speed;
+        this.imagePath = imagePath;
         this.icon = new ImageIcon(imagePath);
     }
 
@@ -30,6 +32,14 @@ public class Character {
 
     public void setHp(int hp) {
         this.hp = hp;
+    }
+
+    public int getAtk() {
+        return this.atk;
+    }
+
+    public String getImagePath() {
+        return this.imagePath;
     }
 
     public Icon getIcon() {

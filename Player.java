@@ -29,11 +29,16 @@ public class Player extends Character {
         return this.level;
     }
 
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
     // レベルアップ時のステータス上昇
     public void levelUp() {
         this.level++;
         this.maxHp += 20; 
         this.atk += 5;    
+        this.setHp(this.maxHp); 
     }
 
     // 必殺スキル攻撃のロジック (Cost: 50 MP)
