@@ -6,13 +6,16 @@ import java.util.List;
 import javax.swing.*;
 
 public class BattleGame extends JFrame {
-    private JLabel statusLabel;       // HPなどをひょうじするラベル（Label）
+    //private JLabel statusLabel;       // HPなどをひょうじするラベル（Label）
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
     private JButton attackButton;     // こうげきコマンドボタン（Command Button）
     private JButton runButton;        // 逃げるコマンドボタン
     private JButton defenseButton;    // ぼうぎょコマンドボタン
     private JButton itemButton;       // アイテムコマンドボタン
-    
+    private JProgressBar[] playerHpBars = new JProgressBar[4]; // プレイヤーのHPをひょうじするプログレスバー（Progress Bar）
+    private JProgressBar[] enemyHpBars = new JProgressBar[5];  // 敵のHPをひょうじするプログレスバー（Progress Bar）
+    private JPanel statusPanel; // ステータスをひょうじするパネル（Panel）
+
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // 背景画像のラベル
     private JLabel[] playerImageLabels = new JLabel[4];  // プレイヤー画像用のラベル
@@ -56,7 +59,6 @@ public class BattleGame extends JFrame {
 
         //最初はタイトル画面を表示する
         cardLayout.show(mainPanel,"TITLE");
-        gameScreen(1);
     }
 
     public static void main(String[] args) {
@@ -67,24 +69,42 @@ public class BattleGame extends JFrame {
 
     // がめんこうしんしょり（Screen Update Process）
     private void updateDisplay() {
-       //4人のステータスを表示する
-       StringBuilder statusText = new StringBuilder();
-       for (Player member : party) {
-           statusText.append(String.format("%s HP: %d/%d atk: %d mgc: %d | ", member.getName(), member.getHp(), member.getMaxHp(), member.getAtk(), member.getMgc()));
-       }
+        //4人のHPバーを表示する
+        for (int i = 0; i < 4; i++){
+            Player member = party.get(i);
+            JProgressBar bar = playerHpBars[i];
+            bar.setMaximum(member.getMaxHp());
+            bar.setValue(member.getHp());
+            bar.setString(member.getName() + " HP: " + member.getHp() + "/" + member.getMaxHp());
+        }
+    
+        //5体の敵のHPバーを表示する
+        for (int i = 0; i < 5; i++){
+            if (i < enemyParty.size()){
+                Enemy currentEnemy = enemyParty.get(i);
+                JProgressBar bar = enemyHpBars[i];
+                if (currentEnemy.isAlive()){
+                    bar.setForeground(new Color(139,0,0));//生きている敵のHPバーを赤にする
+                    bar.setMaximum(currentEnemy.getMaxHp());
+                    bar.setValue(currentEnemy.getHp());
+                    bar.setString(currentEnemy.getName() + " HP: " + currentEnemy.getHp() + "/" + currentEnemy.getMaxHp());
+                } else {
+                    bar.setForeground(new Color(255,255,255));//倒れた敵のHPバーを白にする
+                }
+            } else {
+                //そもそも出現してない枠のHPバーは非表示にする
+                enemyHpBars[i].setVisible(false);
+            }
+        }
 
        //生きている敵を探す
        Enemy showEnemy = null;
        for (Enemy enemyInside : enemyParty){
-        if (enemyInside.isAlive()){
-            showEnemy = enemyInside;
-            break;
+            if (enemyInside.isAlive()){
+                showEnemy = enemyInside;
+                break;
+            }
         }
-       }
-
-       //組み立てたステータス＋敵のステータスを表示する
-         statusText.append(String.format("  | %s HP: %d/%d atk: %d mgc: %d", showEnemy.getName(), showEnemy.getHp(), showEnemy.getMaxHp(), showEnemy.getAtk(), showEnemy.getMgc()));
-         statusLabel.setText(statusText.toString());
 
     }
 
@@ -129,8 +149,13 @@ public class BattleGame extends JFrame {
 
     // キャラクターせんたく（Select）メソッド
     private void choicePlayer() {
-        String[] options = { "勇者", "魔法使い", "騎士", "盗賊", "召喚士", "祈祷師", "回復術師" };
+        //選んだキャラクターを選択肢に出ないようにするには可変長のArrayListにする
+        java.util.List<String>availableOptions = new java.util.ArrayList<>(
+            java.util.Arrays.asList("勇者(HERO)", "魔法使い(WIZARD)", "騎士(KNIGHT)", "盗賊(THIEF)", "召喚士(SUMMONER)", "祈祷師(SHAMAN)", "回復術師(HEALER)")
+        );
+    
         party.clear(); // 選択前にパーティーをクリアする
+
         //４人選ばれるまでループする
         while (party.size() < 4) {
             int correctMemberNom = party.size() + 1; // 正しいメンバー番号（1から始まる）
@@ -142,42 +167,38 @@ public class BattleGame extends JFrame {
                 JOptionPane.DEFAULT_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
-                options,
+                availableOptions.toArray(new String[0]),
                 null
             );
 
-            String selectedCharacter = options[choice];
-
-            //同じキャラクターが選ばれてないかのチェック
-            boolean isDuplicate = false;
-            for (Player member : party) {
-                if (member.getName().equals(selectedCharacter)) {
-                    isDuplicate = true;
-                    break;
-                }
-            }
-            if (isDuplicate) {
-                JOptionPane.showMessageDialog(this, "すでに選ばれたキャラクターです。別のキャラクターを選んでください。");
-                continue; // もう一度選択させる
+            //×ボタンを押したらウィンドウごと閉じる
+            if (choice == JOptionPane.CLOSED_OPTION) {
+                System.exit(0);
             }
 
-            Player newPlayer = null;    
-            if (choice == 0) {
-                newPlayer = new Player("勇者", 60, 20, 20,"yuusya_game.png",0);
-            } else if(choice == 1) {
-                newPlayer = new Player("魔法使い", 45, 25, 50,"mahoutsukai_man.png", 0);
-            } else if(choice == 2) {
-                newPlayer = new Player("騎士", 65, 30, 25,"knight.png",0);
-            }else if (choice == 3) {
-                newPlayer = new Player("盗賊", 70, 10, 20,"dorobou_hokkamuri.png",0);
-            }else if (choice == 4){
-                newPlayer = new Player("召喚士", 90, 5, 5,"mahoutsukai_necromancer.png",0);
-            }else if (choice == 5){
-                newPlayer = new Player("祈祷師", 50, 5, 45,"oharai_kannushi.png",0);
+            String selectedCharacter = availableOptions.get(choice);
+
+            Player newPlayer = null;
+
+            //文字列(名前)で判定する   
+            if (selectedCharacter.equals("勇者(HERO)")) {
+                newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0);
+            } else if(selectedCharacter.equals("魔法使い(WIZARD)")) {
+                newPlayer = new Player("魔法使い(WIZARD)", 45, 25, 50,"mahoutsukai_man.png", 0);
+            } else if(selectedCharacter.equals("騎士(KNIGHT)")) {
+                newPlayer = new Player("騎士(KNIGHT)", 65, 30, 25,"knight.png",0);
+            }else if (selectedCharacter.equals("盗賊(THIEF)")) {
+                newPlayer = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0);
+            }else if (selectedCharacter.equals("召喚士(SUMMONER)")){
+                newPlayer = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0);
+            }else if (selectedCharacter.equals("祈祷師(SHAMAN)")){
+                newPlayer = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0);
             } else {
-                newPlayer = new Player("回復術師", 45, 5, 50,"job_doctor_man.png",0);
+                newPlayer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0);
             }
             party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
+            // 選んだキャラクターを選択肢から削除する
+            availableOptions.remove(selectedCharacter);
         }
 
         //4人選び終わったら、最初のキャラクターをプレイヤーとしてセットする
@@ -228,8 +249,15 @@ public class BattleGame extends JFrame {
         for (int i = 0; i < enemyParty.size(); i++){
             enemyImageLabels[i].setIcon(enemyParty.get(i).getIcon());
             enemyImageLabels[i].setEnabled(true);
+
+            //敵が生まれたら対応するHPバーを表示する
+            if (enemyHpBars != null){
+                enemyHpBars[i].setVisible(true);
+            }
+            
         }
         logTextArea.append("--------------------------------------------\n");
+        updateDisplay();
         
     }
     // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
@@ -310,7 +338,7 @@ public class BattleGame extends JFrame {
         // 【うえはんぶん：キャラクターたいじエリア（はいけいのなかにキャラをいれる）】
         // ※はいけいがぞうファイル（bg.png）をよみこみます
         backgroundLabel = new JLabel(new ImageIcon("Background1.png"));
-        backgroundLabel.setLayout(null); // ★じゅうよう（Important）：じゆうはいち（Free Layout）にするためにnullにする
+        backgroundLabel.setLayout(null); // ★重要：自由配置にするためにnullにする
 
         //for文で横にずらしながらプレイヤーの画像をセットする
         for (int i = 0; i < 4; i++ ){
@@ -330,8 +358,26 @@ public class BattleGame extends JFrame {
         JPanel bottomPanel = new JPanel(new BorderLayout());
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0)); // ボタンをならべるためのパネル（Panel）
         
-        statusLabel = new JLabel("ここにステータスがひょうじされます", JLabel.CENTER);
-        statusLabel.setFont(new Font("MS ゴシック", Font.BOLD, 14));
+        statusPanel = new JPanel(new GridLayout(1, 9, 10, 0)); // ステータスをひょうじするパネル（Panel）
+
+        //プレイヤー４人のHPバーを表示する
+        for (int i = 0; i < 4; i++) {
+            playerHpBars[i] = new JProgressBar(0, 100); // 初期値は100に設定
+            playerHpBars[i].setStringPainted(true);
+            playerHpBars[i].setForeground(new Color(34,139,34)); // HPバーの色を設定
+            playerHpBars[i].setString("Player " + (i + 1)); // 初期の文字列を設定
+            statusPanel.add(playerHpBars[i]);
+        }
+
+        //敵５体のHPバーを表示する
+        for (int i = 0; i < 5; i++) {
+            enemyHpBars[i] = new JProgressBar(0, 100); // 初期値は100に設定
+            enemyHpBars[i].setValue(100); // 初期値は100に設定
+            enemyHpBars[i].setStringPainted(true);
+            enemyHpBars[i].setForeground(new Color(139,0,0)); // HPバーの色を設定
+            enemyHpBars[i].setString("Enemy " + (i + 1)); // 初期の文字列を設定
+            statusPanel.add(enemyHpBars[i]);
+        }
 
         logTextArea = new JTextArea(8, 30);
         logTextArea.setEditable(false); // プレイヤーがちょくせつもじにゅうりょくできないようにする
@@ -342,13 +388,14 @@ public class BattleGame extends JFrame {
         defenseButton = new JButton("防御(DEFENSE)");
         itemButton = new JButton("アイテム(ITEM)");
 
-        bottomPanel.add(statusLabel, BorderLayout.NORTH); // ステータスラベルをしたがわのうえにはいち
+        //bottomPanel.add(statusLabel, BorderLayout.NORTH); // ステータスラベルをしたがわのうえにはいち
         bottomPanel.add(scrollPane, BorderLayout.CENTER); // ログテキストエリアをしたがわのしたにはいち 
+        bottomPanel.add(statusPanel, BorderLayout.NORTH); // ステータスパネルをしたがわのうえにはいち
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
         
         // ぶひん（Parts）をメインウィンドウにはいち
-        add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
-        add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
+        panel.add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
+        panel.add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
         buttonPanel.add(attackButton); // こうげきボタンをしたがわのひだりにはいち
         buttonPanel.add(runButton); // にげるボタンをしたがわのひだりにはいち
         buttonPanel.add(defenseButton); // ぼうぎょボタンをしたがわのひだりにはいち
@@ -427,6 +474,7 @@ public class BattleGame extends JFrame {
                 // 1. プレイヤーのターン（Turn）
                 String playerResult = player.attack(aliveEnemy);
                 logTextArea.append(playerResult);
+                updateDisplay();
                 
                 //攻撃された敵が倒れたらその敵をグレーアウト
                 if(!aliveEnemy.isAlive()){
@@ -633,9 +681,8 @@ public class BattleGame extends JFrame {
 
         //スタートボタンを押したらバトル画面（キャラクター選択画面）に移動する
         startButton.addActionListener(e -> {
-            titlePanel.setVisible(false);
-            battlePanel.setVisible(true);
             choicePlayer();
+            cardLayout.show(mainPanel, "BATTLE");
             spawnEnemy();
             enemyIcon();
             updateDisplay();
