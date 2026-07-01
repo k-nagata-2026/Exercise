@@ -54,15 +54,19 @@ public class BattleGame extends JFrame implements KeyListener {
     private int shakeFrame = 0;
     private boolean isGameOverState = false;
 
+    private final int WINDOW_WIDTH = 1220;
+    private final int WINDOW_HEIGHT = 1050;
+
     public BattleGame() {
         setTitle("本格RPG - ハイブリッド・アンロックバトルシステム");
-        setSize(1220, 1050);
+        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); 
         setLayout(new BorderLayout()); 
 
-        backgroundLabel = new JLabel(new ImageIcon("first_background.png"));
+        backgroundLabel = new JLabel();
         backgroundLabel.setLayout(null); 
+        setBackgroundImage("first_background.png");
 
         playerImageLabel = new JLabel("", JLabel.CENTER);
         enemyImageLabel = new JLabel("", JLabel.CENTER);
@@ -71,26 +75,26 @@ public class BattleGame extends JFrame implements KeyListener {
         enemyImageLabel.setBounds(enemyX, enemyY, 500, 500); 
 
         try {
-            ImageIcon clearIcon = new ImageIcon("game_clear.png");
-            Image scaledClear = clearIcon.getImage().getScaledInstance(600, 250, Image.SCALE_SMOOTH);
+            ImageIcon clearIcon = new ImageIcon("game clear.png");
+            Image scaledClear = clearIcon.getImage().getScaledInstance(800, 350, Image.SCALE_SMOOTH);
             bigGameClearButton = new JButton(new ImageIcon(scaledClear));
         } catch (Exception e) {
             bigGameClearButton = new JButton("🎉 STAGE CLEAR");
         }
-        bigGameClearButton.setBounds(310, 300, 600, 250); 
+        bigGameClearButton.setBounds((WINDOW_WIDTH - 800) / 2, 300, 800, 350); 
         bigGameClearButton.setBorderPainted(false);
         bigGameClearButton.setContentAreaFilled(false);
         bigGameClearButton.setFocusable(false);
         bigGameClearButton.setVisible(false);
 
         try {
-            ImageIcon overIcon = new ImageIcon("game_over.png");
-            Image scaledOver = overIcon.getImage().getScaledInstance(800, 250, Image.SCALE_SMOOTH);
+            ImageIcon overIcon = new ImageIcon("game over.png");
+            Image scaledOver = overIcon.getImage().getScaledInstance(800, 350, Image.SCALE_SMOOTH);
             bigGameOverButton = new JButton(new ImageIcon(scaledOver));
         } catch (Exception e) {
             bigGameOverButton = new JButton("💀 GAME OVER");
         }
-        bigGameOverButton.setBounds(310, 300, 600, 250);
+        bigGameOverButton.setBounds((WINDOW_WIDTH - 800) / 2, 300, 800, 350);
         bigGameOverButton.setBorderPainted(false);
         bigGameOverButton.setContentAreaFilled(false);
         bigGameOverButton.setFocusable(false);
@@ -195,6 +199,16 @@ public class BattleGame extends JFrame implements KeyListener {
         initGameSession(false); 
         
         SwingUtilities.invokeLater(() -> requestFocusInWindow());
+    }
+
+    private void setBackgroundImage(String fileName) {
+        try {
+            ImageIcon bgIcon = new ImageIcon(fileName);
+            Image scaledBg = bgIcon.getImage().getScaledInstance(WINDOW_WIDTH, WINDOW_HEIGHT - 250, Image.SCALE_SMOOTH);
+            backgroundLabel.setIcon(new ImageIcon(scaledBg));
+        } catch (Exception e) {
+            System.out.println("Background image load failed: " + fileName);
+        }
     }
 
     private void showRulesDialog() {
@@ -328,7 +342,6 @@ public class BattleGame extends JFrame implements KeyListener {
             logTextArea.append("★━━━━━━━━━━━━━━━━━━━━★\n\n");
             playerWins++;
             
-            player.levelUp();
             player.levelUp(); 
 
             if (currentSelectedType.equals("hero")) heroLevel = player.getLevel();
@@ -378,7 +391,7 @@ public class BattleGame extends JFrame implements KeyListener {
                 logTextArea.append("💀 覚醒：最後の希望として human が参戦する！\n");
                 player = new Player("human (human)", 300, 130, 10, 50, "human.png");
                 player.setLevel(humanLevel); 
-                enemy = new Enemy("裏ボス (BOSS)", 1200, 32, 10, 50, "dragon.png"); 
+                enemy = new Enemy("裏ボス (BOSS)", 1500, 45, 10, 50, "dragon.png"); 
                 playerX = 80;
                 updateDisplay();
             } else {
@@ -519,16 +532,17 @@ public class BattleGame extends JFrame implements KeyListener {
 
     private void spawnEnemy() {
         if (enemyCount == 1) {
-            enemy = new Enemy("スライム", 100, 12, 25, 20, "smile enamy.png");
-            backgroundLabel.setIcon(new ImageIcon("fristbackgroud.png"));
+            enemy = new Enemy("スライム", 150, 18, 25, 20, "smile enamy.png"); // HP 100->150, ATK 12->18
+            setBackgroundImage("fristbackgroud.png"); 
         } else if (enemyCount == 2) {
-            enemy = new Enemy("フォレストドラゴン", 160, 18, 10, 25, "dargon enamy.png");
-            backgroundLabel.setIcon(new ImageIcon("second backgroud.png"));
+            enemy = new Enemy("フォレストドラゴン", 280, 26, 10, 25, "dargon enamy.png"); // HP 160->280, ATK 18->26
+            setBackgroundImage("second backgroud.png");
         } else if (enemyCount == 3) {
-            enemy = new Enemy("デーモン", 220, 24, 10, 30, "Demon enamy.png");
+            enemy = new Enemy("デーモン", 450, 38, 10, 30, "Demon enamy.png"); // HP 220->450, ATK 24->38
+            setBackgroundImage("backgroundthree.png"); 
         } else if (enemyCount == 4) {
-            enemy = new Enemy("裏ボス (ドラゴングランド)", 1200, 30, 10, 50, "dargon.png");
-            backgroundLabel.setIcon(new ImageIcon("final backgroud.png"));
+            enemy = new Enemy("裏ボス (ドラゴングランド)", 1800, 55, 10, 50, "dargon.png"); // HP 1200->1800, ATK 30->55
+            setBackgroundImage("final backgroud.png");
         }
 
         try {
