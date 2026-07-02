@@ -53,19 +53,25 @@ public class Character {
     public String attack(Character target) {
 
         if (target instanceof Player && target.guardFlg == 1) { // あいてがガードしているばあい
-            target.guardFlg = 0; // ガードフラグをリセット
+            //ダメージを半減する計算
+            int halfDamage = this.atk / 2;
+
+            target.hp -= halfDamage;
+            if (target.hp < 0) {
+                target.hp = 0; // HPがマイナス（Minus）にならないようにする
+            }
+
             return this.name + " のこうげき！ " + target.getName()
-                   + " はガードしている！ ダメージをうけない！\n";
-        }
-        else {
-        // あいてのHPをじぶんのこうげきりょくぶんへらす（Decrease）
-        target.hp -= this.atk;
-        if (target.hp < 0) {
-            target.hp = 0; // HPがマイナス（Minus）にならないようにする
-        }
-        return this.name + " のこうげき！ " + target.getName()
+                   + " はガードしている！ ダメージを" + halfDamage + "におさえた！\n";
+        }else {
+            // あいてのHPをじぶんのこうげきりょくぶんへらす（Decrease）
+            target.hp -= this.atk;
+            if (target.hp < 0) {
+                target.hp = 0; // HPがマイナス（Minus）にならないようにする
+            }
+            return this.name + " のこうげき！ " + target.getName()
                + " に " +  this.atk + " のダメージ（Damage）！\n";
-    }
+        }
     }
 
     // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）

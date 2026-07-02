@@ -394,17 +394,18 @@ public class BattleGame extends JFrame {
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
         
         // ぶひん（Parts）をメインウィンドウにはいち
-        panel.add(backgroundLabel, BorderLayout.CENTER); // はいけい（キャラいり）をまんなかにはいち
-        panel.add(bottomPanel, BorderLayout.SOUTH);       // そうさエリアをしたがわにはいち
-        buttonPanel.add(attackButton); // こうげきボタンをしたがわのひだりにはいち
-        buttonPanel.add(runButton); // にげるボタンをしたがわのひだりにはいち
-        buttonPanel.add(defenseButton); // ぼうぎょボタンをしたがわのひだりにはいち
-        buttonPanel.add(itemButton); // アイテムボタンをしたがわのひだりにはいち
+        panel.add(backgroundLabel, BorderLayout.CENTER); // 背景を真ん中に配置
+        panel.add(bottomPanel, BorderLayout.SOUTH);       // 操作エリアを下側に配置
+        buttonPanel.add(attackButton); // 攻撃ボタンを下の左側に配置
+        buttonPanel.add(runButton); // 逃げるボタンを下の左側に配置
+        buttonPanel.add(defenseButton); // 防御ボタンを下の左側に配置
+        buttonPanel.add(itemButton); // アイテムボタンを下の左側に配置
 
-        // ★「にげる（Escape）ボタン（Button）」をおした（Press）ときのしょり（Process）をついか（Add）
+        // ★逃げるボタンの処理
         runButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                player.guardFlg = 0; // ガードフラグをリセット
                 logTextArea.append( player.getName() + " は逃げ出そうとした！\n");
 
                 // Math.random() は 0.0 以上 1.0 未満のランダムな数字を返す
@@ -456,6 +457,7 @@ public class BattleGame extends JFrame {
         attackButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                player.guardFlg = 0; // ガードフラグをリセット
                 //生きている敵を探す
                 Enemy aliveEnemy = null;
                 for(Enemy enemyInside : enemyParty) {
@@ -572,6 +574,7 @@ public class BattleGame extends JFrame {
         defenseButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                player.guardFlg = 0; // ガードフラグをリセット
                 logTextArea.append( player.getName() + "はガードした！\n");
 
                 //ガードしたら、ダメージを受けないようにするためのフラグをたてる
@@ -648,6 +651,7 @@ public class BattleGame extends JFrame {
         itemButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                player.guardFlg = 0; // ガードフラグをリセット
                 logTextArea.append(player.getName() + " はアイテムをつかった！ HPが20かいふくした！\n");
                 player.hp += 20; // HPを20かいふくする
                 if (player.hp > player.maxHp) {
