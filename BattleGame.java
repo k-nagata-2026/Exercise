@@ -513,21 +513,32 @@ public class BattleGame extends JFrame {
 
                 //４．敵のターン
                 if (isEnemyTrun){
-                    Enemy currentEnemy = null;
-                    for (Enemy enemyInside : enemyParty){
+                    logTextArea.append("敵のターンだ！\n");
+                    //敵パーティをループで回す
+                    for (Enemy enemyInside : enemyParty) {
+                        //生きている敵は攻撃する
                         if(enemyInside.isAlive()){
-                            currentEnemy = enemyInside;
-                            break;
+                            //敵の攻撃でプレイヤーが全滅したら終わる
+                            boolean allMembersDefeated = true;
+                            for (Player member : party) {
+                                if (member.isAlive() && member.getHp() > 0) { 
+                                    allMembersDefeated = false;
+                                    break;
+                                }
+                            }
+                            if (allMembersDefeated) {
+                               break;//全滅していたらループを抜ける
+                            }
+
+                            //現在のプレイヤーに攻撃する
+                            String aliveEnemyResult = enemyInside.attack(player);
+                            logTextArea.append(aliveEnemyResult);
+
+                            //一体ごとに画面を更新
+                            updateDisplay();
+                            updatePlayerVisuals();
                         }
                     }
-
-                    if (currentEnemy != null){
-                        String aliveEnemyResult = currentEnemy.attack(player);
-                        logTextArea.append(aliveEnemyResult);
-                        updateDisplay();
-                        updatePlayerVisuals();
-                    }
-                    
                 }
 
                 // ５. プレイヤーがたおれたかチェック
@@ -575,11 +586,33 @@ public class BattleGame extends JFrame {
                 switchNextPlayer();
 
                 //４．敵のターン
-                if (currentPlayerIndex <= oldIndex){
-                    String enemyResult = enemy.attack(player);
-                    logTextArea.append(enemyResult);
-                    updateDisplay();
-                    updatePlayerVisuals();
+                if (currentPlayerIndex <= oldIndex) {
+                    logTextArea.append("敵のターンだ！\n");
+                    //敵パーティをループで回す
+                    for (Enemy enemyInside : enemyParty) {
+                        //生きている敵は攻撃する
+                        if(enemyInside.isAlive()){
+                            //敵の攻撃でプレイヤーが全滅したら終わる
+                            boolean allMembersDefeated = true;
+                            for (Player member : party) {
+                                if (member.isAlive() && member.getHp() > 0) { 
+                                    allMembersDefeated = false;
+                                    break;
+                                }
+                            }
+                            if (allMembersDefeated) {
+                               break;//全滅していたらループを抜ける
+                            }
+
+                            //現在のプレイヤーに攻撃する
+                            String aliveEnemyResult = enemyInside.attack(player);
+                            logTextArea.append(aliveEnemyResult);
+
+                            //一体ごとに画面を更新
+                            updateDisplay();
+                            updatePlayerVisuals();
+                        }
+                    }
                 }
 
                 // ５. プレイヤーがたおれたかチェック
@@ -627,12 +660,34 @@ public class BattleGame extends JFrame {
                 switchNextPlayer();
 
                 //４．敵のターン
-                if (currentPlayerIndex <= oldIndex){
-                    String enemyResult = enemy.attack(player);
-                    logTextArea.append(enemyResult);
-                    updateDisplay();
-                    updatePlayerVisuals();
-                }   
+                if (currentPlayerIndex <= oldIndex) {
+                    logTextArea.append("敵のターンだ！\n");
+                    //敵パーティをループで回す
+                    for (Enemy enemyInside : enemyParty) {
+                        //生きている敵は攻撃する
+                        if(enemyInside.isAlive()){
+                            //敵の攻撃でプレイヤーが全滅したら終わる
+                            boolean allMembersDefeated = true;
+                            for (Player member : party) {
+                                if (member.isAlive() && member.getHp() > 0) { 
+                                    allMembersDefeated = false;
+                                    break;
+                                }
+                            }
+                            if (allMembersDefeated) {
+                               break;//全滅していたらループを抜ける
+                            }
+
+                            //現在のプレイヤーに攻撃する
+                            String aliveEnemyResult = enemyInside.attack(player);
+                            logTextArea.append(aliveEnemyResult);
+
+                            //一体ごとに画面を更新
+                            updateDisplay();
+                            updatePlayerVisuals();
+                        }
+                    }
+                }  
 
                 // ５. プレイヤーがたおれたかチェック
                 if (!player.isAlive()) {
@@ -676,7 +731,7 @@ public class BattleGame extends JFrame {
         titleLabel.setFont(new Font("MS　ゴシック",Font.BOLD,36));
         titleLabel.setForeground(Color.WHITE); // 白文字
 
-        JButton startButton = new JButton("start");
+        JButton startButton = new JButton("START");
         startButton.setFont(new Font("Arial",Font.PLAIN,24));
 
         //スタートボタンを押したらバトル画面（キャラクター選択画面）に移動する
@@ -733,7 +788,7 @@ public class BattleGame extends JFrame {
         panel.setBackground(Color.WHITE);
 
         JLabel label1 = new JLabel("あなたのおかげで世界は平和になった",JLabel.CENTER);
-        JLabel label2 = new JLabel("感謝");
+        JLabel label2 = new JLabel("感謝",JLabel.CENTER);
         label1.setFont(new Font("MS ゴシック",Font.BOLD,28));
         label2.setFont(new Font("MS ゴシック",Font.BOLD,48));
 
