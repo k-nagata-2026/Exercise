@@ -8,7 +8,7 @@ import javax.swing.*;
 public class BattleGame extends JFrame {
     //private JLabel statusLabel;       // HPなどをひょうじするラベル（Label）
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
-    private JButton attackButton;     // こうげきコマンドボタン（Command Button）
+    private JButton skillButton;      // スキルコマンドボタン（Command Button）
     private JButton runButton;        // 逃げるコマンドボタン
     private JButton defenseButton;    // ぼうぎょコマンドボタン
     private JButton itemButton;       // アイテムコマンドボタン
@@ -110,7 +110,7 @@ public class BattleGame extends JFrame {
 
     // ゲームしゅうりょうじにボタンをおせなくするしょり
     private void endGame() {
-    attackButton.setEnabled(false); // ボタンをむこうか（Disable）
+    skillButton.setEnabled(false); // ボタンをむこうか（Disable）
     runButton.setEnabled(false);//逃げるボタンを無効化
     defenseButton.setEnabled(false);//守るボタンを無効化
     itemButton.setEnabled(false);//アイテムボタンを無効化
@@ -183,18 +183,25 @@ public class BattleGame extends JFrame {
             //文字列(名前)で判定する   
             if (selectedCharacter.equals("勇者(HERO)")) {
                 newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0);
+                newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
             } else if(selectedCharacter.equals("魔法使い(WIZARD)")) {
                 newPlayer = new Player("魔法使い(WIZARD)", 45, 25, 50,"mahoutsukai_man.png", 0);
+                newPlayer.learnSkill("炎魔法", 0.5, "全体攻撃");
             } else if(selectedCharacter.equals("騎士(KNIGHT)")) {
                 newPlayer = new Player("騎士(KNIGHT)", 65, 30, 25,"knight.png",0);
+                newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
             }else if (selectedCharacter.equals("盗賊(THIEF)")) {
                 newPlayer = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0);
+                newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
             }else if (selectedCharacter.equals("召喚士(SUMMONER)")){
                 newPlayer = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0);
+                newPlayer.learnSkill("召喚", 1.0, "全体攻撃");
             }else if (selectedCharacter.equals("祈祷師(SHAMAN)")){
                 newPlayer = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0);
+                newPlayer.learnSkill("攻撃力UP", 1.0, "単体バフ");
             } else {
                 newPlayer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0);
+                newPlayer.learnSkill("回復", 1.0, "単体回復");
             }
             party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
             // 選んだキャラクターを選択肢から削除する
@@ -383,12 +390,11 @@ public class BattleGame extends JFrame {
         logTextArea.setEditable(false); // プレイヤーがちょくせつもじにゅうりょくできないようにする
         JScrollPane scrollPane = new JScrollPane(logTextArea); // スクロール（Scroll）できるようにする
         
-        attackButton = new JButton("攻撃(ATTACK)");
+        skillButton = new JButton("技(SKILL)");
         runButton = new JButton("逃げる(RUN)");
         defenseButton = new JButton("防御(DEFENSE)");
         itemButton = new JButton("アイテム(ITEM)");
 
-        //bottomPanel.add(statusLabel, BorderLayout.NORTH); // ステータスラベルをしたがわのうえにはいち
         bottomPanel.add(scrollPane, BorderLayout.CENTER); // ログテキストエリアをしたがわのしたにはいち 
         bottomPanel.add(statusPanel, BorderLayout.NORTH); // ステータスパネルをしたがわのうえにはいち
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -396,7 +402,7 @@ public class BattleGame extends JFrame {
         // ぶひん（Parts）をメインウィンドウにはいち
         panel.add(backgroundLabel, BorderLayout.CENTER); // 背景を真ん中に配置
         panel.add(bottomPanel, BorderLayout.SOUTH);       // 操作エリアを下側に配置
-        buttonPanel.add(attackButton); // 攻撃ボタンを下の左側に配置
+        buttonPanel.add(skillButton); // スキルボタンを下の左側に配置
         buttonPanel.add(runButton); // 逃げるボタンを下の左側に配置
         buttonPanel.add(defenseButton); // 防御ボタンを下の左側に配置
         buttonPanel.add(itemButton); // アイテムボタンを下の左側に配置
@@ -453,35 +459,88 @@ public class BattleGame extends JFrame {
             }
         });
 
-        // ★ 攻撃ボタンをおしたときのしょりをついか
-        attackButton.addActionListener(new ActionListener() {
+        // ★ スキルボタンをおしたときのしょりをついか
+        skillButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 player.guardFlg = 0; // ガードフラグをリセット
-                //生きている敵を探す
-                Enemy aliveEnemy = null;
-                for(Enemy enemyInside : enemyParty) {
-                    if(enemyInside.isAlive()){
-                        aliveEnemy = enemyInside;
-                        break;
+               
+                //プレイヤーが覚えている技を選択肢に出す
+                java.util.List<Skill> playerSkills = player.getSkills();
+                String[] moves = new String[playerSkills.size()];
+                for (int i = 0; i < playerSkills.size(); i++) {
+                    moves[i] = playerSkills.get(i).getName();
+                }
+
+                int moveChoice = JOptionPane.showOptionDialog(
+                    BattleGame.this,
+                    player.getName() + " はどうする？",
+                    "技の選択",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    moves,
+                    moves[0]
+                );
+
+                //×ボタンを押したらウィンドウごと閉じる
+                if (moveChoice == JOptionPane.CLOSED_OPTION) return;
+
+                //選んだ技を取得する
+                Skill selectedSkill = playerSkills.get(moveChoice);
+                logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
+
+                //技の種類によって処理を分ける
+                if (selectedSkill.getType().equals("単体攻撃")) {
+                    //生きている敵だけをリストに集める
+                    Enemy aliveEnemy = null;
+                    for (Enemy enemyInside : enemyParty) {
+                        if (enemyInside.isAlive()) {
+                            aliveEnemy = enemyInside;
+                            break;
+                        }
                     }
+                    if (aliveEnemy != null) {
+                        String result = player.attack(aliveEnemy, selectedSkill.getMultiplier());
+                        logTextArea.append(result);
+                        if (!aliveEnemy.isAlive()) {
+                            logTextArea.append(aliveEnemy.getName() + " をたおした！\n");
+                            int index = enemyParty.indexOf(aliveEnemy);
+                            enemyImageLabels[index].setEnabled(false);
+                        }
+                    }
+
+                } else if (selectedSkill.getType().equals("全体攻撃")) {
+                    //全体攻撃の場合、すべての生きている敵に攻撃する
+                    for (Enemy enemyInside : enemyParty) {
+                        if (enemyInside.isAlive()) {
+                            String result = player.attack(enemyInside, selectedSkill.getMultiplier());
+                            logTextArea.append(result);
+                            if (!enemyInside.isAlive()) {
+                                logTextArea.append(enemyInside.getName() + " をたおした！\n");
+                                int index = enemyParty.indexOf(enemyInside);
+                                enemyImageLabels[index].setEnabled(false);
+                            }
+                        }
+                    }
+                } else if (selectedSkill.getType().equals("単体回復")) {
+                    //単体回復の場合、プレイヤー自身を回復する
+                    int healAmount = (int) (player.getMaxHp() * selectedSkill.getMultiplier());
+                    player.hp += healAmount;
+                    logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
+                    if (player.hp > player.getMaxHp()) {
+                        player.hp = player.getMaxHp(); // 最大HPを超えないようにする
+                    }
+                    logTextArea.append(player.getName() + " は " + healAmount + " 回復した！\n");
+
+                } else if (selectedSkill.getType().equals("単体バフ")) {
+                    //単体バフの場合、プレイヤー自身にバフをかける
+                    player.atk = (int) (player.getAtk() * selectedSkill.getMultiplier());
+                    logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
+                    logTextArea.append(player.getName() + " の攻撃力が " + player.getAtk() + " に上がった！\n");
                 }
-
-                //敵が全滅している場合は何もしない
-                if(aliveEnemy == null) return;
-
-                // 1. プレイヤーのターン（Turn）
-                String playerResult = player.attack(aliveEnemy);
-                logTextArea.append(playerResult);
                 updateDisplay();
-                
-                //攻撃された敵が倒れたらその敵をグレーアウト
-                if(!aliveEnemy.isAlive()){
-                    logTextArea.append(aliveEnemy.getName() + "をたおした！\n");
-                    //倒した敵のインデックスを調べてグレーにする
-                    int index = enemyParty.indexOf(aliveEnemy);
-                    enemyImageLabels[index].setEnabled(false);
-                }
+
 
                 // 2. エネミーがたおれたかチェック（Check）
                 //敵が全員倒れたかチェック
