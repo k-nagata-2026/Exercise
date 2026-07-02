@@ -24,6 +24,7 @@ public class Character {
         this.atk = atk;
         this.deff = deff;
         this.speed = speed;
+        this.potion = potion;
         this.levelup = 1;
         this.icon = new ImageIcon(imagePath); // がぞうファイルのよみこみ（Load）
         
@@ -62,6 +63,15 @@ public class Character {
     public void setAtk(int atk) {
         this.atk = atk;
     }
+    public int getDeff() {
+        return deff;
+    }
+    public void setDeff(int deff) {
+        this.deff = deff;
+    }
+    public int getPotion() {
+    return potion;
+}
 
     public void setHp(int hp) {
         this.hp = hp;
@@ -70,9 +80,6 @@ public class Character {
     public void setMaxHp(int maxHp) {
         this.maxHp = maxHp;
     }
-
-    
-
     public void gainExp(int amount) {
         exp += amount;
         while (exp >= expNeeded) {

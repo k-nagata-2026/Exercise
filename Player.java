@@ -34,4 +34,33 @@ public class Player extends Character {
 public void setExp(int exp) {
     this.exp = exp;
 }
+
+public String usePotion() {
+    if (potion > 0) {
+        potion--;
+        hp += 30;
+
+        if (hp > maxHp) {
+            hp = maxHp;
+        }
+
+        return getName() + " used a Potion! HP +30";
+    } else {
+        return "No Potion left!";
+    } 
+    }
+
+public String skillAttack(Enemy enemy) {
+
+    int damage = (getAtk() * 2) - enemy.getDeff();
+
+    if (damage < 1) {
+        damage = 1;
+    }
+
+    enemy.setHp(enemy.getHp() - damage);
+
+    return getName() + " used SKILL!\n"
+         + enemy.getName() + " took " + damage + " damage!\n";
+}
 }

@@ -16,9 +16,14 @@ public class BattleGame extends JFrame {
    final  private JProgressBar playerHpBar;
    final  private JProgressBar enemyHpBar;
 
+   private JProgressBar hpBar;
     private Player player;
     private Enemy enemy;
     private int enemyCount = 0; // 0から開始するように修正
+    private int potionUseCount = 0;
+    private final int MAX_POTION_USE = 3;
+    private int skillUseCount = 0;
+    private final int MAX_SKILL_USE = 2;
     
 
 
@@ -29,40 +34,33 @@ public class BattleGame extends JFrame {
     victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
     victoryFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    JLabel bg = new JLabel(new ImageIcon("GAME CALER.png"));
+    JLabel bg = new JLabel(new ImageIcon("gameclear.png"));
     bg.setBounds(0, 0, 1920, 1080);
     bg.setLayout(null);
 
     JButton homeButton = new JButton();
-    homeButton.setBounds(820, 500, 300, 70);
-
-    JButton nextButton = new JButton();
-    nextButton.setBounds(820, 600, 300, 70);
+    homeButton.setBounds(800, 540, 460, 90);
 
     homeButton.setOpaque(false);
     homeButton.setContentAreaFilled(false);
     homeButton.setBorderPainted(false);
 
-    nextButton.setOpaque(false);
-    nextButton.setContentAreaFilled(false);
-    nextButton.setBorderPainted(false);
-
+   
     homeButton.addActionListener(e -> {
         System.exit(0);
     });
 
-    nextButton.addActionListener(e -> {
+    homeButton.addActionListener(e -> {
         victoryFrame.dispose();
         enemyCount = 0;
         player.setHp(player.getMaxHp());
         spawnEnemy();
         updateDisplay();
         this.setVisible(true);
-    });
+     });
 
     bg.add(homeButton);
-    bg.add(nextButton);
-
+    
     victoryFrame.add(bg);
     victoryFrame.setVisible(true);
 
@@ -166,6 +164,8 @@ private void shakePlayer() {
 
     timer.start();
 }
+
+
   public BattleGame() {
         // ウィンドウの基本設定
         setTitle("ターン制コマンドバトル");
@@ -214,7 +214,7 @@ private void shakePlayer() {
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(attackButton);
-        buttonPanel.add(speedButton);
+       // buttonPanel.add(speedButton);
         buttonPanel.add(skillButton);
         buttonPanel.add(potionButton);
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -222,6 +222,16 @@ private void shakePlayer() {
         add(hpPanel, BorderLayout.NORTH);
         add(backgroundLabel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
+
+        hpBar = new JProgressBar();
+hpBar.setBounds(40, 40, 300, 25);
+hpBar.setMaximum(player.getMaxHp());
+hpBar.setValue(player.getHp());
+
+hpBar.setStringPainted(true);
+hpBar.setForeground(Color.GREEN);
+
+add(hpBar);
 
         // ボタンの処理
         attackButton.addActionListener(e -> {
@@ -248,26 +258,43 @@ private void shakePlayer() {
             }
         });
 
-        skillButton.addActionListener(e -> {
-            int damage = player.getAtk() * 2;
-            enemy.setHp(enemy.getHp() - damage);
-            logTextArea.append("Fire Ball! -" + damage + " HP\n");
-            updateDisplay();
-            if (!enemy.isAlive()) {
-                handleEnemyDefeat();
-            }
-        });
+       skillButton.addActionListener(e -> {
 
-        potionButton.addActionListener(e -> { 
-            int heal = 30;  //
+    if (skillUseCount >= MAX_SKILL_USE) {
+        JOptionPane.showMessageDialog(this,
+                "Skill can only be used 2 times in this battle!");
+        return;
+    }
 
-            player.setHp(Math.min(player.getHp() + heal,
-            player.getMaxHp())
-            );
-            logTextArea.append("potion used! +" + heal + " HP\n");
+    skillUseCount++;
 
-               updateDisplay();
-        });
+    String result = player.skillAttack(enemy);   // timro skill method ko naam
+    logTextArea.append(result + "\n");
+
+    updateDisplay();
+
+    if (!enemy.isAlive()) {
+        handleEnemyDefeat();
+    }
+
+});
+
+       potionButton.addActionListener(e -> {
+
+    if (potionUseCount >= MAX_POTION_USE) {
+        JOptionPane.showMessageDialog(this,
+                "You can only use Potion 3 times in this battle!");
+        return;
+    }
+
+    potionUseCount++;
+
+    String result = player.usePotion();
+    logTextArea.append(result + "\n");
+
+    updateDisplay();
+
+});
         
 
         // 初期化
@@ -279,8 +306,8 @@ private void shakePlayer() {
         logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
     }
 
-   private void handleEnemyDefeat() {
-    player.gainExp(50);
+  private void handleEnemyDefeat() {
+
     logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
 
     enemyCount++;
@@ -293,6 +320,9 @@ private void shakePlayer() {
         return;
     }
 
+    // EXP only if not the last enemy
+    player.gainExp(50);
+
     // Next level unlock
     javax.swing.JOptionPane.showMessageDialog(
         this,
@@ -301,6 +331,9 @@ private void shakePlayer() {
 
     spawnEnemy();
     updateDisplay();
+
+    potionUseCount = 0;
+    skillUseCount = 0;
 }
     // 他メソッド（updateDisplay, endGame, choicePlayer, spawnEnemy 等）はそのまま記述
     private void updateDisplay() {
@@ -314,6 +347,16 @@ private void shakePlayer() {
         attackButton.setEnabled(false); // ボタンをむこうか
         logTextArea.append("【ゲームしゅうりょう】ウィンドウをとじてください。\n");
     }
+    hpBar.setMaximum(player.getMaxHp());
+hpBar.setValue(player.getHp());
+
+if (player.getHp() > player.getMaxHp() * 0.6) {
+    hpBar.setForeground(Color.GREEN);
+} else if (player.getHp() > player.getMaxHp() * 0.3) {
+    hpBar.setForeground(Color.ORANGE);
+} else {
+    hpBar.setForeground(Color.RED);
+}
 
     private void choicePlayer() {
         // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1
@@ -332,13 +375,13 @@ private void shakePlayer() {
                 null);
 
         if (choice == 0) {
-            player = new Player("BHOLA（Hero）", 100, 10, 10, 10, 30, "BHOLA.png");
+            player = new Player("BHOLA（Hero）", 200, 20, 10, 10, 30, "BHOLA.png");
         } else if (choice == 1) {
             player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
         } else if (choice == 2) {
             player = new Player("LedyBoss", 100, 15, 20, 10, 30, "ladyboss.png");
         } else if (choice == 3) {
-            player = new Player("boss", 150, 25, 10, 15, 30, "bigboss.png");
+            player = new Player("boss", 150, 40, 0, 15, 30, "bigboss.png");
         }
     }
 
