@@ -426,17 +426,14 @@ public class BattleGame extends JFrame {
                         logTextArea.append(player.getName() + " はたおれた… \n");
 
                         //パーティーが全滅してないかチェック
-                        boolean allMembersDefeated = true;
+                        java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                             for (Player member : party) {
-                                if (member.isAlive()) {
-                                    if (member.getHp() > 0) {
-                                        allMembersDefeated = false;
-                                        break;
-                                    }
+                                if (member.isAlive() && member.getHp() > 0) {
+                                    aliveMembers.add(member);
                                 }
                             }
-        
-                        if (allMembersDefeated) {
+
+                        if (aliveMembers.isEmpty()) {
                          logTextArea.append("パーティーは全滅した… \n");
                          endGame();
                           return;
@@ -486,15 +483,14 @@ public class BattleGame extends JFrame {
 
                 // 2. エネミーがたおれたかチェック（Check）
                 //敵が全員倒れたかチェック
-                boolean allEnemiesDefeated = true;
+                java.util.List<Enemy> aliveEnemies = new java.util.ArrayList<>();
                 for (Enemy enemyInside : enemyParty){
                     if (enemyInside.isAlive()){
-                        allEnemiesDefeated = false;
-                        break;
+                        aliveEnemies.add(enemyInside);
                     }
                 }
 
-                if(allEnemiesDefeated){
+                if(aliveEnemies.isEmpty()){
                     logTextArea.append("敵の群れを倒した！\n");
                     if(enemyCount < 3){
                         enemyCount++;
@@ -518,20 +514,25 @@ public class BattleGame extends JFrame {
                     for (Enemy enemyInside : enemyParty) {
                         //生きている敵は攻撃する
                         if(enemyInside.isAlive()){
-                            //敵の攻撃でプレイヤーが全滅したら終わる
-                            boolean allMembersDefeated = true;
+                            //生きている味方だけをリストに集める
+                            java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                             for (Player member : party) {
-                                if (member.isAlive() && member.getHp() > 0) { 
-                                    allMembersDefeated = false;
-                                    break;
+                                if (member.isAlive() && member.getHp() > 0) {
+                                    aliveMembers.add(member);
                                 }
                             }
-                            if (allMembersDefeated) {
-                               break;//全滅していたらループを抜ける
+
+                            //プレイヤーが全滅していたら攻撃をやめる
+                            if (aliveMembers.isEmpty()) {
+                                break;
                             }
 
+                            //ランダムに生きているプレイヤーを選ぶ
+                            int randomIndex = (int)(Math.random() * aliveMembers.size());
+                            Player targetPlayer = aliveMembers.get(randomIndex);
+
                             //現在のプレイヤーに攻撃する
-                            String aliveEnemyResult = enemyInside.attack(player);
+                            String aliveEnemyResult = enemyInside.attack(targetPlayer);
                             logTextArea.append(aliveEnemyResult);
 
                             //一体ごとに画面を更新
@@ -546,15 +547,14 @@ public class BattleGame extends JFrame {
                     logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
         
                     //６．パーティーが全滅してないかチェック
-                    boolean allMembersDefeated = true;
+                    java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                     for (Player member : party) {
-                        if (member.isAlive() && member.getHp() > 0) { 
-                            allMembersDefeated = false;
-                            break;
+                        if (member.isAlive() && member.getHp() > 0) {
+                            aliveMembers.add(member);
                         }
                     }
 
-                    if (allMembersDefeated) {
+                    if (aliveMembers.isEmpty()) {
                         logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
                         gameScreen(3);
                         return;
@@ -593,19 +593,22 @@ public class BattleGame extends JFrame {
                         //生きている敵は攻撃する
                         if(enemyInside.isAlive()){
                             //敵の攻撃でプレイヤーが全滅したら終わる
-                            boolean allMembersDefeated = true;
+                            java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                             for (Player member : party) {
-                                if (member.isAlive() && member.getHp() > 0) { 
-                                    allMembersDefeated = false;
-                                    break;
+                                if (member.isAlive() && member.getHp() > 0) {
+                                    aliveMembers.add(member);
                                 }
                             }
-                            if (allMembersDefeated) {
-                               break;//全滅していたらループを抜ける
+                            if (aliveMembers.isEmpty()) {
+                                break;//全滅していたらループを抜ける
                             }
 
-                            //現在のプレイヤーに攻撃する
-                            String aliveEnemyResult = enemyInside.attack(player);
+                            //生きているプレイヤーをランダムで選ぶ
+                            int randomIndex = (int)(Math.random() * aliveMembers.size());
+                            Player targetPlayer = aliveMembers.get(randomIndex);
+
+                            //選んだプレイヤーに攻撃する
+                            String aliveEnemyResult = enemyInside.attack(targetPlayer);
                             logTextArea.append(aliveEnemyResult);
 
                             //一体ごとに画面を更新
@@ -620,15 +623,14 @@ public class BattleGame extends JFrame {
                     logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
         
                     //６．パーティーが全滅してないかチェック
-                    boolean allMembersDefeated = true;
+                    java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                     for (Player member : party) {
-                        if (member.isAlive() && member.getHp() > 0) { 
-                            allMembersDefeated = false;
-                            break;
+                        if (member.isAlive() && member.getHp() > 0) {
+                            aliveMembers.add(member);
                         }
                     }
 
-                    if (allMembersDefeated) {
+                    if (aliveMembers.isEmpty()) {
                         logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
                         endGame();
                         return;
@@ -667,19 +669,22 @@ public class BattleGame extends JFrame {
                         //生きている敵は攻撃する
                         if(enemyInside.isAlive()){
                             //敵の攻撃でプレイヤーが全滅したら終わる
-                            boolean allMembersDefeated = true;
+                            java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                             for (Player member : party) {
-                                if (member.isAlive() && member.getHp() > 0) { 
-                                    allMembersDefeated = false;
-                                    break;
+                                if (member.isAlive() && member.getHp() > 0) {
+                                    aliveMembers.add(member);
                                 }
                             }
-                            if (allMembersDefeated) {
-                               break;//全滅していたらループを抜ける
+                            if (aliveMembers.isEmpty()) {
+                                break;//全滅していたらループを抜ける
                             }
 
-                            //現在のプレイヤーに攻撃する
-                            String aliveEnemyResult = enemyInside.attack(player);
+                            //生きているプレイヤーをランダムで選ぶ
+                            int randomIndex = (int)(Math.random() * aliveMembers.size());
+                            Player targetPlayer = aliveMembers.get(randomIndex);
+
+                            //選んだプレイヤーに攻撃する
+                            String aliveEnemyResult = enemyInside.attack(targetPlayer);
                             logTextArea.append(aliveEnemyResult);
 
                             //一体ごとに画面を更新
@@ -694,15 +699,14 @@ public class BattleGame extends JFrame {
                     logTextArea.append(" " + player.getName() + " はたおれた… ゲームオーバー（Game Over）\n");
         
                     //６．パーティーが全滅してないかチェック
-                    boolean allMembersDefeated = true;
+                    java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                     for (Player member : party) {
-                        if (member.isAlive() && member.getHp() > 0) { 
-                            allMembersDefeated = false;
-                            break;
+                        if (member.isAlive() && member.getHp() > 0) {
+                            aliveMembers.add(member);
                         }
                     }
 
-                    if (allMembersDefeated) {
+                    if (aliveMembers.isEmpty()) {
                         logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
                         endGame();
                         return;
