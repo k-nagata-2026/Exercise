@@ -50,10 +50,31 @@ public class Character {
     }
 
     // ★ あいてにこうげきするメソッド（Method）
-    public String attack(Character target,double multiplier) {
+    public String attack(Character target) {
 
-        int temporaryAtk = (int)(this.atk * multiplier); // 攻撃力に倍率をかける
+        if (target instanceof Player && target.guardFlg == 1) { // あいてがガードしているばあい
+            //ダメージを半減する計算
+            int halfDamage = this.atk / 2;
+            target.hp -= halfDamage;
+            if (target.hp < 0) {
+                target.hp = 0; // HPがマイナス（Minus）にならないようにする
+            }
+            return this.name + " のこうげき！ " + target.getName()
+                   + " はガードしている！ ダメージを" + halfDamage + "におさえた！\n";
+        }else {
+            // あいてのHPをじぶんのこうげきりょくぶんへらす（Decrease）
+            target.hp -= this.atk;
+            if (target.hp < 0) {
+                target.hp = 0; // HPがマイナス（Minus）にならないようにする
+            }
+            return this.name + " のこうげき！ " + target.getName()
+               + " に " +  this.atk + " のダメージ（Damage）！\n";
+        }
+    }
 
+    //倍率をかけて攻撃するメソッド（Method）
+    public String skill(Character target, double multiplier) {
+        int temporaryAtk = (int)(this.atk * multiplier);
         if (target instanceof Player && target.guardFlg == 1) { // あいてがガードしているばあい
             //ダメージを半減する計算
             int halfDamage = temporaryAtk / 2;
@@ -61,10 +82,9 @@ public class Character {
             if (target.hp < 0) {
                 target.hp = 0; // HPがマイナス（Minus）にならないようにする
             }
-
             return this.name + " のこうげき！ " + target.getName()
                    + " はガードしている！ ダメージを" + halfDamage + "におさえた！\n";
-        }else {
+        } else {
             // あいてのHPをじぶんのこうげきりょくぶんへらす（Decrease）
             target.hp -= temporaryAtk;
             if (target.hp < 0) {

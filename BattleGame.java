@@ -185,10 +185,10 @@ public class BattleGame extends JFrame {
                 newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0);
                 newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
             } else if(selectedCharacter.equals("魔法使い(WIZARD)")) {
-                newPlayer = new Player("魔法使い(WIZARD)", 45, 25, 50,"mahoutsukai_man.png", 0);
+                newPlayer = new Player("魔法使い(WIZARD)", 45, 5, 50,"mahoutsukai_man.png", 0);
                 newPlayer.learnSkill("炎魔法", 0.5, "全体攻撃");
             } else if(selectedCharacter.equals("騎士(KNIGHT)")) {
-                newPlayer = new Player("騎士(KNIGHT)", 65, 30, 25,"knight.png",0);
+                newPlayer = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0);
                 newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
             }else if (selectedCharacter.equals("盗賊(THIEF)")) {
                 newPlayer = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0);
@@ -198,10 +198,12 @@ public class BattleGame extends JFrame {
                 newPlayer.learnSkill("召喚", 1.0, "全体攻撃");
             }else if (selectedCharacter.equals("祈祷師(SHAMAN)")){
                 newPlayer = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0);
-                newPlayer.learnSkill("攻撃力UP", 1.0, "単体バフ");
+                newPlayer.learnSkill("攻撃力UP", 1.5, "単体バフ");
+                newPlayer.learnSkill("魔力UP", 1.5, "単体バフ");
             } else {
                 newPlayer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0);
                 newPlayer.learnSkill("回復", 1.0, "単体回復");
+                newPlayer.learnSkill("全体回復", 0.5, "全体回復");
             }
             party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
             // 選んだキャラクターを選択肢から削除する
@@ -210,7 +212,6 @@ public class BattleGame extends JFrame {
 
         //4人選び終わったら、最初のキャラクターをプレイヤーとしてセットする
         player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
-        //playerImageLabel.setIcon(party.get(0).getIcon()); // プレイヤーのがぞうをせっていする
         
         JOptionPane.showMessageDialog(this,  " 4人パーティが結成されました。" ,"パーティ結成", JOptionPane.INFORMATION_MESSAGE); // 選んだキャラクターをひょうじする
 
@@ -501,8 +502,12 @@ public class BattleGame extends JFrame {
                         }
                     }
                     if (aliveEnemy != null) {
-                        String result = player.attack(aliveEnemy, selectedSkill.getMultiplier());
-                        logTextArea.append(result);
+                        int damage = (int) (player.getAtk() * selectedSkill.getMultiplier());
+                        aliveEnemy.hp -= damage;
+                        if (aliveEnemy.hp < 0) {
+                            aliveEnemy.hp = 0; // HPがマイナスにならないようにする
+                        }
+                        logTextArea.append(player.getName() + " の攻撃！ " + aliveEnemy.getName() + " に " + damage + " のダメージ！\n");
                         if (!aliveEnemy.isAlive()) {
                             logTextArea.append(aliveEnemy.getName() + " をたおした！\n");
                             int index = enemyParty.indexOf(aliveEnemy);
@@ -514,8 +519,12 @@ public class BattleGame extends JFrame {
                     //全体攻撃の場合、すべての生きている敵に攻撃する
                     for (Enemy enemyInside : enemyParty) {
                         if (enemyInside.isAlive()) {
-                            String result = player.attack(enemyInside, selectedSkill.getMultiplier());
-                            logTextArea.append(result);
+                            int damage = (int) (player.getMgc() * selectedSkill.getMultiplier());
+                            enemyInside.hp -= damage;
+                            if (enemyInside.hp < 0) {
+                                enemyInside.hp = 0;
+                            }
+                            logTextArea.append(player.getName() + " の攻撃！ " + enemyInside.getName() + " に " + damage + " のダメージ！\n");
                             if (!enemyInside.isAlive()) {
                                 logTextArea.append(enemyInside.getName() + " をたおした！\n");
                                 int index = enemyParty.indexOf(enemyInside);
@@ -524,20 +533,93 @@ public class BattleGame extends JFrame {
                         }
                     }
                 } else if (selectedSkill.getType().equals("単体回復")) {
-                    //単体回復の場合、プレイヤー自身を回復する
-                    int healAmount = (int) (player.getMaxHp() * selectedSkill.getMultiplier());
-                    player.hp += healAmount;
-                    logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
-                    if (player.hp > player.getMaxHp()) {
-                        player.hp = player.getMaxHp(); // 最大HPを超えないようにする
+                    //味方全員の選択肢を出す
+                    String[] partyNames = new String[party.size()];
+                    for (int i = 0; i < party.size(); i++) {
+                        partyNames[i] = party.get(i).getName() + " (HP: " + party.get(i).getHp() + "/" + party.get(i).getMaxHp() + ")";
                     }
-                    logTextArea.append(player.getName() + " は " + healAmount + " 回復した！\n");
 
+                    int targetChoice = JOptionPane.showOptionDialog(
+                        BattleGame.this,
+                        "誰を回復する？",
+                        "回復対象の選択",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        partyNames,
+                        partyNames[currentPlayerIndex]
+                    );
+
+                    if (targetChoice != JOptionPane.CLOSED_OPTION) {
+                        Player targetPlayer = party.get(targetChoice);//選んだ味方を取得する
+
+                        if (targetPlayer.isAlive()) {
+                            int healAmount = (int) (player.getMaxHp() * selectedSkill.getMultiplier());
+                            party.get(targetChoice).hp += healAmount;
+                            logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
+                            if (party.get(targetChoice).hp > party.get(targetChoice).getMaxHp()) {
+                                party.get(targetChoice).hp = party.get(targetChoice).getMaxHp(); // 最大HPを超えないようにする
+                            }
+                            logTextArea.append(player.getName() + " は " + targetPlayer.getName() + " を " + healAmount + " 回復した！\n");
+                        } else {
+                            logTextArea.append(targetPlayer.getName() + " はたおれているため回復できない！\n");
+                        }
+                        
+                    }
+                } else if (selectedSkill.getType().equals("全体回復")) {
+                    //全体回復の場合、すべての生きている味方を回復する
+                    for (Player member : party) {
+                        if (member.isAlive()) {
+                            int healAmount = (int) (player.getMaxHp() * selectedSkill.getMultiplier());
+                            member.hp += healAmount;
+                            if (member.hp > member.getMaxHp()) {
+                                member.hp = member.getMaxHp(); // 最大HPを超えないようにする
+                            }
+                            logTextArea.append( member.getName() + " のHPを " + healAmount + " 回復した！\n");
+                        }
+                    }
                 } else if (selectedSkill.getType().equals("単体バフ")) {
-                    //単体バフの場合、プレイヤー自身にバフをかける
-                    player.atk = (int) (player.getAtk() * selectedSkill.getMultiplier());
-                    logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
-                    logTextArea.append(player.getName() + " の攻撃力が " + player.getAtk() + " に上がった！\n");
+                    //スキル名に魔力が入っているか確認する
+                    boolean isMagicBuff = selectedSkill.getName().contains("魔力");
+
+                    //味方全員の選択肢を出す
+                    String[] partyNames = new String[party.size()];
+                    for (int i = 0; i < party.size(); i++) {
+                        if (isMagicBuff) {
+                            partyNames[i] = party.get(i).getName() + " (MGC: " + party.get(i).getMgc() + ")";
+                        } else {
+                            partyNames[i] = party.get(i).getName() + " (ATK: " + party.get(i).getAtk() + ")";
+                        }
+                    }
+
+                    int targetChoice = JOptionPane.showOptionDialog(
+                        BattleGame.this,
+                        "誰にバフをかける？",
+                        "バフ対象の選択",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        partyNames,
+                        partyNames[currentPlayerIndex]
+                    );
+
+                    if (targetChoice != JOptionPane.CLOSED_OPTION) {
+                        Player targetPlayer = party.get(targetChoice);
+
+                        if (targetPlayer.isAlive()) {
+                            if (isMagicBuff) {
+                                targetPlayer.mgc = (int) (targetPlayer.getMgc() * selectedSkill.getMultiplier());
+                                logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
+                                logTextArea.append(targetPlayer.getName() + " の魔力が " + targetPlayer.getMgc() + " に上がった！\n");
+                            } else {
+                                targetPlayer.atk = (int) (targetPlayer.getAtk() * selectedSkill.getMultiplier());
+                                logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
+                                logTextArea.append(targetPlayer.getName() + " の攻撃力が " + targetPlayer.getAtk() + " に上がった！\n");
+                            }
+                        } else {
+                            logTextArea.append(targetPlayer.getName() + " はたおれているためバフをかけられない！\n");
+                        }
+                    }
                 }
                 updateDisplay();
 
