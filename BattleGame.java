@@ -11,11 +11,11 @@ public class BattleGame extends JFrame implements KeyListener {
     private JLabel playerImageLabel; 
     private JLabel enemyImageLabel; 
 
-    // Visual Effect: ड्यामेज संख्या तैरिने लेबलहरू
+
     private JLabel playerDamageLabel;
     private JLabel enemyDamageLabel;
 
-    // UI Improvement: प्रोग्रेस बारहरू (Life & Magic Bars)
+
     private JProgressBar playerHpBar;
     private JProgressBar playerMpBar;
     private JProgressBar enemyHpBar;
@@ -84,7 +84,6 @@ public class BattleGame extends JFrame implements KeyListener {
         playerImageLabel.setBounds(playerX, playerY, 500, 500); 
         enemyImageLabel.setBounds(enemyX, enemyY, 500, 500); 
 
-        // Floating ड्यामेज टेक्स्ट सेटअप
         playerDamageLabel = new JLabel("", JLabel.CENTER);
         playerDamageLabel.setFont(new Font("Arial", Font.BOLD, 42));
         playerDamageLabel.setForeground(Color.RED);
@@ -479,7 +478,6 @@ public class BattleGame extends JFrame implements KeyListener {
         
         logTextArea.append("💚 アイテムを使用！ " + player.getName() + " のHPが " + healedAmount + " 回復した！\n");
         
-        // हरियो रङमा प्लस (+) नम्बर देखाउने
         playerDamageLabel.setForeground(new Color(34, 139, 34)); 
         showDamageText(playerDamageLabel, "+" + healedAmount);                
 
@@ -487,7 +485,6 @@ public class BattleGame extends JFrame implements KeyListener {
         comboCount = 0; 
         updateDisplay();
 
-        // शत्रुको पालोलाई १ सेकेन्ड ढिलो गराउने ताकि +१०० मज्जाले देखियोस्
         Timer delayEnemyTimer = new Timer(1000, ev -> {
             executeEnemyTurn();
         });
@@ -506,7 +503,6 @@ public class BattleGame extends JFrame implements KeyListener {
         String enemyResult = enemy.attack(player, isPlayerDefending || passiveGuard);
         int damageTaken = oldHp - player.getHp();
         
-        // शत्रुले साच्चिकै ड्यामेज दिएको भए मात्र रातो माइनस देखाउने
         if (damageTaken > 0) {
             playerDamageLabel.setForeground(Color.RED);
             showDamageText(playerDamageLabel, "-" + damageTaken);
