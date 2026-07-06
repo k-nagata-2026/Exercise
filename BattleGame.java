@@ -1,4 +1,9 @@
 import java.awt.*;
+import java.io.File;
+
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 
 public class BattleGame extends JFrame {
@@ -26,9 +31,22 @@ public class BattleGame extends JFrame {
     private final int MAX_SKILL_USE = 2;
     
 
+    private void playSound(String fileName) {
+    try {
+        AudioInputStream audioInputStream =
+                AudioSystem.getAudioInputStream(new File(fileName));
 
+        Clip clip = AudioSystem.getClip();
+        clip.open(audioInputStream);
+        clip.start();
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
     
      private void showVictoryScreen() {
+        playSound("sounds/victory.wav");
 
     JFrame victoryFrame = new JFrame("GAME CLEAR!");
     victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -69,6 +87,7 @@ public class BattleGame extends JFrame {
 
       
  private void showGameOverScreen() {
+    playSound("sounds/gameover.wav");
 
     JFrame gameOverFrame = new JFrame("GAME OVER");
     gameOverFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -223,18 +242,12 @@ private void shakePlayer() {
         add(backgroundLabel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
 
-        hpBar = new JProgressBar();
-hpBar.setBounds(40, 40, 300, 25);
-hpBar.setMaximum(player.getMaxHp());
-hpBar.setValue(player.getHp());
-
-hpBar.setStringPainted(true);
-hpBar.setForeground(Color.GREEN);
-
-add(hpBar);
-
+       
         // ボタンの処理
         attackButton.addActionListener(e -> {
+
+            String playerResult = player.attack(enemy);
+          logTextArea.append(playerResult);
             String playerResult = player.attack(enemy);
            shakePlayer();
             logTextArea.append(playerResult);
@@ -249,6 +262,8 @@ add(hpBar);
                 if (!player.isAlive()) {
                     logTextArea.append(player.getName() + " はたおれた…     ゲームオーバー(GAME OVER)\n");
                     playerImageLabel.setEnabled(false);
+
+                    playSound("sounds/attack.wav");
 
                     showGameOverScreen();
 
@@ -267,6 +282,7 @@ add(hpBar);
     }
 
     skillUseCount++;
+    playSound("sounds/skill.wav");
 
     String result = player.skillAttack(enemy);   // timro skill method ko naam
     logTextArea.append(result + "\n");
@@ -280,6 +296,7 @@ add(hpBar);
 });
 
        potionButton.addActionListener(e -> {
+        playSound("sounds/potion.wav");
 
     if (potionUseCount >= MAX_POTION_USE) {
         JOptionPane.showMessageDialog(this,
@@ -300,6 +317,17 @@ add(hpBar);
         // 初期化
         choicePlayer();
         spawnEnemy();
+         hpBar = new JProgressBar();
+     playerHpBar.setBounds(40, 40, 100, 25);
+     playerHpBar.setMaximum(player.getMaxHp());
+     playerHpBar.setValue(player.getHp());
+
+    playerHpBar.setStringPainted(true);
+    playerHpBar.setForeground(Color.GREEN);
+    backgroundLabel.add(hpBar);
+
+    add(hpBar);
+
         playerImageLabel.setIcon(player.getIcon());
         enemyImageLabel.setIcon(enemy.getIcon());
         updateDisplay();
@@ -307,6 +335,7 @@ add(hpBar);
     }
 
   private void handleEnemyDefeat() {
+    playSound("sounds/enemy_dead.wav");
 
     logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
 
@@ -341,24 +370,30 @@ add(hpBar);
                 "【%s】Lv.%d HP: %d/%d  vs  【%s】 Lv.%d HP: %d/%d",
                 player.getName(), player.getLevel(), player.getHp(), player.getMaxHp(),
                 enemy.getName(), enemy.getLevel(), enemy.getHp(), enemy.getMaxHp()));
+                
+               playerHpBar.setMaximum(player.getMaxHp());
+playerHpBar.setValue(player.getHp());
+
+if (player.getHp() > player.getMaxHp() * 0.6) {
+    playerHpBar.setForeground(Color.GREEN);
+} else if (player.getHp() > player.getMaxHp() * 0.3) {
+    playerHpBar.setForeground(Color.ORANGE);
+} else {
+    playerHpBar.setForeground(Color.RED);
+}
     }
+    
+       
 
     private void endGame() {
         attackButton.setEnabled(false); // ボタンをむこうか
         logTextArea.append("【ゲームしゅうりょう】ウィンドウをとじてください。\n");
     }
-    hpBar.setMaximum(player.getMaxHp());
-hpBar.setValue(player.getHp());
 
-if (player.getHp() > player.getMaxHp() * 0.6) {
-    hpBar.setForeground(Color.GREEN);
-} else if (player.getHp() > player.getMaxHp() * 0.3) {
-    hpBar.setForeground(Color.ORANGE);
-} else {
-    hpBar.setForeground(Color.RED);
-}
 
     private void choicePlayer() {
+
+
         // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1
 
         // でかえってくる）
