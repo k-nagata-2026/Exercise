@@ -6,7 +6,6 @@ import java.util.List;
 import javax.swing.*;
 
 public class BattleGame extends JFrame {
-    //private JLabel statusLabel;       // HPなどをひょうじするラベル（Label）
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
     private JButton skillButton;      // スキルコマンドボタン（Command Button）
     private JButton runButton;        // 逃げるコマンドボタン
@@ -15,6 +14,7 @@ public class BattleGame extends JFrame {
     private JProgressBar[] playerHpBars = new JProgressBar[4]; // プレイヤーのHPをひょうじするプログレスバー（Progress Bar）
     private JProgressBar[] enemyHpBars = new JProgressBar[5];  // 敵のHPをひょうじするプログレスバー（Progress Bar）
     private JPanel statusPanel; // ステータスをひょうじするパネル（Panel）
+    private ImageIcon currentBackgroundImage; // 現在の背景画像を保持するフィールド
 
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // 背景画像のラベル
@@ -31,6 +31,7 @@ public class BattleGame extends JFrame {
     private int currentPlayerIndex = 0; // 今何人目のプレイヤーのターンかを数えるためのフィールド（０から３）
     private CardLayout cardLayout;//画面の切り替えに必要な部品
     private JPanel mainPanel;//画面の切り替えに必要な部品
+    private int retryCount = 1; // リトライ回数を数えるためのフィールド
 
     public BattleGame() {
         setTitle("ターン制コマンドバトル");
@@ -160,6 +161,14 @@ public class BattleGame extends JFrame {
         while (party.size() < 4) {
             int correctMemberNom = party.size() + 1; // 正しいメンバー番号（1から始まる）
 
+            //選択肢リストを一時的に作成
+            java.util.List<String> currentButton = new java.util.ArrayList<>(availableOptions);
+
+            //2人目以降を選んでいるときに「1人前に戻る」ボタンを追加する
+            if (party.size() > 0) {
+                currentButton.add("1人前に戻る(BACK)");
+            }
+
             int choice = JOptionPane.showOptionDialog(
                 this,
                 "キャラクターを選んでください（" + correctMemberNom + "人目）",
@@ -167,7 +176,7 @@ public class BattleGame extends JFrame {
                 JOptionPane.DEFAULT_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
-                availableOptions.toArray(new String[0]),
+                currentButton.toArray(new String[0]),
                 null
             );
 
@@ -231,6 +240,10 @@ public class BattleGame extends JFrame {
         int numberOfEnemies = 1;//出現する敵の数
 
         if (enemyCount == 1) {
+           if (backgroundLabel != null) {
+                //背景画像を変更する
+                backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのダンジョン.jpg"));
+            }
             numberOfEnemies = (int)(Math.random() * 5) + 1;
             logTextArea.append("第一戦　スライムが" + numberOfEnemies + "体あらわれた！\n");
 
@@ -240,6 +253,10 @@ public class BattleGame extends JFrame {
                 enemyParty.add(new Enemy("スライム" + suffix, 20, 5, 5,"fantasy_game_character_slime.png"));
             }
         } else if (enemyCount == 2) {
+            if (backgroundLabel != null) {
+                //背景画像を変更する
+                backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルの森.jpg"));
+            }
             numberOfEnemies = (int)(Math.random() * 5) + 1;
             logTextArea.append("第二戦　ゴブリンが" + numberOfEnemies + "体あらわれた！\n");
 
@@ -248,6 +265,10 @@ public class BattleGame extends JFrame {
                 enemyParty.add(new Enemy("ゴブリン" + suffix, 25, 10, 5, "fantasy_goblin.png"));
             }
         } else if (enemyCount == 3) {
+            if (backgroundLabel != null) {
+                //背景画像を変更する
+                backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのボス.jpg"));
+            }
             //ドラゴンは一体だけに固定
             numberOfEnemies = 1;
             logTextArea.append("最終決戦　伝説の ドラゴン があらわれた！\n");
@@ -776,7 +797,7 @@ public class BattleGame extends JFrame {
 
                     if (aliveMembers.isEmpty()) {
                         logTextArea.append("パーティーは全滅した… ゲームオーバー\n");
-                        endGame();
+                        gameScreen(3);
                         return;
                     } else {
                         //全員死んでいないなら、生きているキャラクターと交代
@@ -912,9 +933,57 @@ public class BattleGame extends JFrame {
         label.setFont(new Font("MS　ゴシック",Font.BOLD,32));
         label.setForeground(Color.WHITE);
 
-        JButton retryButton = new JButton("さっきの戦闘をやり直す(RETRY)");
-        JButton restartButton = new JButton("最初から始める(RESTART)");
+        JButton retryButton = new JButton("不屈の闘志で立ち上がる(RETRY)");
+        JButton restartButton = new JButton("新しい旅を始める(RESTART)");
         JButton quitButton = new JButton("諦める(GIVE UP)");
+
+        //不屈の闘志で立ち上がるボタンを押したら、負けたバトル画面に戻る
+       
+
+        retryButton.addActionListener(e -> {
+            retryCount--;//リトライ回数を減らす
+            if (retryCount <= 0) {
+                retryButton.setEnabled(false);
+                retryButton.setText("不屈の闘志も尽きた(CAN'T RETRY)");
+            }
+            //味方全員のHPを全回復する(alive状態に戻す)
+            for (Player member : party) {
+                member.hp = member.getMaxHp();
+            }
+
+            //味方全員のグレーアウトを解除する
+            for (int i = 0; i < 4; i++) {
+                playerImageLabels[i].setEnabled(true);
+            }
+
+            //メンバーのインデックスを最初のプレイヤーに戻す
+            currentPlayerIndex = 0;
+            player = party.get(0);
+
+            //敵のスポーンをやり直す
+            spawnEnemy();
+            enemyIcon();
+            //バトル画面に再度移動
+            cardLayout.show(mainPanel, "BATTLE");
+        });
+
+        //新しい旅を始めるボタンを押したら、タイトル画面に戻る
+        restartButton.addActionListener(e -> {
+            //味方全員のHPを全回復する(alive状態に戻す)
+            for (Player member : party) {
+                member.hp = member.getMaxHp();
+            }
+            //メンバーのインデックスを最初のプレイヤーに戻す
+            currentPlayerIndex = 0;
+            player = party.get(0);
+
+            //敵のスポーンをやり直す
+            enemyCount = 1; //敵のカウントをリセット
+            spawnEnemy();
+            enemyIcon();
+            //タイトル画面に戻る
+            cardLayout.show(mainPanel, "TITLE");
+        });
 
         //諦めるボタンを押したら、ウィンドウごと閉じる
         quitButton.addActionListener(e -> System.exit(0));
@@ -945,6 +1014,44 @@ public class BattleGame extends JFrame {
         JButton replayButton = new JButton("もう一回世界を救う？(PLAY AGAIN)");
         JButton endButton = new JButton("終わる(FINISH)");
 
+        //まだ冒険を続けるボタンを押したら、タイトル画面に戻る
+        continueButton.addActionListener(e -> {     
+            //味方全員のHPを全回復する(alive状態に戻す)
+            for (Player member : party) {
+                member.hp = member.getMaxHp();
+            }
+            //メンバーのインデックスを最初のプレイヤーに戻す
+            currentPlayerIndex = 0;
+            player = party.get(0);
+
+            //敵のスポーンをやり直す
+            enemyCount = 1; //敵のカウントをリセット
+            spawnEnemy();
+            enemyIcon();
+            //タイトル画面に戻る
+            cardLayout.show(mainPanel, "TITLE");
+        });
+
+        //もう一回世界を救うボタンを押したら、タイトル画面に戻る
+        replayButton.addActionListener(e -> {
+            //味方全員のHPを全回復する(alive状態に戻す)
+            for (Player member : party) {
+                member.hp = member.getMaxHp();
+            }
+            //メンバーのインデックスを最初のプレイヤーに戻す
+            currentPlayerIndex = 0;
+            player = party.get(0);
+
+            //敵のスポーンをやり直す
+            enemyCount = 1; //敵のカウントをリセット
+            retryCount = 1; //リトライ回数をリセット
+            spawnEnemy();
+            enemyIcon();
+            //バトル画面に再度移動
+            cardLayout.show(mainPanel, "TITLE");
+        });
+
+        //終わるボタンを押したら、ウィンドウごと閉じる
         endButton.addActionListener(e -> System.exit(0));
 
         JPanel menu = new JPanel(new GridLayout(5,1,0,15));
