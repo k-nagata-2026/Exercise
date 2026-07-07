@@ -1,6 +1,5 @@
 import java.awt.*;
 import java.io.File;
-
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
@@ -245,10 +244,9 @@ private void shakePlayer() {
        
         // ボタンの処理
         attackButton.addActionListener(e -> {
-
+         playSound("attack.wav");
             String playerResult = player.attack(enemy);
           logTextArea.append(playerResult);
-            String playerResult = player.attack(enemy);
            shakePlayer();
             logTextArea.append(playerResult);
             updateDisplay();
@@ -410,7 +408,7 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
                 null);
 
         if (choice == 0) {
-            player = new Player("BHOLA（Hero）", 200, 20, 10, 10, 30, "BHOLA.png");
+            player = new Player("BHOLA（Hero）", 150, 20, 10, 10, 30, "BHOLA.png");
         } else if (choice == 1) {
             player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
         } else if (choice == 2) {
