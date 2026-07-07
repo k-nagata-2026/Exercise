@@ -4,6 +4,7 @@ import java.util.List;
 public class Player extends Character {
     //プレイヤーが覚えている技のリスト
     private List<Skill> skills;
+    public boolean isCovered = false;//かばう
 
     //コンストラクタ
     public Player(String name, int hp, int atk, int mgc, String imagePath, int guardFlg) {

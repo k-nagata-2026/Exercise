@@ -32,6 +32,7 @@ public class BattleGame extends JFrame {
     private CardLayout cardLayout;//画面の切り替えに必要な部品
     private JPanel mainPanel;//画面の切り替えに必要な部品
     private int retryCount = 1; // リトライ回数を数えるためのフィールド
+    private Player coveringPlayer; // かばうを使ったプレイヤーを保持するフィールド
 
     public BattleGame() {
         setTitle("ターン制コマンドバトル");
@@ -203,12 +204,14 @@ public class BattleGame extends JFrame {
             if (selectedCharacter.equals("勇者(HERO)")) {
                 newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0);
                 newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
+                newPlayer.learnSkill("かばう", 0.25, "かばう");
             } else if(selectedCharacter.equals("魔法使い(WIZARD)")) {
                 newPlayer = new Player("魔法使い(WIZARD)", 45, 5, 50,"mahoutsukai_man.png", 0);
                 newPlayer.learnSkill("炎魔法", 0.5, "全体攻撃");
             } else if(selectedCharacter.equals("騎士(KNIGHT)")) {
                 newPlayer = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0);
                 newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
+                newPlayer.learnSkill("かばう", 0.25, "かばう");
             }else if (selectedCharacter.equals("盗賊(THIEF)")) {
                 newPlayer = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0);
                 newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
@@ -651,9 +654,13 @@ public class BattleGame extends JFrame {
                             logTextArea.append(targetPlayer.getName() + " はたおれているためバフをかけられない！\n");
                         }
                     }
+                } else if (selectedSkill.getType().equals("かばう")) {
+                    //クラスのメンバー変数として用意したcoveringPlayerに現在のプレイヤーをセットする
+                    coveringPlayer = player;
+                    //かばうを使ったログを表示
+                    logTextArea.append(player.getName() + " は仲間をかばった！\n");
                 }
                 updateDisplay();
-
 
                 // 2. エネミーがたおれたかチェック（Check）
                 //敵が全員倒れたかチェック
@@ -701,19 +708,45 @@ public class BattleGame extends JFrame {
                                 break;
                             }
 
-                            //ランダムに生きているプレイヤーを選ぶ
-                            int randomIndex = (int)(Math.random() * aliveMembers.size());
-                            Player targetPlayer = aliveMembers.get(randomIndex);
+                            //プレイヤーターゲット変数を先に用意
+                            Player tergetPlayer = null;
+                            boolean isCovered = false;//かばうが発動したかどうかの目印
 
-                            //現在のプレイヤーに攻撃する
-                            String aliveEnemyResult = enemyInside.attack(targetPlayer);
-                            logTextArea.append(aliveEnemyResult);
+                            //もしかばっている人がいて、その人が生きている場合
+                            if (coveringPlayer != null && aliveMembers.contains(coveringPlayer)) {
+                                tergetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
+                                isCovered = true;//かばうフラグON
+                                logTextArea.append(tergetPlayer.getName() + "がかばった！\n");
+                            } else {
+                                //ランダムに生きているプレイヤーを選ぶ
+                                int randomIndex = (int)(Math.random() * aliveMembers.size());
+                                tergetPlayer = aliveMembers.get(randomIndex);
+                            }
+
+                            //敵の攻撃のコード
+                            if (isCovered) {
+                                //かばう専用の攻撃コード
+                                int damage = (int)(enemyInside.getAtk() * 0.25);
+                                if (damage < 1) damage = 1;
+
+                                tergetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
+                                if (tergetPlayer.hp < 0)tergetPlayer.hp = 0;
+
+                                logTextArea.append(tergetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+
+                            } else {
+                                //通常の攻撃コード
+                                String aliveEnemyResult = enemyInside.attack(tergetPlayer);
+                                logTextArea.append(aliveEnemyResult);
+                            }
 
                             //一体ごとに画面を更新
                             updateDisplay();
                             updatePlayerVisuals();
                         }
                     }
+                    //敵のターン終了時にかばうを終了する
+                    coveringPlayer = null;
                 }
 
                 // ５. プレイヤーがたおれたかチェック
@@ -761,36 +794,64 @@ public class BattleGame extends JFrame {
                 switchNextPlayer();
 
                 //４．敵のターン
-                if (currentPlayerIndex <= oldIndex) {
+                if (currentPlayerIndex <= oldIndex){
                     logTextArea.append("敵のターンだ！\n");
                     //敵パーティをループで回す
                     for (Enemy enemyInside : enemyParty) {
                         //生きている敵は攻撃する
                         if(enemyInside.isAlive()){
-                            //敵の攻撃でプレイヤーが全滅したら終わる
+                            //生きている味方だけをリストに集める
                             java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                             for (Player member : party) {
                                 if (member.isAlive() && member.getHp() > 0) {
                                     aliveMembers.add(member);
                                 }
                             }
+
+                            //プレイヤーが全滅していたら攻撃をやめる
                             if (aliveMembers.isEmpty()) {
-                                break;//全滅していたらループを抜ける
+                                break;
                             }
 
-                            //生きているプレイヤーをランダムで選ぶ
-                            int randomIndex = (int)(Math.random() * aliveMembers.size());
-                            Player targetPlayer = aliveMembers.get(randomIndex);
+                            //プレイヤーターゲット変数を先に用意
+                            Player tergetPlayer = null;
+                            boolean isCovered = false;//かばうが発動したかどうかの目印
 
-                            //選んだプレイヤーに攻撃する
-                            String aliveEnemyResult = enemyInside.attack(targetPlayer);
-                            logTextArea.append(aliveEnemyResult);
+                            //もしかばっている人がいて、その人が生きている場合
+                            if (coveringPlayer != null && aliveMembers.contains(coveringPlayer)) {
+                                tergetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
+                                isCovered = true;//かばうフラグON
+                                logTextArea.append(tergetPlayer.getName() + "がかばった！\n");
+                            } else {
+                                //ランダムに生きているプレイヤーを選ぶ
+                                int randomIndex = (int)(Math.random() * aliveMembers.size());
+                                tergetPlayer = aliveMembers.get(randomIndex);
+                            }
+
+                            //敵の攻撃のコード
+                            if (isCovered) {
+                                //かばう専用の攻撃コード
+                                int damage = (int)(enemyInside.getAtk() * 0.25);
+                                if (damage < 1) damage = 1;
+
+                                tergetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
+                                if (tergetPlayer.hp < 0)tergetPlayer.hp = 0;
+
+                                logTextArea.append(tergetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+
+                            } else {
+                                //通常の攻撃コード
+                                String aliveEnemyResult = enemyInside.attack(tergetPlayer);
+                                logTextArea.append(aliveEnemyResult);
+                            }
 
                             //一体ごとに画面を更新
                             updateDisplay();
                             updatePlayerVisuals();
                         }
                     }
+                    //敵のターン終了時にかばうを終了する
+                    coveringPlayer = null;
                 }
 
                 // ５. プレイヤーがたおれたかチェック
@@ -838,37 +899,65 @@ public class BattleGame extends JFrame {
                 switchNextPlayer();
 
                 //４．敵のターン
-                if (currentPlayerIndex <= oldIndex) {
+                if (currentPlayerIndex <= oldIndex){
                     logTextArea.append("敵のターンだ！\n");
                     //敵パーティをループで回す
                     for (Enemy enemyInside : enemyParty) {
                         //生きている敵は攻撃する
                         if(enemyInside.isAlive()){
-                            //敵の攻撃でプレイヤーが全滅したら終わる
+                            //生きている味方だけをリストに集める
                             java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                             for (Player member : party) {
                                 if (member.isAlive() && member.getHp() > 0) {
                                     aliveMembers.add(member);
                                 }
                             }
+
+                            //プレイヤーが全滅していたら攻撃をやめる
                             if (aliveMembers.isEmpty()) {
-                                break;//全滅していたらループを抜ける
+                                break;
                             }
 
-                            //生きているプレイヤーをランダムで選ぶ
-                            int randomIndex = (int)(Math.random() * aliveMembers.size());
-                            Player targetPlayer = aliveMembers.get(randomIndex);
+                            //プレイヤーターゲット変数を先に用意
+                            Player tergetPlayer = null;
+                            boolean isCovered = false;//かばうが発動したかどうかの目印
 
-                            //選んだプレイヤーに攻撃する
-                            String aliveEnemyResult = enemyInside.attack(targetPlayer);
-                            logTextArea.append(aliveEnemyResult);
+                            //もしかばっている人がいて、その人が生きている場合
+                            if (coveringPlayer != null && aliveMembers.contains(coveringPlayer)) {
+                                tergetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
+                                isCovered = true;//かばうフラグON
+                                logTextArea.append(tergetPlayer.getName() + "がかばった！\n");
+                            } else {
+                                //ランダムに生きているプレイヤーを選ぶ
+                                int randomIndex = (int)(Math.random() * aliveMembers.size());
+                                tergetPlayer = aliveMembers.get(randomIndex);
+                            }
+
+                            //敵の攻撃のコード
+                            if (isCovered) {
+                                //かばう専用の攻撃コード
+                                int damage = (int)(enemyInside.getAtk() * 0.25);
+                                if (damage < 1) damage = 1;
+
+                                tergetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
+                                if (tergetPlayer.hp < 0)tergetPlayer.hp = 0;
+
+                                logTextArea.append(tergetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+
+                            } else {
+                                //通常の攻撃コード
+                                String aliveEnemyResult = enemyInside.attack(tergetPlayer);
+                                logTextArea.append(aliveEnemyResult);
+                            }
 
                             //一体ごとに画面を更新
                             updateDisplay();
                             updatePlayerVisuals();
                         }
                     }
-                }  
+                    //敵のターン終了時にかばうを終了する
+                    coveringPlayer = null;
+                }
 
                 // ５. プレイヤーがたおれたかチェック
                 if (!player.isAlive()) {
