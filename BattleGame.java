@@ -185,7 +185,17 @@ public class BattleGame extends JFrame {
                 System.exit(0);
             }
 
-            String selectedCharacter = availableOptions.get(choice);
+            //「1人前に戻る」を選んだ場合の処理
+            if (party.size() > 0 && choice == currentButton.size() - 1) {
+                Player lastSelected = party.remove(party.size() - 1); // 最後のプレイヤーを削除
+                availableOptions.add(lastSelected.getName()); // 選択肢に戻す
+                //お手本リスト
+                java.util.List<String> defaultOrder = java.util.Arrays.asList("勇者(HERO)", "魔法使い(WIZARD)", "騎士(KNIGHT)", "盗賊(THIEF)", "召喚士(SUMMONER)", "祈祷師(SHAMAN)", "回復術師(HEALER)");
+                java.util.Collections.sort(availableOptions, java.util.Comparator.comparingInt(defaultOrder::indexOf)); // デフォルトの順序に従って並べ替える
+                continue; // ループの先頭に戻る
+            }
+
+            String selectedCharacter = currentButton.get(choice);
 
             Player newPlayer = null;
 
