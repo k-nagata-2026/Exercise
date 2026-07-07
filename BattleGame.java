@@ -1,6 +1,8 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
+import javax.sound.sampled.*; 
 import javax.swing.*;
 
 public class BattleGame extends JFrame implements KeyListener {
@@ -11,10 +13,8 @@ public class BattleGame extends JFrame implements KeyListener {
     private JLabel playerImageLabel; 
     private JLabel enemyImageLabel; 
 
-
     private JLabel playerDamageLabel;
     private JLabel enemyDamageLabel;
-
 
     private JProgressBar playerHpBar;
     private JProgressBar playerMpBar;
@@ -66,6 +66,8 @@ public class BattleGame extends JFrame implements KeyListener {
 
     private final int WINDOW_WIDTH = 1220;
     private final int WINDOW_HEIGHT = 1050;
+
+    private Clip bgmClip; 
 
     public BattleGame() {
         setTitle("本格RPG - ハイブリッド・アンロックバトルシステム + Visual FX");
@@ -253,7 +255,26 @@ public class BattleGame extends JFrame implements KeyListener {
         choicePlayer(); 
         initGameSession(false); 
         
+        playBGM("backgroundmusic.wav");
+
         SwingUtilities.invokeLater(() -> requestFocusInWindow());
+    }
+
+    private void playBGM(String fileName) {
+        try {
+            File soundFile = new File(fileName);
+            if (soundFile.exists()) {
+                AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundFile);
+                bgmClip = AudioSystem.getClip();
+                bgmClip.open(audioStream);
+                bgmClip.loop(Clip.LOOP_CONTINUOUSLY); 
+                bgmClip.start();
+            } else {
+                System.out.println("BGM file not found: " + fileName);
+            }
+        } catch (Exception e) {
+            System.out.println("Error playing BGM: " + e.getMessage());
+        }
     }
 
     private void showDamageText(JLabel label, String text) {
