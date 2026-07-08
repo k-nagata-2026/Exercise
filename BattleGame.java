@@ -302,6 +302,7 @@ public class BattleGame extends JFrame {
         updateDisplay();
         
     }
+
     // ★ せいぞんはんてい（Alive Check）メソッド（HPが0よりおおきければ true）
     public boolean isAlive() {
         return player.hp > 0;
@@ -453,14 +454,52 @@ public class BattleGame extends JFrame {
                 // 0.5 未満（50% の確率）なら逃亡成功とする
                 if (Math.random() < 0.5) {
                     logTextArea.append("うまくにげきれた！\n");
-                    endGame(); // ゲームをしゅうりょう（End）させる
+                    String previousEnemyName = "";//敵の名前を入れる変数
+                    
+                    //ひとつ前に戦っていた敵に戻る
+                    if (enemyCount > 1) {
+                       enemyCount--;
+                       //戻った後のエネミーカウントで名前を決める
+                       if (enemyCount == 1) {
+                        previousEnemyName = "スライム";
+                       } else if (enemyCount == 2){
+                        previousEnemyName = "ゴブリン";
+                       }
+                        logTextArea.append("もう一度" + previousEnemyName + "と戦闘だ！\n");
+                    } else {
+                        logTextArea.append("ここより前には戻れない！\n");
+                    }
+
+                    spawnEnemy();
+                    enemyIcon();
+                    updateDisplay();
+
                 } else {
                     // 逃亡失敗の場合
                     logTextArea.append("しかし にげきれなかった！\n");
 
                     // モンスターのターン（ペナルティとして敵の反撃を受ける）
-                    String monsterResult = enemy.attack(player);
-                    logTextArea.append(monsterResult);
+                    Enemy attacker = null;
+                    for (Enemy eInside : enemyParty) {
+                        if (eInside.isAlive()) {
+                            attacker = eInside;
+                            break;
+                        }
+                    }
+                    
+                    //生きている敵がいたら攻撃
+                    if (attacker != null) {
+                        logTextArea.append(attacker.getName() + "が背後から襲い掛かる！\n");
+                        int originalAtk = attacker.getAtk();
+                        int escapeFailAtk = (int)(originalAtk * 1.5);
+
+                        attacker.setAtk(escapeFailAtk);
+
+                        String monsterResult = attacker.attack(player);
+                        logTextArea.append(monsterResult);
+
+                        attacker.setAtk(originalAtk);
+                    }
                     updateDisplay();
 
                     // プレイヤーが倒れたかチェック
@@ -486,9 +525,8 @@ public class BattleGame extends JFrame {
                         return;
                     
                     }
-                    
-                
-            
+                    switchNextPlayer();
+                    logTextArea.append("次のプレイヤーは" + player.getName() + "だ！\n");
                     logTextArea.append("--------------------------------------------\n");
                 }
             }
