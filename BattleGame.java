@@ -18,6 +18,8 @@ public class BattleGame extends JFrame {
     // ★ キャラクターのインスタンスをよういする
     private Player player;
     private Enemy enemy;
+    private Enemy enemy2;
+    private Enemy enemy3;
     private static int currentplayerlevel = 1;
 
     public BattleGame() {
@@ -79,18 +81,49 @@ public class BattleGame extends JFrame {
                 // 1. プレイヤーのターン（Turn）
                 String playerResult = player.attack(enemy);
                 logTextArea.append(playerResult);
-                updateDisplay();
+                updateDisplay();    
 
-                // 2. エネミーがたおれたかチェック（Check）
-                if (!enemy.isAlive()) {
-                    logTextArea.append("★ " + enemy.getName() + " を倒した！ " + player.getName() + "の勝利！\n");
-                    enemyImageLabel.setEnabled(false); // てきのがぞうをグレーアウト
-                    player.levelUp(); 
-                    logTextArea.append(" レベルアップ！ レベル " + player.getLevel() + " になりました！\n");
-                    updateDisplay();
-                    endGame();
-                    return; // てきがたおれたらここでしょりをしゅうりょう（End）
-                }
+                // 2. エネミーがたおれたかチェック（Check Enemy Dead）
+if (!enemy.isAlive()) {
+    logTextArea.append("★ " + enemy.getName() + " を倒した！ " + player.getName() + "の勝利！\n");
+    player.levelUp(); 
+    logTextArea.append(" レベルアップ！ レベル " + player.getLevel() + " になりました！\n");
+
+    // --- ステージシステム（Stage System Handling） ---
+    if (currentplayerlevel == 1) {
+        // 【ステージ 1 クリア：中ボスが現れる】
+        currentplayerlevel = 2; 
+        player.setHp(player.getMaxHp()); // プレイヤーのHPを満タンに回復
+
+        enemy = enemy2; // 敵をインフェルノドラゴンに変更
+        enemyImageLabel.setIcon(enemy.getIcon()); 
+        updateDisplay(); 
+
+        logTextArea.append("🔥 次のステージ！ 中ボス 「" + enemy.getName() + "」 が現れた！\n");
+        logTextArea.append("--------------------------------------------\n");
+
+    } else if (currentplayerlevel == 2) {
+        // 【ステージ 2 クリア：最終ボスが現れる】
+        currentplayerlevel = 3; 
+        player.setHp(player.getMaxHp()); // プレイヤーのHPを満タンに回復
+
+        enemy = enemy3; // 敵を魔王（Final Boss）に変更
+        enemyImageLabel.setIcon(enemy.getIcon()); 
+        updateDisplay(); 
+
+        logTextArea.append("👿 👑 ついに現れた！ 最終ボス 「" + enemy.getName() + "」 との決戦だ！\n");
+        logTextArea.append("👿 魔王: 'よくぞここまで来ただが、ここがお前の墓場だ！'\n");
+        logTextArea.append("--------------------------------------------\n");
+
+    } else {
+        // 【ステージ 3 クリア：ゲームクリア（Game Clear）】
+        enemyImageLabel.setEnabled(false); 
+        updateDisplay();
+        logTextArea.append("🎉 🎉 おめでとう！ 伝説の魔王を倒し、世界に平和が戻った！\n");
+        endGame();
+    }
+    return; 
+}
 
                 // 3. エネミーのターン（はんげき）
                 String enemyResult = enemy.attack(player);
@@ -109,7 +142,7 @@ public class BattleGame extends JFrame {
             }
         });
 
-        // ★「回復（Heal）ボタン」をおしたときのしょりを独立したブロックでついか
+        // ★「回復（Heal）ボタン」をおしたときのしょり
         healButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -132,22 +165,28 @@ public class BattleGame extends JFrame {
                 logTextArea.append("--------------------------------------------\n");
             }
         });
-
-        // ★「にげる（Escape）ボタン（Button）」をおした（Press）ときのしょり（Process）をついか（Add）
+        // ★「にげる（Escape）ボタン」をおしたときのしょり
         runButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                // 【最終ボス：逃げられない設定】
+                if (currentplayerlevel == 3) {
+                    logTextArea.append("❌ 「" + enemy.getName() + "」 からは逃げられない！ 決戦に集中しろ！\n");
+                    logTextArea.append("--------------------------------------------\n");
+                    return;
+                }
+
                 logTextArea.append(player.getName() + " は逃げ出そうとした！\n");
                 
                 // 0.5 未満（50% の確率）なら逃亡成功とする
                 if (Math.random() < 0.5) {
                     logTextArea.append("うまくにげきれた！\n");
-                    endGame(); // ゲームをしゅうりょう（End）させる
+                    endGame(); 
                 } else {
                     // 逃亡失敗の場合
                     logTextArea.append("しかし にげきれなかった！\n");
 
-                    // モンスターのターン（ペナルティとして敵の反撃を受ける）
+                    // モンスターのターン
                     String monsterResult = enemy.attack(player);
                     logTextArea.append(monsterResult);
                     updateDisplay();
@@ -159,15 +198,15 @@ public class BattleGame extends JFrame {
                         endGame();
                         return;
                     }
-                    logTextArea.append("-----------// Math.random() は 0.0 以上 1.0 未満のランダムな数字を返す---------------------------------\n");
+                    logTextArea.append("--------------------------------------------\n");
                 }
             }
         });
-
         // ★ インスタンスをしょきか（Initialize）
         choicePlayer();
-        enemy = new Enemy("スライム", 50, 10, 10, "Picture5.png");
-
+        enemy = new Enemy("スライム", 80, 15, 12, "Picture5.png");
+        enemy2 = new Enemy("インフェルノドラゴン", 250, 40, 20, "dragon1.png");
+        enemy3 = new Enemy("魔王 (Demon King)", 500, 65, 35, "Demon king.png");
         // ★ がぞうをがめんのラベルにセットする
         playerImageLabel.setIcon(player.getIcon());
         enemyImageLabel.setIcon(enemy.getIcon());
@@ -218,4 +257,5 @@ public class BattleGame extends JFrame {
             player = new Player("ninja（ninja）", 80, 25, 10, "Picture2.png");
         }
     }
+    
 }
