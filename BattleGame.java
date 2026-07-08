@@ -28,15 +28,44 @@ public class BattleGame extends JFrame {
     private final int MAX_POTION_USE = 3;
     private int skillUseCount = 0;
     private final int MAX_SKILL_USE = 2;
+    private Clip bgmClip;
     
 
-    private void playSound(String fileName) {
+
+    private void playBGM(String fileName) {
     try {
-        AudioInputStream audioInputStream =
+        AudioInputStream audio =
                 AudioSystem.getAudioInputStream(new File(fileName));
 
+        bgmClip = AudioSystem.getClip();
+        bgmClip.open(audio);
+
+        // लगातार बजिरहने
+        bgmClip.loop(Clip.LOOP_CONTINUOUSLY);
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+private void stopBGM() {
+    if (bgmClip != null) {
+        bgmClip.stop();
+        bgmClip.close();
+    }
+}
+
+   private void playSound(String fileName) {
+    try {
+        File soundFile = new File(fileName);
+
+        System.out.println("Playing: " + soundFile.getAbsolutePath());
+        System.out.println("Exists: " + soundFile.exists());
+
+        AudioInputStream audio = AudioSystem.getAudioInputStream(soundFile);
+
         Clip clip = AudioSystem.getClip();
-        clip.open(audioInputStream);
+        clip.open(audio);
         clip.start();
 
     } catch (Exception e) {
@@ -45,7 +74,8 @@ public class BattleGame extends JFrame {
 }
     
      private void showVictoryScreen() {
-        playSound("sounds/victory.wav");
+        stopBGM();
+playSound("sounds/victory.wav");
 
     JFrame victoryFrame = new JFrame("GAME CLEAR!");
     victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -183,6 +213,35 @@ private void shakePlayer() {
     timer.start();
 }
 
+private void handleEnemyDefeat() {
+
+    playSound("sounds/enemy_dead.wav");
+
+    logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
+
+    enemyCount++;
+
+    if (enemyCount >= 6) {
+        stopBGM();
+        playSound("sounds/victory.wav");
+
+        endGame();
+        showVictoryScreen();
+        return;
+    }
+
+    JOptionPane.showMessageDialog(
+        this,
+        "LEVEL " + (enemyCount + 1) + " UNLOCKED!"
+    );
+
+    spawnEnemy();
+    updateDisplay();
+
+    potionUseCount = 0;
+    skillUseCount = 0;
+}
+
 
   public BattleGame() {
         // ウィンドウの基本設定
@@ -194,6 +253,7 @@ private void shakePlayer() {
 
 
         // コンポーネントの初期化
+        playBGM("sounds/bgm.wav");
         backgroundLabel = new JLabel(new ImageIcon("battlebackround.png"));
         backgroundLabel.setLayout(null);
 
@@ -240,23 +300,26 @@ private void shakePlayer() {
         add(hpPanel, BorderLayout.NORTH);
         add(backgroundLabel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
+        
 
        
         // ボタンの処理
-        attackButton.addActionListener(e -> {
-         playSound("attack.wav");
-            String playerResult = player.attack(enemy);
-          logTextArea.append(playerResult);
-           shakePlayer();
-            logTextArea.append(playerResult);
-            updateDisplay();
+       attackButton.addActionListener(e -> {
 
-            if (!enemy.isAlive()) {
-                handleEnemyDefeat();
-            } else {
-                String enemyResult = enemy.attack(player);
-                logTextArea.append(enemyResult);
-                updateDisplay();
+    playSound("sounds/attack.wav");
+
+    String playerResult = player.attack(enemy);
+    shakePlayer();
+    logTextArea.append(playerResult);
+    updateDisplay();
+
+    if (!enemy.isAlive()) {
+        handleEnemyDefeat();
+    } else {
+        String enemyResult = enemy.attack(player);
+        logTextArea.append(enemyResult);
+        updateDisplay();
+    
                 if (!player.isAlive()) {
                     logTextArea.append(player.getName() + " はたおれた…     ゲームオーバー(GAME OVER)\n");
                     playerImageLabel.setEnabled(false);
@@ -333,6 +396,7 @@ private void shakePlayer() {
     }
 
   private void handleEnemyDefeat() {
+    playSound("sounds/enemy_dead.wav");
     playSound("sounds/enemy_dead.wav");
 
     logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
