@@ -10,6 +10,9 @@ public class Enemy extends Character {
     public int getMaxHp() {
         return this.maxHp; 
     }
+    public void setAtk(int atk) {
+    this.atk = atk; 
+}
 
     // エネミーの攻撃メソッド（プレイヤーオブジェクトと防御状態を引数にとる）
     public String attack(Player player, boolean isPlayerDefending) {
