@@ -498,6 +498,11 @@ public class BattleGame extends JFrame {
                         String monsterResult = attacker.attack(player);
                         logTextArea.append(monsterResult);
 
+                        int damage = (int)(attacker.getAtk());
+                        int index = currentPlayerIndex;
+
+                        showPopupText("-" + damage, Color.RED, playerImageLabels[index]);
+
                         attacker.setAtk(originalAtk);
                     }
                     updateDisplay();
@@ -579,6 +584,7 @@ public class BattleGame extends JFrame {
                         if (aliveEnemy.hp < 0) {
                             aliveEnemy.hp = 0; // HPがマイナスにならないようにする
                         }
+                        showPopupText("-" + damage, Color.RED, enemyImageLabels[enemyParty.indexOf(aliveEnemy)]);
                         logTextArea.append(player.getName() + " の攻撃！ " + aliveEnemy.getName() + " に " + damage + " のダメージ！\n");
                         if (!aliveEnemy.isAlive()) {
                             logTextArea.append(aliveEnemy.getName() + " をたおした！\n");
@@ -596,6 +602,7 @@ public class BattleGame extends JFrame {
                             if (enemyInside.hp < 0) {
                                 enemyInside.hp = 0;
                             }
+                            showPopupText("-" + damage, Color.RED, enemyImageLabels[enemyParty.indexOf(enemyInside)]);
                             logTextArea.append(player.getName() + " の攻撃！ " + enemyInside.getName() + " に " + damage + " のダメージ！\n");
                             if (!enemyInside.isAlive()) {
                                 logTextArea.append(enemyInside.getName() + " をたおした！\n");
@@ -632,6 +639,7 @@ public class BattleGame extends JFrame {
                             if (party.get(targetChoice).hp > party.get(targetChoice).getMaxHp()) {
                                 party.get(targetChoice).hp = party.get(targetChoice).getMaxHp(); // 最大HPを超えないようにする
                             }
+                            showPopupText("+" + healAmount, Color.GREEN, playerImageLabels[targetChoice]);
                             logTextArea.append(player.getName() + " は " + targetPlayer.getName() + " を " + healAmount + " 回復した！\n");
                         } else {
                             logTextArea.append(targetPlayer.getName() + " はたおれているため回復できない！\n");
@@ -647,6 +655,7 @@ public class BattleGame extends JFrame {
                             if (member.hp > member.getMaxHp()) {
                                 member.hp = member.getMaxHp(); // 最大HPを超えないようにする
                             }
+                            showPopupText("+" + healAmount, Color.GREEN, playerImageLabels[party.indexOf(member)]);
                             logTextArea.append( member.getName() + " のHPを " + healAmount + " 回復した！\n");
                         }
                     }
@@ -680,13 +689,19 @@ public class BattleGame extends JFrame {
 
                         if (targetPlayer.isAlive()) {
                             if (isMagicBuff) {
+                                int beforeMgc = targetPlayer.getMgc();//バフ前の魔力をメモする
                                 targetPlayer.mgc = (int) (targetPlayer.getMgc() * selectedSkill.getMultiplier());
+                                int buffAmount = targetPlayer.getMgc() - beforeMgc;//バフ後の魔力-バフ前の魔力
                                 logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
                                 logTextArea.append(targetPlayer.getName() + " の魔力が " + targetPlayer.getMgc() + " に上がった！\n");
+                                showPopupText("魔力＋" + buffAmount, Color.BLUE, playerImageLabels[targetChoice]);
                             } else {
+                                int beforeAtk = targetPlayer.getAtk();//バフ前の攻撃力をメモする
                                 targetPlayer.atk = (int) (targetPlayer.getAtk() * selectedSkill.getMultiplier());
+                                int buffAmount = targetPlayer.getAtk() - beforeAtk;//バフ後の攻撃力-バフ前の攻撃力
                                 logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
                                 logTextArea.append(targetPlayer.getName() + " の攻撃力が " + targetPlayer.getAtk() + " に上がった！\n");
+                                showPopupText("攻撃力＋" + buffAmount, Color.BLUE, playerImageLabels[targetChoice]);
                             }
                         } else {
                             logTextArea.append(targetPlayer.getName() + " はたおれているためバフをかけられない！\n");
@@ -697,6 +712,7 @@ public class BattleGame extends JFrame {
                     coveringPlayer = player;
                     //かばうを使ったログを表示
                     logTextArea.append(player.getName() + " は仲間をかばった！\n");
+                    showPopupText("かばう", Color.BLUE, playerImageLabels[currentPlayerIndex]);
                 }
                 updateDisplay();
 
@@ -747,18 +763,18 @@ public class BattleGame extends JFrame {
                             }
 
                             //プレイヤーターゲット変数を先に用意
-                            Player tergetPlayer = null;
+                            Player targetPlayer = null;
                             boolean isCovered = false;//かばうが発動したかどうかの目印
 
                             //もしかばっている人がいて、その人が生きている場合
                             if (coveringPlayer != null && aliveMembers.contains(coveringPlayer)) {
-                                tergetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
+                                targetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
                                 isCovered = true;//かばうフラグON
-                                logTextArea.append(tergetPlayer.getName() + "がかばった！\n");
+                                logTextArea.append(targetPlayer.getName() + "がかばった！\n");
                             } else {
                                 //ランダムに生きているプレイヤーを選ぶ
                                 int randomIndex = (int)(Math.random() * aliveMembers.size());
-                                tergetPlayer = aliveMembers.get(randomIndex);
+                                targetPlayer = aliveMembers.get(randomIndex);
                             }
 
                             //敵の攻撃のコード
@@ -767,15 +783,22 @@ public class BattleGame extends JFrame {
                                 int damage = (int)(enemyInside.getAtk() * 0.25);
                                 if (damage < 1) damage = 1;
 
-                                tergetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
-                                if (tergetPlayer.hp < 0)tergetPlayer.hp = 0;
+                                targetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
+                                if (targetPlayer.hp < 0)targetPlayer.hp = 0;
 
-                                logTextArea.append(tergetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+                                logTextArea.append(targetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+
+                                int pIndex = party.indexOf(targetPlayer);
+                                showPopupText("-" + damage, Color.RED, playerImageLabels[pIndex]);
 
                             } else {
                                 //通常の攻撃コード
-                                String aliveEnemyResult = enemyInside.attack(tergetPlayer);
+                                String aliveEnemyResult = enemyInside.attack(targetPlayer);
                                 logTextArea.append(aliveEnemyResult);
+
+                                int eDamage = (int)(enemyInside.getAtk());
+                                int pIndex = party.indexOf(targetPlayer);
+                                showPopupText("-" + eDamage, Color.RED, playerImageLabels[pIndex]);
                             }
 
                             //一体ごとに画面を更新
@@ -852,18 +875,18 @@ public class BattleGame extends JFrame {
                             }
 
                             //プレイヤーターゲット変数を先に用意
-                            Player tergetPlayer = null;
+                            Player targetPlayer = null;
                             boolean isCovered = false;//かばうが発動したかどうかの目印
 
                             //もしかばっている人がいて、その人が生きている場合
                             if (coveringPlayer != null && aliveMembers.contains(coveringPlayer)) {
-                                tergetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
+                                targetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
                                 isCovered = true;//かばうフラグON
-                                logTextArea.append(tergetPlayer.getName() + "がかばった！\n");
+                                logTextArea.append(targetPlayer.getName() + "がかばった！\n");
                             } else {
                                 //ランダムに生きているプレイヤーを選ぶ
                                 int randomIndex = (int)(Math.random() * aliveMembers.size());
-                                tergetPlayer = aliveMembers.get(randomIndex);
+                                targetPlayer = aliveMembers.get(randomIndex);
                             }
 
                             //敵の攻撃のコード
@@ -872,15 +895,26 @@ public class BattleGame extends JFrame {
                                 int damage = (int)(enemyInside.getAtk() * 0.25);
                                 if (damage < 1) damage = 1;
 
-                                tergetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
-                                if (tergetPlayer.hp < 0)tergetPlayer.hp = 0;
+                                targetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
+                                if (targetPlayer.hp < 0)targetPlayer.hp = 0;
 
-                                logTextArea.append(tergetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+                                logTextArea.append(targetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+                                int pIndex = party.indexOf(targetPlayer);
+                                showPopupText("-" + damage, Color.RED, playerImageLabels[pIndex]);
 
                             } else {
                                 //通常の攻撃コード
-                                String aliveEnemyResult = enemyInside.attack(tergetPlayer);
+                                String aliveEnemyResult = enemyInside.attack(targetPlayer);
                                 logTextArea.append(aliveEnemyResult);
+
+                                int eDamage = (int)(enemyInside.getAtk());
+
+                                if (targetPlayer.guardFlg == 1) {
+                                    eDamage = eDamage / 2;
+                                }
+                                
+                                int pIndex = party.indexOf(targetPlayer);
+                                showPopupText("-" + eDamage, Color.RED, playerImageLabels[pIndex]);
                             }
 
                             //一体ごとに画面を更新
@@ -924,6 +958,7 @@ public class BattleGame extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 player.guardFlg = 0; // ガードフラグをリセット
                 logTextArea.append(player.getName() + " はアイテムをつかった！ HPが20かいふくした！\n");
+                showPopupText("+20" , Color.GREEN, playerImageLabels[currentPlayerIndex]);
                 player.hp += 20; // HPを20かいふくする
                 if (player.hp > player.maxHp) {
                     player.hp = player.maxHp; // HPがさいだいHPをこえないようにする
@@ -957,18 +992,18 @@ public class BattleGame extends JFrame {
                             }
 
                             //プレイヤーターゲット変数を先に用意
-                            Player tergetPlayer = null;
+                            Player targetPlayer = null;
                             boolean isCovered = false;//かばうが発動したかどうかの目印
 
                             //もしかばっている人がいて、その人が生きている場合
                             if (coveringPlayer != null && aliveMembers.contains(coveringPlayer)) {
-                                tergetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
+                                targetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
                                 isCovered = true;//かばうフラグON
-                                logTextArea.append(tergetPlayer.getName() + "がかばった！\n");
+                                logTextArea.append(targetPlayer.getName() + "がかばった！\n");
                             } else {
                                 //ランダムに生きているプレイヤーを選ぶ
                                 int randomIndex = (int)(Math.random() * aliveMembers.size());
-                                tergetPlayer = aliveMembers.get(randomIndex);
+                                targetPlayer = aliveMembers.get(randomIndex);
                             }
 
                             //敵の攻撃のコード
@@ -977,15 +1012,21 @@ public class BattleGame extends JFrame {
                                 int damage = (int)(enemyInside.getAtk() * 0.25);
                                 if (damage < 1) damage = 1;
 
-                                tergetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
-                                if (tergetPlayer.hp < 0)tergetPlayer.hp = 0;
+                                targetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
+                                if (targetPlayer.hp < 0)targetPlayer.hp = 0;
 
-                                logTextArea.append(tergetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+                                logTextArea.append(targetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+                                int pIndex = party.indexOf(targetPlayer);
+                                showPopupText("-" + damage, Color.RED, playerImageLabels[pIndex]);
 
                             } else {
                                 //通常の攻撃コード
-                                String aliveEnemyResult = enemyInside.attack(tergetPlayer);
+                                String aliveEnemyResult = enemyInside.attack(targetPlayer);
                                 logTextArea.append(aliveEnemyResult);
+
+                                int eDamage = (int)(enemyInside.getAtk());
+                                int pIndex = party.indexOf(targetPlayer);
+                                showPopupText("-" + eDamage, Color.RED, playerImageLabels[pIndex]);
                             }
 
                             //一体ごとに画面を更新
@@ -1201,5 +1242,35 @@ public class BattleGame extends JFrame {
         panel.add(menu);
 
         return panel;
+    }
+
+    //ダメージポップアップのメソッド
+    private void showPopupText (String text ,Color color ,JLabel targetLabel) {
+        if (targetLabel == null) return;
+
+        //キャラクターのラベルの上に重ねる用のラベルを作る
+        JLabel popupLabel = new JLabel(text, JLabel.CENTER);
+        popupLabel.setFont(new Font("Arial", Font.BOLD, 28));//文字の大きさと太さ
+        popupLabel.setForeground(color);
+
+        //表示する位置
+        popupLabel.setBounds(0, 50, targetLabel.getWidth(), 40);
+        targetLabel.add(popupLabel);
+
+        //画面の再描写
+        targetLabel.revalidate();
+        targetLabel.repaint();
+
+        //1.5秒(1500ミリ秒)後に自動で消去するタイマー
+        javax.swing.Timer timer = new javax.swing.Timer(1500, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                targetLabel.remove(popupLabel);
+                targetLabel.revalidate();
+                targetLabel.repaint();
+            }
+        });
+        timer.setRepeats(false);
+        timer.start();
     }
 }
