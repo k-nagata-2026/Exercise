@@ -983,8 +983,8 @@ public class BattleGame extends JFrame {
         return panel;
     }
 
-    //ダメージポップアップのメソッド
-    private void showPopupText (String text ,Color color ,JLabel targetLabel) {
+    //ポップアップのメソッド(引数四つ)
+    private void showPopupText (String text ,Color color ,JLabel targetLabel ,int offsetY) {
         if (targetLabel == null) return;
 
         //キャラクターのラベルの上に重ねる用のラベルを作る
@@ -993,7 +993,8 @@ public class BattleGame extends JFrame {
         popupLabel.setForeground(color);
 
         //表示する位置
-        popupLabel.setBounds(0, 50, targetLabel.getWidth(), 40);
+        int yPosition = 50 - offsetY;
+        popupLabel.setBounds(0, yPosition, targetLabel.getWidth(), 40);
         targetLabel.add(popupLabel);
 
         //画面の再描写
@@ -1013,9 +1014,17 @@ public class BattleGame extends JFrame {
         timer.start();
     }
 
+    //二個目のポップアップのメソッド(引数三つ)
+    private void showPopupText (String text ,Color color ,JLabel targetLabel) {
+        showPopupText(text, color, targetLabel, 0);
+    }
+
     //敵のターンのメソッド
     private void startEnemyTurn() {
         logTextArea.append("敵のターンだ！\n");
+
+        //各プレイヤーが「このターンに何回ポップアップを出したか」を数えるカウンター
+        int[] playerPopupCounts = new int[party.size()];
 
         //敵パーティをループで回す
         for (Enemy enemyInside : enemyParty) {
@@ -1049,6 +1058,8 @@ public class BattleGame extends JFrame {
                     targetPlayer = aliveMembers.get(randomIndex);
                 }
 
+                int pIndex = party.indexOf(targetPlayer);
+
                 //敵の攻撃のコード
                 if (isCovered) {
                     //かばう専用の攻撃コード
@@ -1059,9 +1070,11 @@ public class BattleGame extends JFrame {
                     if (targetPlayer.hp < 0)targetPlayer.hp = 0;//0より下にしない
 
                     logTextArea.append(targetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
-                    int pIndex = party.indexOf(targetPlayer);
-                    showPopupText("-" + damage, Color.RED, playerImageLabels[pIndex]);
+                   
+                    int offsetY = playerPopupCounts[pIndex] * 25;
+                    showPopupText("-" + damage, Color.RED, playerImageLabels[pIndex], offsetY);
 
+                    playerPopupCounts[pIndex]++;
                 } else {
                     //通常の攻撃コード
                     String aliveEnemyResult = enemyInside.attack(targetPlayer);
@@ -1074,8 +1087,10 @@ public class BattleGame extends JFrame {
                         eDamage = eDamage /2;
                     }
 
-                    int pIndex = party.indexOf(targetPlayer);
-                    showPopupText("-" + eDamage, Color.RED, playerImageLabels[pIndex]);
+                    int offsetY = playerPopupCounts[pIndex] * 25;
+                    showPopupText("-" + eDamage, Color.RED, playerImageLabels[pIndex], offsetY);
+
+                    playerPopupCounts[pIndex]++;
                 }
 
                 //一体ごとに画面を更新
