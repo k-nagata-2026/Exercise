@@ -32,27 +32,38 @@ public class BattleGame extends JFrame {
     
 
 
-    private void playBGM(String fileName) {
+  private void playBGM(String fileName) {
+
     try {
+
+        // Purano BGM rokne
+        if (bgmClip != null && bgmClip.isRunning()) {
+            bgmClip.stop();
+            bgmClip.close();
+        }
+
         AudioInputStream audio =
                 AudioSystem.getAudioInputStream(new File(fileName));
 
         bgmClip = AudioSystem.getClip();
         bgmClip.open(audio);
 
-        // लगातार बजिरहने
         bgmClip.loop(Clip.LOOP_CONTINUOUSLY);
+        bgmClip.start();
 
     } catch (Exception e) {
         e.printStackTrace();
     }
 }
-
 private void stopBGM() {
+
     if (bgmClip != null) {
         bgmClip.stop();
+        bgmClip.flush();
         bgmClip.close();
+        bgmClip = null;
     }
+
 }
 
    private void playSound(String fileName) {
@@ -74,7 +85,7 @@ private void stopBGM() {
 }
     
      private void showVictoryScreen() {
-        stopBGM();
+        
 playSound("sounds/victory.wav");
 
     JFrame victoryFrame = new JFrame("GAME CLEAR!");
@@ -116,6 +127,8 @@ playSound("sounds/victory.wav");
 
       
  private void showGameOverScreen() {
+
+    
     playSound("sounds/gameover.wav");
 
     JFrame gameOverFrame = new JFrame("GAME OVER");
@@ -138,6 +151,9 @@ playSound("sounds/victory.wav");
     homeButton.setBorderPainted(false);
     homeButton.setFocusPainted(false);
     homeButton.setBorder(null);
+    stopBGM();
+dispose();
+new HomeScreen().setVisible(true);
      // RETRY button
     JButton retryButton = new JButton();
     retryButton.setBounds(780, 420, 350, 55);
@@ -148,6 +164,8 @@ playSound("sounds/victory.wav");
     retryButton.setBorder(null);
     retryButton.addActionListener(e -> {
     gameOverFrame.dispose();
+    dispose();
+    new BattleGame(player);
 
     // Player reset
     player.setHp(player.getMaxHp());
@@ -243,16 +261,17 @@ private void handleEnemyDefeat() {
 }
 
 
-  public BattleGame() {
+ public BattleGame(Player player) {
         // ウィンドウの基本設定
         setTitle("ターン制コマンドバトル");
         setSize(1200, 750);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
-
-
+        this.player = player;
+       
         // コンポーネントの初期化
+        
         playBGM("sounds/bgm.wav");
         backgroundLabel = new JLabel(new ImageIcon("battlebackround.png"));
         backgroundLabel.setLayout(null);
@@ -304,6 +323,8 @@ private void handleEnemyDefeat() {
 
        
         // ボタンの処理
+       
+
        attackButton.addActionListener(e -> {
 
     playSound("sounds/attack.wav");
@@ -325,6 +346,7 @@ private void handleEnemyDefeat() {
                     playerImageLabel.setEnabled(false);
 
                     playSound("sounds/attack.wav");
+                    stopBGM();
 
                     showGameOverScreen();
 
@@ -376,18 +398,15 @@ private void handleEnemyDefeat() {
         
 
         // 初期化
-        choicePlayer();
+        this.player = player;
         spawnEnemy();
-         hpBar = new JProgressBar();
-     playerHpBar.setBounds(40, 40, 100, 25);
-     playerHpBar.setMaximum(player.getMaxHp());
-     playerHpBar.setValue(player.getHp());
+         playerHpBar.setBounds(40, 40, 250, 25);
+playerHpBar.setMaximum(player.getMaxHp());
+playerHpBar.setValue(player.getHp());
+playerHpBar.setStringPainted(true);
+playerHpBar.setForeground(Color.GREEN);
 
-    playerHpBar.setStringPainted(true);
-    playerHpBar.setForeground(Color.GREEN);
-    backgroundLabel.add(hpBar);
-
-    add(hpBar);
+backgroundLabel.add(playerHpBar);
 
         playerImageLabel.setIcon(player.getIcon());
         enemyImageLabel.setIcon(enemy.getIcon());
@@ -395,37 +414,7 @@ private void handleEnemyDefeat() {
         logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
     }
 
-  private void handleEnemyDefeat() {
-    playSound("sounds/enemy_dead.wav");
-    playSound("sounds/enemy_dead.wav");
-
-    logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
-
-    enemyCount++;
-
-    // Last enemy defeated
-    if (enemyCount >= 6) {
-        logTextArea.append("世界に平和が訪れた！【ゲームクリア】\n");
-        endGame();
-        showVictoryScreen();
-        return;
-    }
-
-    // EXP only if not the last enemy
-    player.gainExp(50);
-
-    // Next level unlock
-    javax.swing.JOptionPane.showMessageDialog(
-        this,
-        "LEVEL " + (enemyCount + 1) + " UNLOCKED!"
-    );
-
-    spawnEnemy();
-    updateDisplay();
-
-    potionUseCount = 0;
-    skillUseCount = 0;
-}
+ 
     // 他メソッド（updateDisplay, endGame, choicePlayer, spawnEnemy 等）はそのまま記述
     private void updateDisplay() {
         statusLabel.setText(String.format(
@@ -454,6 +443,8 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
 
 
     private void choicePlayer() {
+         this.player = player;
+        
 
 
         // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1
@@ -472,11 +463,11 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
                 null);
 
         if (choice == 0) {
-            player = new Player("BHOLA（Hero）", 150, 20, 10, 10, 30, "BHOLA.png");
+            player = new Player("BHOLA（Hero）", 200, 20, 20, 10, 30, "BHOLA.png");
         } else if (choice == 1) {
             player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
         } else if (choice == 2) {
-            player = new Player("LedyBoss", 100, 15, 20, 10, 30, "ladyboss.png");
+            player = new Player("LedyBoss", 200, 20, 20, 10, 30, "ladyboss.png");
         } else if (choice == 3) {
             player = new Player("boss", 150, 40, 0, 15, 30, "bigboss.png");
         }
@@ -502,9 +493,18 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
             enemy = new Enemy("MONSTAR", 200, 15, 15, 8, 10, "MONSTAR.png");
             logTextArea.append("IM THE MONSTAR! \n");
         }
+
+        playerImageLabel.setIcon(player.getIcon());
+enemyImageLabel.setIcon(enemy.getIcon());
+updateDisplay();
+logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
+
+setVisible(true);
         enemyImageLabel.setIcon(enemy.getIcon());
         logTextArea.append("--------------------------------------------\n");
     }    public static void main(String[] args) {
     new HomeScreen().setVisible(true);
    }
+   
     }
+    
