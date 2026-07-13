@@ -373,7 +373,7 @@ public class BattleGame extends JFrame {
 
         // ウィンドウ（Window）のきほんせってい（Basic Setting）
         setTitle("ターンせいコマンドバトル");
-        setSize(1220, 750);
+        setSize(1520, 750);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // がめんのまんなかにひょうじ
         setLayout(new BorderLayout()); // ぜんたいのレイアウト（Layout）をせってい
@@ -386,7 +386,7 @@ public class BattleGame extends JFrame {
         //for文で横にずらしながらプレイヤーの画像をセットする
         for (int i = 0; i < 4; i++ ){
             playerImageLabels[i] = new JLabel("",JLabel.CENTER);
-            playerImageLabels[i].setBounds(20 + (i * 140), 100, 130, 400);//（i * 140）は140マス間をあけるという意味
+            playerImageLabels[i].setBounds(15 + (i * 140), 100, 160, 400);//（i * 140）は140マス間をあけるという意味
             backgroundLabel.add(playerImageLabels[i]);
         }
         
@@ -694,14 +694,14 @@ public class BattleGame extends JFrame {
                                 int buffAmount = targetPlayer.getMgc() - beforeMgc;//バフ後の魔力-バフ前の魔力
                                 logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
                                 logTextArea.append(targetPlayer.getName() + " の魔力が " + targetPlayer.getMgc() + " に上がった！\n");
-                                showPopupText("魔力＋" + buffAmount, Color.BLUE, playerImageLabels[targetChoice]);
+                                showPopupText("mgc＋" + buffAmount, Color.BLUE, playerImageLabels[targetChoice]);
                             } else {
                                 int beforeAtk = targetPlayer.getAtk();//バフ前の攻撃力をメモする
                                 targetPlayer.atk = (int) (targetPlayer.getAtk() * selectedSkill.getMultiplier());
                                 int buffAmount = targetPlayer.getAtk() - beforeAtk;//バフ後の攻撃力-バフ前の攻撃力
                                 logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
                                 logTextArea.append(targetPlayer.getName() + " の攻撃力が " + targetPlayer.getAtk() + " に上がった！\n");
-                                showPopupText("攻撃力＋" + buffAmount, Color.BLUE, playerImageLabels[targetChoice]);
+                                showPopupText("atk＋" + buffAmount, Color.BLUE, playerImageLabels[targetChoice]);
                             }
                         } else {
                             logTextArea.append(targetPlayer.getName() + " はたおれているためバフをかけられない！\n");
@@ -987,14 +987,51 @@ public class BattleGame extends JFrame {
     private void showPopupText (String text ,Color color ,JLabel targetLabel ,int offsetY) {
         if (targetLabel == null) return;
 
+        String popupName;
+        if (color.equals(Color.RED)) {
+            popupName = "damage_popup";
+        } else {
+            popupName = "other_popup";
+        }
+
+        JLabel extingPopup = null;
+        for (java.awt.Component comp : targetLabel.getComponents()) {
+            if (comp instanceof JLabel && popupName.equals(comp.getName())) {
+                extingPopup = (JLabel) comp;
+                break;
+            }
+        }
+
+        if (extingPopup != null && color.equals(Color.RED)) {
+            String oldText = extingPopup.getText().replace("-","");
+            String newText = text.replace("-","");
+
+            int oldDamage = convertStringToInteger(oldText);
+            int newDamage = convertStringToInteger(newText);
+
+            extingPopup.setText("-" + (oldDamage + newDamage));
+            
+            targetLabel.revalidate();
+            targetLabel.repaint();
+            return;
+        }
+
         //キャラクターのラベルの上に重ねる用のラベルを作る
         JLabel popupLabel = new JLabel(text, JLabel.CENTER);
-        popupLabel.setFont(new Font("Arial", Font.BOLD, 28));//文字の大きさと太さ
+        popupLabel.setName(popupName);
+        popupLabel.setFont(new Font("MS　ゴシック", Font.BOLD, 28));//文字の大きさと太さ
         popupLabel.setForeground(color);
 
+        //ポップアップの種類で表示する位置を変える
+        int yPosition;
+        if (color.equals(Color.RED)) {
+            yPosition = 50;
+        } else {
+            yPosition = 15;
+        }
+
         //表示する位置
-        int yPosition = 50 - offsetY;
-        popupLabel.setBounds(0, yPosition, targetLabel.getWidth(), 40);
+        popupLabel.setBounds(0,yPosition, targetLabel.getWidth(), 40);
         targetLabel.add(popupLabel);
 
         //画面の再描写
@@ -1126,5 +1163,17 @@ public class BattleGame extends JFrame {
             logTextArea.append("--------------------------------------------\n");
         }
     }   
+
+    //文字を数字に変換するメソッド
+    private int convertStringToInteger(String str) {
+        int result = 0;
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c >= '0' && c <= '9') {
+                result = result * 10 + (c - '0');
+            }
+        }   
+        return result;
+    }
 
 }
