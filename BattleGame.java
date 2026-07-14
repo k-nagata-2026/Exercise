@@ -202,28 +202,28 @@ public class BattleGame extends JFrame {
 
             //文字列(名前)で判定する   
             if (selectedCharacter.equals("勇者(HERO)")) {
-                newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0);
+                newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0, 1, 0, 100);
                 newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
                 newPlayer.learnSkill("かばう", 0.25, "かばう");
             } else if(selectedCharacter.equals("魔法使い(WIZARD)")) {
-                newPlayer = new Player("魔法使い(WIZARD)", 45, 5, 50,"mahoutsukai_man.png", 0);
+                newPlayer = new Player("魔法使い(WIZARD)", 45, 5, 50,"mahoutsukai_man.png", 0, 1, 0, 10);
                 newPlayer.learnSkill("炎魔法", 0.5, "全体攻撃");
             } else if(selectedCharacter.equals("騎士(KNIGHT)")) {
-                newPlayer = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0);
+                newPlayer = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0, 1, 0, 100);
                 newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
                 newPlayer.learnSkill("かばう", 0.25, "かばう");
             }else if (selectedCharacter.equals("盗賊(THIEF)")) {
-                newPlayer = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0);
+                newPlayer = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0, 1, 0, 100);
                 newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
             }else if (selectedCharacter.equals("召喚士(SUMMONER)")){
-                newPlayer = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0);
+                newPlayer = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 100);
                 newPlayer.learnSkill("召喚", 1.0, "全体攻撃");
             }else if (selectedCharacter.equals("祈祷師(SHAMAN)")){
-                newPlayer = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0);
+                newPlayer = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 100);
                 newPlayer.learnSkill("攻撃力UP", 1.5, "単体バフ");
                 newPlayer.learnSkill("魔力UP", 1.5, "単体バフ");
             } else {
-                newPlayer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0);
+                newPlayer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0, 1, 0, 100);
                 newPlayer.learnSkill("回復", 1.0, "単体回復");
                 newPlayer.learnSkill("全体回復", 0.5, "全体回復");
             }
@@ -263,7 +263,7 @@ public class BattleGame extends JFrame {
             for (int i = 0; i < numberOfEnemies; i++){
                 //スライムA、スライムB…と名付ける
                 char suffix = (char)('A' + i);
-                enemyParty.add(new Enemy("スライム" + suffix, 20, 5, 5,"fantasy_game_character_slime.png"));
+                enemyParty.add(new Enemy("スライム" + suffix, 20, 5, 5,"fantasy_game_character_slime.png", 1));
             }
         } else if (enemyCount == 2) {
             if (backgroundLabel != null) {
@@ -275,7 +275,7 @@ public class BattleGame extends JFrame {
 
             for (int i = 0; i < numberOfEnemies; i++){
                 char suffix = (char)('A' + i);
-                enemyParty.add(new Enemy("ゴブリン" + suffix, 25, 10, 5, "fantasy_goblin.png"));
+                enemyParty.add(new Enemy("ゴブリン" + suffix, 25, 10, 5, "fantasy_goblin.png", 1));
             }
         } else if (enemyCount == 3) {
             if (backgroundLabel != null) {
@@ -285,7 +285,7 @@ public class BattleGame extends JFrame {
             //ドラゴンは一体だけに固定
             numberOfEnemies = 1;
             logTextArea.append("最終決戦　伝説の ドラゴン があらわれた！\n");
-            enemyParty.add(new Enemy("ドラゴン" ,500, 30, 130, "fantasy_dragon.png"));
+            enemyParty.add(new Enemy("ドラゴン" ,500, 30, 130, "fantasy_dragon.png", 1));
         }
         
         for (int i = 0; i < enemyParty.size(); i++){
@@ -590,6 +590,18 @@ public class BattleGame extends JFrame {
                             logTextArea.append(aliveEnemy.getName() + " をたおした！\n");
                             int index = enemyParty.indexOf(aliveEnemy);
                             enemyImageLabels[index].setEnabled(false);
+
+                            //現在行動中のプレイヤーに経験値をあげる
+                            player.setExp(player.getExp() + aliveEnemy.getRewardExp());
+
+                            //レベルアップ判定
+                            if (player.checkLevelUp()) {
+                                JOptionPane.showMessageDialog(
+                                    BattleGame.this,
+                                    player.getName() + "はLv" + player.getLevel() + "に上がった！\n"
+                                );
+                            }
+                            updateDisplay();
                         }
                     }
 
@@ -608,6 +620,16 @@ public class BattleGame extends JFrame {
                                 logTextArea.append(enemyInside.getName() + " をたおした！\n");
                                 int index = enemyParty.indexOf(enemyInside);
                                 enemyImageLabels[index].setEnabled(false);
+
+                                //全体攻撃をしたプレイヤーに経験値をあげる
+                                player.setExp(player.getExp() + enemyInside.getRewardExp());
+                                if (player.checkLevelUp()) {
+                                    JOptionPane.showMessageDialog(
+                                        BattleGame.this,
+                                        player.getName() + "はLv" + player.getLevel() + "に上がった"
+                                    );
+                                }
+                                updateDisplay();
                             }
                         }
                     }

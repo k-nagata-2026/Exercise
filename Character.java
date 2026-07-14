@@ -3,18 +3,18 @@ public class Character {
     // わくぐみのみ（つぎのステップでなかみをかきます）
      // フィールド（Field）のていぎ（Define）
     // （こクラスからもアクセス（Access）できるようにprotectedにする）
-    protected String name;   // なまえ（Name）
-    protected int hp;        // げんざいのHP（Current HP）
-    protected int maxHp;     // さいだいHP（Max HP）
-    protected int atk;       // こうげきりょく（Attack Power）
-    protected int mgc;       // まほうりょく（Magic Power）
-    protected ImageIcon icon; // がぞうデータをほじするフィールド
-    protected int defense;   //ぼうぎょりょく（Defense Power）
+    protected String name;   //名前
+    protected int hp;        //現在のHP
+    protected int maxHp;     //最大HP
+    protected int atk;       //攻撃力
+    protected int mgc;       //魔力
+    protected ImageIcon icon; //画像データを保持するフィールド
     protected int guardFlg = 0; // ガードフラグ（0: ガードしていない、1: ガードしている）
+    protected int level;
 
     // コンストラクタ（Constructor）
     // （しょきか（Initialize）のためのとくべつなメソッド）
-    public Character(String name, int hp, int atk, int mgc, String imagePath) {
+    public Character(String name, int hp, int atk, int mgc, String imagePath, int level) {
         this.name = name;
         this.hp = hp;
         this.maxHp = hp;
@@ -22,6 +22,7 @@ public class Character {
         this.mgc = mgc;
         this.icon = new ImageIcon(imagePath); // がぞうファイルのよみこみ（Load）
         this.guardFlg = 0; // ガードフラグをリセット
+        this.level = level;
     }
     
     // そとからあんぜん（Safe）にデータをしゅとく（Get）するためのゲッター（Getter）
@@ -47,6 +48,10 @@ public class Character {
 
     public ImageIcon getIcon() {
         return icon;
+    }
+
+    public int level() {
+        return level;
     }
 
     // ★ あいてにこうげきするメソッド（Method）
