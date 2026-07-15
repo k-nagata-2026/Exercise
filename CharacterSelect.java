@@ -23,7 +23,7 @@ public class CharacterSelect extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        JLabel bg = new JLabel(new ImageIcon("characterselectbg.png"));
+        JLabel bg = new JLabel(new ImageIcon("characterselect.png"));
         bg.setLayout(null);
 
         JLabel title = new JLabel("SELECT YOUR HERO");

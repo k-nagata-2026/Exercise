@@ -39,7 +39,7 @@ public class HomeScreen extends JFrame {
 
     JOptionPane.showMessageDialog(this, "Character Select Open");
 
-    new CharacterSelect();
+    new CharacterSelect().setVisible(true);
 
     dispose();
 
