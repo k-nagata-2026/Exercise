@@ -23,13 +23,13 @@ public class BattleGame extends JFrame {
     private static int currentplayerlevel = 1;
 
     public BattleGame() {
+        playBGM("BGM.wav");
         // ウィンドウ（Window）のきほんせってい（Basic Setting）
         setTitle("ターンせいコマンドバトル");
         setSize(1300, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // がめんのまんなかにひょうじ
         setLayout(new BorderLayout()); // ぜんたいのレイアウト（Layout）をせってい
-
         // 【うえはんぶん：キャラクターたいじエリア（はいけいのなかにキャラをいれる）】
         // ※はいけいがぞうファイル（bg.png）をよみこみます
         backgroundLabel = new JLabel(new ImageIcon("background.png"));
@@ -39,8 +39,8 @@ public class BattleGame extends JFrame {
         enemyImageLabel = new JLabel("", JLabel.CENTER);
 
         // ★はいけいラベルをきじゅん（Base）とした、キャラがぞうラベルの「いち（Position）(x, y)」と「サイズ（Size）（はば（Width）, たかさ（Height））」をしてい（Specify）
-        playerImageLabel.setBounds(200, 10, 500, 700); // ひだりがわにはいち
-        enemyImageLabel.setBounds(700, 10, 500, 700);  // みぎがわにはいち
+        playerImageLabel.setBounds(50, 10, 550, 700); // ひだりがわにはいち
+        enemyImageLabel.setBounds(680, 10, 500, 700);  // みぎがわにはいち
 
         // ★はいけいラベルのなかにキャラがぞうラベルを「add」してかさねる！
         backgroundLabel.add(playerImageLabel);
@@ -171,7 +171,7 @@ if (!enemy.isAlive()) {
             public void actionPerformed(ActionEvent e) {
                 // 【最終ボス：逃げられない設定】
                 if (currentplayerlevel == 3) {
-                    logTextArea.append("❌ 「" + enemy.getName() + "」 からは逃げられない！ 決戦に集中しろ！\n");
+                    logTextArea.append(" 「" + enemy.getName() + "」 からは逃げられない！ 決戦に集中しろ！\n");
                     logTextArea.append("--------------------------------------------\n");
                     return;
                 }
@@ -206,7 +206,7 @@ if (!enemy.isAlive()) {
         choicePlayer();
         enemy = new Enemy("スライム", 80, 15, 12, "Picture5.png");
         enemy2 = new Enemy("インフェルノドラゴン", 250, 40, 20, "dragon1.png");
-        enemy3 = new Enemy("魔王 (Demon King)", 500, 65, 35, "Demon king.png");
+        enemy3 = new Enemy("魔王 (Demon King)", 500, 65, 35, "Demon king1.png");
         // ★ がぞうをがめんのラベルにセットする
         playerImageLabel.setIcon(player.getIcon());
         enemyImageLabel.setIcon(enemy.getIcon());
@@ -238,8 +238,7 @@ if (!enemy.isAlive()) {
     }
 
     // キャラクターせんたく（Select）メソッド
-    private void choicePlayer() {
-        // せんたく（Select）ダイアログ（Dialog）をひょうじ（Display）（えらんだボタン（Button）のばんごう（Number）が 0, 1, 2 でかえってくる）
+ private void choicePlayer() {
         int choice = JOptionPane.showOptionDialog(
                 this,
                 "しよう（Use）するキャラクターをせんたく（Select）してください",
@@ -250,12 +249,26 @@ if (!enemy.isAlive()) {
                 new String[] { "ゆうしゃ（Hero）", "まほうつかい（Mage）", "ninja"},
                 null);
         if (choice == 0) {
-            player = new Player("ゆうしゃ（Hero）", 100, 20, 10, "sagar.png");
+            player = new Player("ゆうしゃ（Hero）", 150, 120, 15, "sagar.png");
         } else if (choice == 1) {
-            player = new Player("まほうつかい（Mage）", 80, 25, 10, "Aelina.png");
+            player = new Player("まほうつかい（Mage）", 120, 130, 15, "Aelina.png");
         } else if (choice == 2) {
-            player = new Player("ninja（ninja）", 80, 25, 10, "Picture2.png");
+            player = new Player("ninja（ninja）", 110, 140, 12, "Picture2.png");
+        }
+    } // choicePlayer ko brackets yaha banda bhayo!
+
+    private void playBGM(String musicFile) {
+        try {
+            java.io.File file = new java.io.File(musicFile);
+            if (file.exists()) {
+                javax.sound.sampled.AudioInputStream audioStream = javax.sound.sampled.AudioSystem.getAudioInputStream(file);
+                javax.sound.sampled.Clip clip = javax.sound.sampled.AudioSystem.getClip();
+                clip.open(audioStream);
+                clip.loop(javax.sound.sampled.Clip.LOOP_CONTINUOUSLY);
+                clip.start();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
-    
-}
+} 
