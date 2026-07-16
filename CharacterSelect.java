@@ -19,7 +19,7 @@ public class CharacterSelect extends JFrame {
     public CharacterSelect() {
         System.out.println("CharacterSelect opened");
         setTitle("Character Select");
-        setSize(1200,700);
+        setSize(1800,1000);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -28,7 +28,7 @@ public class CharacterSelect extends JFrame {
 
         JLabel title = new JLabel("SELECT YOUR HERO");
         title.setFont(new Font("Arial",Font.BOLD,40));
-        title.setForeground(Color.WHITE);
+        title.setForeground(Color.black);
         title.setBounds(320,20,600,50);
         bg.add(title);
 
