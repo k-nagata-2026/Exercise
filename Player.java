@@ -32,7 +32,7 @@ public class Player extends Character {
     }
 
     public int getExp() {return this.exp;}
-    public void setExp(int exp) {exp = this.exp;}
+    public void setExp(int exp) {this.exp = exp;}
     public int getMaxExp() {return this.maxExp;}
     public int getLevel() {return this.level;}
 
@@ -79,6 +79,9 @@ public class Player extends Character {
             this.maxHp += hpUp;
             this.atk += atkUp;
             this.mgc += mgcUp;
+
+            //レベルアップ時に全回復
+            this.hp = this.maxHp;
         }
         return leveledUp;
     }

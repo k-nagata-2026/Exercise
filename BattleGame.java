@@ -20,6 +20,8 @@ public class BattleGame extends JFrame {
     private JLabel backgroundLabel;   // 背景画像のラベル
     private JLabel[] playerImageLabels = new JLabel[4];  // プレイヤー画像用のラベル
     private JLabel[] enemyImageLabels = new JLabel[5];//敵の画像用ラベル
+    private JLabel[] playerStatusLabels = new JLabel[4];//プレイヤーの画像の下にステータスを貼るためのラベル
+    private JLabel[] enemyStatusLabels = new JLabel[5];//敵の画像の下にステータスを貼るためのラベル
 
     // ★ キャラクターのインスタンスをよういする
     private Player player;
@@ -77,7 +79,7 @@ public class BattleGame extends JFrame {
             JProgressBar bar = playerHpBars[i];
             bar.setMaximum(member.getMaxHp());
             bar.setValue(member.getHp());
-            bar.setString(member.getName() + " HP: " + member.getHp() + "/" + member.getMaxHp());
+            bar.setString("Lv." + member.getLevel() + " HP: " + member.getHp() + "/" + member.getMaxHp());
         }
     
         //5体の敵のHPバーを表示する
@@ -89,7 +91,7 @@ public class BattleGame extends JFrame {
                     bar.setForeground(new Color(139,0,0));//生きている敵のHPバーを赤にする
                     bar.setMaximum(currentEnemy.getMaxHp());
                     bar.setValue(currentEnemy.getHp());
-                    bar.setString(currentEnemy.getName() + " HP: " + currentEnemy.getHp() + "/" + currentEnemy.getMaxHp());
+                    bar.setString(" HP: " + currentEnemy.getHp() + "/" + currentEnemy.getMaxHp());
                 } else {
                     bar.setForeground(new Color(255,255,255));//倒れた敵のHPバーを白にする
                 }
@@ -202,30 +204,30 @@ public class BattleGame extends JFrame {
 
             //文字列(名前)で判定する   
             if (selectedCharacter.equals("勇者(HERO)")) {
-                newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0, 1, 0, 100);
-                newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
-                newPlayer.learnSkill("かばう", 0.25, "かばう");
+                newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0, 1, 0, 10);
+                newPlayer.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
+                newPlayer.learnSkill("かばう(COVER)", 0.25, "かばう");
             } else if(selectedCharacter.equals("魔法使い(WIZARD)")) {
                 newPlayer = new Player("魔法使い(WIZARD)", 45, 5, 50,"mahoutsukai_man.png", 0, 1, 0, 10);
-                newPlayer.learnSkill("炎魔法", 0.5, "全体攻撃");
+                newPlayer.learnSkill("炎魔法(FIRE)", 0.5, "全体攻撃");
             } else if(selectedCharacter.equals("騎士(KNIGHT)")) {
                 newPlayer = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0, 1, 0, 100);
-                newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
-                newPlayer.learnSkill("かばう", 0.25, "かばう");
+                newPlayer.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
+                newPlayer.learnSkill("かばう(COVER)", 0.25, "かばう");
             }else if (selectedCharacter.equals("盗賊(THIEF)")) {
                 newPlayer = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0, 1, 0, 100);
-                newPlayer.learnSkill("斬る", 1.0, "単体攻撃");
+                newPlayer.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
             }else if (selectedCharacter.equals("召喚士(SUMMONER)")){
                 newPlayer = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 100);
-                newPlayer.learnSkill("召喚", 1.0, "全体攻撃");
+                newPlayer.learnSkill("召喚(SUMMON)", 1.0, "全体攻撃");
             }else if (selectedCharacter.equals("祈祷師(SHAMAN)")){
                 newPlayer = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 100);
-                newPlayer.learnSkill("攻撃力UP", 1.5, "単体バフ");
-                newPlayer.learnSkill("魔力UP", 1.5, "単体バフ");
+                newPlayer.learnSkill("攻撃力UP(ATK BUFF)", 1.5, "単体バフ");
+                newPlayer.learnSkill("魔力UP(MGC BUFF)", 1.5, "単体バフ");
             } else {
                 newPlayer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0, 1, 0, 100);
-                newPlayer.learnSkill("回復", 1.0, "単体回復");
-                newPlayer.learnSkill("全体回復", 0.5, "全体回復");
+                newPlayer.learnSkill("回復(HEAL)", 1.0, "単体回復");
+                newPlayer.learnSkill("全体回復(MASS HEAL)", 0.5, "全体回復");
             }
             party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
             // 選んだキャラクターを選択肢から削除する
@@ -313,18 +315,33 @@ public class BattleGame extends JFrame {
         for (int i = 0; i < 4; i++){
             Player p = party.get(i);
 
+            //足元のテキストを「名前」にする
+            playerStatusLabels[i].setText(p.getName());
+
             if (!p.isAlive() || p.getHp() <= 0) {
                 //死んでるキャラクターはグレーアウトして通常の位置に
                 playerImageLabels[i].setEnabled(false);
                 playerImageLabels[i].setBounds(20 + (i * 140), 100, 130, 400);
+                //死んでいるキャラクターのステータスもグレーアウト
+                playerStatusLabels[i].setEnabled(false);
+                playerStatusLabels[i].setForeground(Color.GRAY);
+                playerStatusLabels[i].setBounds(20 + (i * 140), 510, 130, 30);
             } else if (i == currentPlayerIndex){
                 //現在ターンが回ってきたキャラは少し上がる
                 playerImageLabels[i].setEnabled(true);
                 playerImageLabels[i].setBounds(20 + (i * 140), 40, 130, 400);
+                //テキストも少し上げ、黄色く光らせる
+                playerStatusLabels[i].setEnabled(true);
+                playerStatusLabels[i].setBounds(20 + (i * 140), 510, 130, 30);
+                playerStatusLabels[i].setForeground(Color.YELLOW);
             } else {
                 //待機中の生存キャラは通常位置
                 playerImageLabels[i].setEnabled(true);
                 playerImageLabels[i].setBounds(20 + (i * 140), 100, 130, 400);
+                //待機中の生存キャラは白色
+                playerStatusLabels[i].setEnabled(true);
+                playerStatusLabels[i].setBounds(20 + (i * 140), 510, 130, 30);
+                playerStatusLabels[i].setForeground(Color.WHITE);
             }
         }
         backgroundLabel.repaint();//画面をリフレッシュする
@@ -388,6 +405,13 @@ public class BattleGame extends JFrame {
             playerImageLabels[i] = new JLabel("",JLabel.CENTER);
             playerImageLabels[i].setBounds(15 + (i * 140), 100, 160, 400);//（i * 140）は140マス間をあけるという意味
             backgroundLabel.add(playerImageLabels[i]);
+
+            //プレイヤーの足元にステータスのラベルを追加する
+            playerStatusLabels[i] = new JLabel("",JLabel.CENTER);
+            playerStatusLabels[i].setBounds(15 + (i * 140), 510, 160, 30);
+            playerStatusLabels[i].setFont(new Font("MS ゴシック", Font.BOLD, 14));
+            playerStatusLabels[i].setForeground(Color.WHITE);
+            backgroundLabel.add(playerStatusLabels[i]);
         }
         
         //for文で横にずらしながら敵の画像をセットする
@@ -601,6 +625,7 @@ public class BattleGame extends JFrame {
                                     player.getName() + "はLv" + player.getLevel() + "に上がった！\n"
                                 );
                             }
+                            updatePlayerVisuals();
                             updateDisplay();
                         }
                     }
