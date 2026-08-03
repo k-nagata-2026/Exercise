@@ -11,6 +11,7 @@ public class BattleGame extends JFrame {
     private JButton runButton;        // 逃げるコマンドボタン
     private JButton defenseButton;    // ぼうぎょコマンドボタン
     private JButton itemButton;       // アイテムコマンドボタン
+    private JButton dictionaryButton; // 技辞典コマンドボタン
     private JProgressBar[] playerHpBars = new JProgressBar[4]; // プレイヤーのHPをひょうじするプログレスバー（Progress Bar）
     private JProgressBar[] enemyHpBars = new JProgressBar[5];  // 敵のHPをひょうじするプログレスバー（Progress Bar）
     private JPanel statusPanel; // ステータスをひょうじするパネル（Panel）
@@ -454,6 +455,7 @@ public class BattleGame extends JFrame {
         runButton = new JButton("逃げる(RUN)");
         defenseButton = new JButton("防御(DEFENSE)");
         itemButton = new JButton("アイテム(ITEM)");
+        dictionaryButton = new JButton("技辞典(SKILL DICTIONARY)");
 
         bottomPanel.add(scrollPane, BorderLayout.CENTER); // ログテキストエリアをしたがわのしたにはいち 
         bottomPanel.add(statusPanel, BorderLayout.NORTH); // ステータスパネルをしたがわのうえにはいち
@@ -466,6 +468,7 @@ public class BattleGame extends JFrame {
         buttonPanel.add(runButton); // 逃げるボタンを下の左側に配置
         buttonPanel.add(defenseButton); // 防御ボタンを下の左側に配置
         buttonPanel.add(itemButton); // アイテムボタンを下の左側に配置
+        buttonPanel.add(dictionaryButton);//技辞典ボタンをアイテムボタンの右に配置する
 
         // ★逃げるボタンの処理
         runButton.addActionListener(new ActionListener() {
@@ -847,6 +850,74 @@ public class BattleGame extends JFrame {
                     startEnemyTurn();
                 }
 
+            }
+        });
+
+        //技辞典ボタンの追加
+        dictionaryButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                //技辞典内の解説
+                StringBuilder text = new StringBuilder();
+                text.append("技辞典(SKILL DICTIONARY)\n");
+
+                text.append("ーーーーーーーーーーーーーーーーーーーーー\n\n");
+
+                text.append("【斬る(SLASH)】\n");
+                text.append("・敵一体を攻撃する\n");
+                text.append("・攻撃力×1.0ダメージ\n");
+                text.append("・Attcks a single enemy\n");
+                text.append("・Damage: ATK × 1.0\n\n");
+
+                text.append("【かばう(COVER)】\n");
+                text.append("・すべての敵の攻撃を受ける\n");
+                text.append("・被ダメージ×0.25\n");
+                text.append("・Takes all incoming enemy attacks.\n");
+                text.append("・Damage Taken: × 0.25\n\n");
+
+                text.append("【召喚(SUMMON)】\n");
+                text.append("・精霊を召喚する\n");
+                text.append("・HPを割合で消費\n");
+                text.append("・Summons a spirit.\n");
+                text.append("・Cost: Consumes a percentage of max HP\n\n");
+
+                text.append("【攻撃力UP(ATK BUFF)】\n");
+                text.append("・味方一人の攻撃力を上げる\n");
+                text.append("・魔力×1.5\n");
+                text.append("・Increases the ATK of one ally.\n");
+                text.append("・Effect: MGC × 1.5\n\n");
+
+                text.append("【魔力UP(MGC BUFF)】\n");
+                text.append("・味方一人の魔力を上げる\n");
+                text.append("・魔力×1.5\n");
+                text.append("・Increases the MGC of one ally.\n");
+                text.append("・Effect: MGC × 1.5\n\n");
+
+                text.append("【単体回復(HEAL)】\n");
+                text.append("・味方一人のHPを回復する\n");
+                text.append("・魔力×1.0\n");
+                text.append("・Restores HP to one ally.\n");
+                text.append("・Heal Amount: MGC × 1.0\n\n");
+
+                text.append("【全体回復(MASS HEAL)】\n");
+                text.append("・すべての味方のHPを回復する\n");
+                text.append("・魔力×0.5\n");
+                text.append("・Restores HP to all allies.\n");
+                text.append("・Heal Amount: MGC × 0.5\n\n");
+
+                text.append("ーーーーーーーーーーーーーーーーーーーーー\n");
+
+                JTextArea dictionaryArea = new JTextArea(text.toString());
+                dictionaryArea.setEditable(false);
+                dictionaryArea.setFont(new Font("MS ゴシック", Font.PLAIN, 14));
+                dictionaryArea.setCaretPosition(0); // スクロール位置を先頭に設定
+
+                //スクロールを作成
+                JScrollPane dictionaryScroll = new JScrollPane(dictionaryArea);
+                dictionaryScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+                dictionaryScroll.setPreferredSize(new Dimension(450, 300));
+
+                JOptionPane.showMessageDialog(BattleGame.this, dictionaryScroll, "技辞典", JOptionPane.INFORMATION_MESSAGE);
             }
         });
  
