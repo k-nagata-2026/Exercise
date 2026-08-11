@@ -154,12 +154,155 @@ public class BattleGame extends JFrame {
 
     // キャラクターせんたく（Select）メソッド
     private void choicePlayer() {
-        //選んだキャラクターを選択肢に出ないようにするには可変長のArrayListにする
-        java.util.List<String>availableOptions = new java.util.ArrayList<>(
-            java.util.Arrays.asList("勇者(HERO)", "魔法使い(WIZARD)", "騎士(KNIGHT)", "盗賊(THIEF)", "召喚士(SUMMONER)", "祈祷師(SHAMAN)", "回復術師(HEALER)")
-        );
-    
         party.clear(); // 選択前にパーティーをクリアする
+
+        //選択候補を作成
+        java.util.List<Player> availableList = new java.util.ArrayList<>();
+
+        Player hero = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0, 1, 0, 10);
+        hero.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
+        hero.learnSkill("かばう(COVER)", 0.25, "かばう");
+        availableList.add(hero);
+
+        Player wizard = new Player("魔法使い(WIZARD)", 45, 5, 50,"mahoutsukai_man.png", 0, 1, 0, 10);
+        wizard.learnSkill("炎魔法(FIRE)", 0.5, "全体攻撃");
+        availableList.add(wizard);
+
+        Player knight = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0, 1, 0, 100);
+        knight.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
+        knight.learnSkill("かばう(COVER)", 0.25, "かばう");
+        availableList.add(knight);
+
+        Player thief = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0, 1, 0, 100);
+        thief.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
+        availableList.add(thief);
+
+        Player summoner = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 100);
+        summoner.learnSkill("召喚(SUMMON)", 1.0, "全体攻撃");
+        availableList.add(summoner);
+
+        Player shaman = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 100);
+        shaman.learnSkill("攻撃力UP(ATK BUFF)", 1.5, "単体バフ");
+        shaman.learnSkill("魔力UP(MGC BUFF)", 1.5, "単体バフ");
+        availableList.add(shaman);
+
+        Player healer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0, 1, 0, 100);
+        healer.learnSkill("回復(HEAL)", 1.0, "単体回復");
+        healer.learnSkill("全体回復(MASS HEAL)", 0.5, "全体回復");
+        availableList.add(healer);
+
+        //ウィンドウを作成
+        JDialog dialog = new JDialog(this, "キャラクター選択", true);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10,10));
+
+        //表示パーツの準備
+        final int[] currentIndex = {0}; //現在表示中のキャラ番号
+
+        JLabel imageLabel = new JLabel("", JLabel.CENTER);
+        imageLabel.setPreferredSize(new Dimension(200, 200));
+
+        JTextArea statusArea = new JTextArea();
+        statusArea.setEditable(false);
+        statusArea.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        statusArea.setBackground(new Color(245, 245, 245));
+
+        JButton prevButton = new JButton("◀");
+        JButton nextButton = new JButton("▶");
+        prevButton.setFont(new Font("MS ゴシック", Font.BOLD, 20));
+        nextButton.setFont(new Font("MS ゴシック", Font.BOLD, 20));
+
+        JButton selectButton = new JButton("選択する(SELECT)");
+        JButton startButton = new JButton("出発!!(START)");
+        startButton.setEnabled(false); // 最初は無効化しておく
+        startButton.setBackground(new Color(255, 215, 0)); // ゴールド色に設定
+        startButton.setForeground(Color.WHITE); // 文字色を白に設定
+        startButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+
+        //チーム4人のアイコン枠
+        JLabel[] teamSlots = new JLabel[4];
+        JPanel teamPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        teamPanel.add(new JLabel("チーム: "));
+        for (int i = 0; i < 4; i++) {
+            teamSlots[i] = new JLabel("", JLabel.CENTER);
+            teamSlots[i].setPreferredSize(new Dimension(50, 50));
+            teamSlots[i].setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+            teamPanel.add(teamSlots[i]);
+        }
+
+        //画面表示を更新する処理
+        Runnable updateView = new Runnable() {
+            @Override
+            public void run() {
+                Player currentPlayer = availableList.get(currentIndex[0]);
+                imageLabel.setIcon(currentPlayer.getIcon());
+                statusArea.setText("名前: " + currentPlayer.getName() + "\n" +
+                                   "体力(HP): " + currentPlayer.getHp() + "\n" +
+                                   "攻撃力(ATK): " + currentPlayer.getAtk() + "\n" +
+                                   "魔法力(MGC): " + currentPlayer.getMgc() + "\n" +
+                                   "特徴(TRAIT)\n" + getCharacterFeatures(currentPlayer.getName()));
+                statusArea.setText(info);
+            }
+        };
+
+        //初期表示
+        updateView.run();
+
+        //ボタン処理
+        //◀ボタン
+        prevButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!availableList.isEmpty()) {
+                    currentIndex[0] = (currentIndex[0] - 1 + availableList.size()) % availableList.size();
+                    updateView.run();
+                }
+            }
+        });
+
+        //▶ボタン
+        nextButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!availableList.isEmpty()) {
+                    currentIndex[0] = (currentIndex[0] + 1) % availableList.size();
+                    updateView.run();
+                }
+            }
+        });
+
+        //選択するボタン
+        selectButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (party.size() < 4 && !availableList.isEmpty()) {
+                    Player selectedPlayer = availableList.get(currentIndex[0]);
+                    party.add(selectedPlayer);
+
+                    //チーム枠にアイコンを表示
+                    teamSlots[party.size() - 1].setIcon(selectedPlayer.getIcon());
+
+                    //選んだらインデックス処理
+                    if (currentIndex[0] >= availableList.size()) {
+                        currentIndex[0] = Math.max(0, availableList.size() - 1); //選んだキャラクターは選べない
+                    }
+
+                    //選択後の処理
+                    if (party.size() == 4) {
+                        selectButton.setEnabled(false); // 選択ボタンを無効化
+                        startButton.setEnabled(true);    // 出発ボタンを有効化
+                        statusArea.setText("4人パーティが結成されました。\n出発ボタンを押して冒険を始めましょう！");
+                        imageLabel.setIcon(null); // キャラクター画像を非表示にする
+                    } else {
+                        updateView.run();
+                    }
+                }
+            }
+        });
+
+        //出発ボタン
+        
 
         //４人選ばれるまでループする
         while (party.size() < 4) {
