@@ -302,89 +302,69 @@ public class BattleGame extends JFrame {
         });
 
         //出発ボタン
-        
-
-        //４人選ばれるまでループする
-        while (party.size() < 4) {
-            int correctMemberNom = party.size() + 1; // 正しいメンバー番号（1から始まる）
-
-            //選択肢リストを一時的に作成
-            java.util.List<String> currentButton = new java.util.ArrayList<>(availableOptions);
-
-            //2人目以降を選んでいるときに「1人前に戻る」ボタンを追加する
-            if (party.size() > 0) {
-                currentButton.add("1人前に戻る(BACK)");
+        startButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose(); // ダイアログを閉じる
+                player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
+                for (int i = 0; i < 4; i++){
+                    playerImageLabels[i].setIcon(party.get(i).getIcon());
+                }
+                JOptionPane.showMessageDialog(BattleGame.this, "4人パーティが結成されました。", "パーティ結成", JOptionPane.INFORMATION_MESSAGE);
             }
+        });
 
-            int choice = JOptionPane.showOptionDialog(
-                this,
-                "キャラクターを選んでください（" + correctMemberNom + "人目）",
-                "キャラクター選択",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                currentButton.toArray(new String[0]),
-                null
-            );
+        //レイアウトの設定
+        JPanel navigationPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        navigationPanel.add(imageLabel);
+        navigationPanel.add(statusArea);
 
-            //×ボタンを押したらウィンドウごと閉じる
-            if (choice == JOptionPane.CLOSED_OPTION) {
-                System.exit(0);
-            }
+        JPanel actionPanel = new JPanel(new BorderLayout(10, 10));
+        actionPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        actionPanel.add(prevButton, BorderLayout.WEST);
+        actionPanel.add(selectButton, BorderLayout.CENTER);
+        actionPanel.add(startButton, BorderLayout.EAST);
 
-            //「1人前に戻る」を選んだ場合の処理
-            if (party.size() > 0 && choice == currentButton.size() - 1) {
-                Player lastSelected = party.remove(party.size() - 1); // 最後のプレイヤーを削除
-                availableOptions.add(lastSelected.getName()); // 選択肢に戻す
-                //お手本リスト
-                java.util.List<String> defaultOrder = java.util.Arrays.asList("勇者(HERO)", "魔法使い(WIZARD)", "騎士(KNIGHT)", "盗賊(THIEF)", "召喚士(SUMMONER)", "祈祷師(SHAMAN)", "回復術師(HEALER)");
-                java.util.Collections.sort(availableOptions, java.util.Comparator.comparingInt(defaultOrder::indexOf)); // デフォルトの順序に従って並べ替える
-                continue; // ループの先頭に戻る
-            }
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(teamPanel, BorderLayout.WEST);
 
-            String selectedCharacter = currentButton.get(choice);
+        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actionButtonPanel.add(selectButton);
+        actionButtonPanel.add(startButton);
+        bottomPanel.add(actionButtonPanel, BorderLayout.EAST);
 
-            Player newPlayer = null;
+        dialog.add(mainPanel, BorderLayout.CENTER);
+        dialog.add(bottomPanel, BorderLayout.SOUTH);
 
-            //文字列(名前)で判定する   
-            if (selectedCharacter.equals("勇者(HERO)")) {
-                newPlayer = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0, 1, 0, 10);
-                newPlayer.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
-                newPlayer.learnSkill("かばう(COVER)", 0.25, "かばう");
-            } else if(selectedCharacter.equals("魔法使い(WIZARD)")) {
-                newPlayer = new Player("魔法使い(WIZARD)", 45, 5, 50,"mahoutsukai_man.png", 0, 1, 0, 10);
-                newPlayer.learnSkill("炎魔法(FIRE)", 0.5, "全体攻撃");
-            } else if(selectedCharacter.equals("騎士(KNIGHT)")) {
-                newPlayer = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0, 1, 0, 100);
-                newPlayer.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
-                newPlayer.learnSkill("かばう(COVER)", 0.25, "かばう");
-            }else if (selectedCharacter.equals("盗賊(THIEF)")) {
-                newPlayer = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0, 1, 0, 100);
-                newPlayer.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
-            }else if (selectedCharacter.equals("召喚士(SUMMONER)")){
-                newPlayer = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 100);
-                newPlayer.learnSkill("召喚(SUMMON)", 1.0, "全体攻撃");
-            }else if (selectedCharacter.equals("祈祷師(SHAMAN)")){
-                newPlayer = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 100);
-                newPlayer.learnSkill("攻撃力UP(ATK BUFF)", 1.5, "単体バフ");
-                newPlayer.learnSkill("魔力UP(MGC BUFF)", 1.5, "単体バフ");
-            } else {
-                newPlayer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0, 1, 0, 100);
-                newPlayer.learnSkill("回復(HEAL)", 1.0, "単体回復");
-                newPlayer.learnSkill("全体回復(MASS HEAL)", 0.5, "全体回復");
-            }
-            party.add(newPlayer); // 選んだキャラクターをパーティーに追加する
-            // 選んだキャラクターを選択肢から削除する
-            availableOptions.remove(selectedCharacter);
-        }
+        dialog.setVisible(true);//ダイアログを表示する
 
-        //4人選び終わったら、最初のキャラクターをプレイヤーとしてセットする
+        //セットアップ
         player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
-        
-        JOptionPane.showMessageDialog(this,  " 4人パーティが結成されました。" ,"パーティ結成", JOptionPane.INFORMATION_MESSAGE); // 選んだキャラクターをひょうじする
-
         for (int i = 0; i < 4; i++){
             playerImageLabels[i].setIcon(party.get(i).getIcon());
+        }
+
+    }
+
+    //キャラクターの特徴を返すメソッド
+    private String getCharacterFeatures(String characterName) {
+        switch (characterName) {
+            case "勇者(HERO)":
+                return "・バランスの取れたステータス\n・単体攻撃とかばうが可能";
+            case "魔法使い(WIZARD)":
+                return "・魔法攻撃に特化\n・全体攻撃が得意";
+            case "騎士(KNIGHT)":
+                return "・高い防御力\n・単体攻撃とかばうが可能";
+            case "盗賊(THIEF)":
+                return "・素早さが高い\n・単体攻撃が得意";
+            case "召喚士(SUMMONER)":
+                return "・強力な全体攻撃を持つ\n・耐久力は低め";
+            case "祈祷師(SHAMAN)":
+                return "・味方の強化が得意\n・バフスキルを持つ";
+            case "回復術師(HEALER)":
+                return "・味方の回復に特化\n・全体回復も可能";
+            default:
+                return "";
         }
     }
 
