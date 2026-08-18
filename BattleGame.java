@@ -193,25 +193,27 @@ public class BattleGame extends JFrame {
 
         //ウィンドウを作成
         JDialog dialog = new JDialog(this, "キャラクター選択", true);
-        dialog.setSize(400, 300);
+        dialog.setSize(1220, 750);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout(10,10));
+        dialog.getContentPane().setBackground(new Color(230, 230, 230)); // 背景色を設定
 
         //表示パーツの準備
         final int[] currentIndex = {0}; //現在表示中のキャラ番号
 
         JLabel imageLabel = new JLabel("", JLabel.CENTER);
-        imageLabel.setPreferredSize(new Dimension(200, 200));
+        imageLabel.setPreferredSize(new Dimension(250, 250));
 
         JTextArea statusArea = new JTextArea();
         statusArea.setEditable(false);
-        statusArea.setFont(new Font("MS ゴシック", Font.BOLD, 16));
-        statusArea.setBackground(new Color(245, 245, 245));
+        statusArea.setFont(new Font("MS ゴシック", Font.BOLD, 18));
+        statusArea.setBackground(new Color(255, 255, 255));
+        statusArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JButton prevButton = new JButton("◀");
-        JButton nextButton = new JButton("▶");
-        prevButton.setFont(new Font("MS ゴシック", Font.BOLD, 20));
-        nextButton.setFont(new Font("MS ゴシック", Font.BOLD, 20));
+        JButton prevButton = new TriangleButton(true);
+        JButton nextButton = new TriangleButton(false);
+        prevButton.setPreferredSize(new Dimension(40, 120));
+        nextButton.setPreferredSize(new Dimension(40, 120));
 
         JButton selectButton = new JButton("選択する(SELECT)");
         JButton startButton = new JButton("出発!!(START)");
@@ -242,7 +244,6 @@ public class BattleGame extends JFrame {
                                    "攻撃力(ATK): " + currentPlayer.getAtk() + "\n" +
                                    "魔法力(MGC): " + currentPlayer.getMgc() + "\n" +
                                    "特徴(TRAIT)\n" + getCharacterFeatures(currentPlayer.getName()));
-                statusArea.setText(info);
             }
         };
 
@@ -277,6 +278,7 @@ public class BattleGame extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (party.size() < 4 && !availableList.isEmpty()) {
+                    //選んだキャラクターをパーティに追加
                     Player selectedPlayer = availableList.get(currentIndex[0]);
                     party.add(selectedPlayer);
 
@@ -284,9 +286,7 @@ public class BattleGame extends JFrame {
                     teamSlots[party.size() - 1].setIcon(selectedPlayer.getIcon());
 
                     //選んだらインデックス処理
-                    if (currentIndex[0] >= availableList.size()) {
-                        currentIndex[0] = Math.max(0, availableList.size() - 1); //選んだキャラクターは選べない
-                    }
+                    availableList.remove(currentIndex[0]);
 
                     //選択後の処理
                     if (party.size() == 4) {
@@ -314,35 +314,44 @@ public class BattleGame extends JFrame {
             }
         });
 
-        //レイアウトの設定
-        JPanel navigationPanel = new JPanel(new GridLayout(1, 2, 10, 0));
-        navigationPanel.add(imageLabel);
-        navigationPanel.add(statusArea);
+        JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        centerPanel.setOpaque(false); // 背景を透明にする
 
-        JPanel actionPanel = new JPanel(new BorderLayout(10, 10));
-        actionPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        actionPanel.add(prevButton, BorderLayout.WEST);
-        actionPanel.add(selectButton, BorderLayout.CENTER);
-        actionPanel.add(startButton, BorderLayout.EAST);
+        //左ボタン
+        JPanel leftButtonPanel = new JPanel(new GridBagLayout());
+        leftButtonPanel.setOpaque(false); // 背景を透明にする
+        leftButtonPanel.add(prevButton);
+        centerPanel.add(leftButtonPanel, BorderLayout.WEST);
 
+        //中央キャラエリア
+        JPanel charInfoPanel = new JPanel(new GridLayout(1,2,10, 0));
+        charInfoPanel.setOpaque(false);
+        charInfoPanel.add(imageLabel);
+        charInfoPanel.add(statusArea);
+        centerPanel.add(charInfoPanel, BorderLayout.CENTER);
+
+        //右ボタン
+        JPanel rightButtonPanel = new JPanel(new GridBagLayout());
+        rightButtonPanel.setOpaque(false); // 背景を透明にする
+        rightButtonPanel.add(nextButton);
+        centerPanel.add(rightButtonPanel, BorderLayout.EAST);
+
+        //下部分
         JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setOpaque(false); // 背景を透明にする
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // パディングを追加
         bottomPanel.add(teamPanel, BorderLayout.WEST);
 
-        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        actionButtonPanel.setOpaque(false); // 背景を透明にする
         actionButtonPanel.add(selectButton);
         actionButtonPanel.add(startButton);
         bottomPanel.add(actionButtonPanel, BorderLayout.EAST);
 
-        dialog.add(mainPanel, BorderLayout.CENTER);
+        dialog.add(centerPanel, BorderLayout.CENTER);
         dialog.add(bottomPanel, BorderLayout.SOUTH);
 
         dialog.setVisible(true);//ダイアログを表示する
-
-        //セットアップ
-        player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
-        for (int i = 0; i < 4; i++){
-            playerImageLabels[i].setIcon(party.get(i).getIcon());
-        }
 
     }
 
@@ -365,6 +374,65 @@ public class BattleGame extends JFrame {
                 return "・味方の回復に特化\n・全体回復も可能";
             default:
                 return "";
+        }
+    }
+
+    //三角形の形をしたボタンを作るメソッド
+    class TriangleButton extends JButton {
+        private boolean isLeft;
+        
+        public TriangleButton(boolean isLeft) {
+            this.isLeft = isLeft;
+            setContentAreaFilled(false); // 背景を塗りつぶさない
+            setFocusPainted(false); // フォーカスの描画を無効化
+            setBorderPainted(false);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            //滑らかに描画するためのアンチエイリアスを有効化
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            //ボタンの色を設定
+            if (getModel().isArmed()) {
+                g2d.setColor(new Color(218, 165, 32));
+            } else {
+                g2d.setColor(new Color(255, 215, 0));
+            }
+            int w = getWidth();
+            int h = getHeight();
+
+            //三角形の頂点座標を計算
+            Polygon triangle = new Polygon();
+            if (isLeft) {
+                //左向きの三角形
+                triangle.addPoint(w, 0);
+                triangle.addPoint(0, h / 2);
+                triangle.addPoint(w, h);
+            } else {
+                //右向きの三角形
+                triangle.addPoint(0, 0);
+                triangle.addPoint(w, h / 2);
+                triangle.addPoint(0, h);
+            }
+            g2d.fill(triangle);
+            g2d.dispose();
+        }
+
+        //三角形の中だけをクリック可能にするための判定
+        @Override
+        public boolean contains(int x, int y) {
+            Polygon triangle = new Polygon();
+            if (isLeft) {
+                triangle.addPoint(getWidth(), 0);
+                triangle.addPoint(0, getHeight() / 2);
+                triangle.addPoint(getWidth(), getHeight());
+            } else {
+                triangle.addPoint(0, 0);
+                triangle.addPoint(getWidth(), getHeight() / 2);
+                triangle.addPoint(0, getHeight());
+            }
+            return triangle.contains(x, y);
         }
     }
 
@@ -1065,12 +1133,15 @@ public class BattleGame extends JFrame {
         //スタートボタンを押したらバトル画面（キャラクター選択画面）に移動する
         startButton.addActionListener(e -> {
             choicePlayer();
-            cardLayout.show(mainPanel, "BATTLE");
-            spawnEnemy();
-            enemyIcon();
-            updateDisplay();
-            updatePlayerVisuals();
-            cardLayout.show(mainPanel,"BATTLE");//バトル画面に切り替え
+            //4人選択したらバトルを開始する
+            if (!party.isEmpty()) {
+                spawnEnemy();
+                enemyIcon();
+                updateDisplay();
+                updatePlayerVisuals();
+                cardLayout.show(mainPanel,"BATTLE");//バトル画面に切り替え
+            }
+            
         });
 
         JPanel menu = new JPanel(new GridLayout(2,1,0,30));
