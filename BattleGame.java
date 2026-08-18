@@ -310,7 +310,6 @@ public class BattleGame extends JFrame {
                 for (int i = 0; i < 4; i++){
                     playerImageLabels[i].setIcon(party.get(i).getIcon());
                 }
-                JOptionPane.showMessageDialog(BattleGame.this, "4人パーティが結成されました。", "パーティ結成", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
