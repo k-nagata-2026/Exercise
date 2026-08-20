@@ -58,6 +58,7 @@ public class BattleGame extends JFrame {
         mainPanel.add(battlePanel,"BATTLE");
         mainPanel.add(gameOverPanel,"GAMEOVER");
         mainPanel.add(gameClearPanel,"GAMECLEAR");
+        mainPanel.add(new MapPanel(),"MAP"); // マップ画面を追加
 
         //全体をウィンドウに追加
         add(mainPanel);
@@ -570,6 +571,10 @@ public class BattleGame extends JFrame {
                 //ゲームオーバーの画面
                 cardLayout.show(mainPanel,"GAMEOVER");
                 break;
+            case 4 :
+                //マップ画面
+                cardLayout.show(mainPanel,"MAP");
+                break;    
             default:
                 break;
         }
@@ -1129,18 +1134,20 @@ public class BattleGame extends JFrame {
         JButton startButton = new JButton("START");
         startButton.setFont(new Font("Arial",Font.PLAIN,24));
 
-        //スタートボタンを押したらバトル画面（キャラクター選択画面）に移動する
-        startButton.addActionListener(e -> {
-            choicePlayer();
-            //4人選択したらバトルを開始する
-            if (!party.isEmpty()) {
-                spawnEnemy();
-                enemyIcon();
-                updateDisplay();
-                updatePlayerVisuals();
-                cardLayout.show(mainPanel,"BATTLE");//バトル画面に切り替え
+        //スタートボタンを押したらマップ画面に移動する
+        startButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                choicePlayer();
+                //4人選択したらバトルを開始する
+                if (!party.isEmpty()) {
+                    spawnEnemy();
+                    enemyIcon();
+                    updateDisplay();
+                    updatePlayerVisuals();
+                    cardLayout.show(mainPanel,"MAP");//マップ画面に切り替え
+                }
             }
-            
         });
 
         JPanel menu = new JPanel(new GridLayout(2,1,0,30));
@@ -1166,8 +1173,6 @@ public class BattleGame extends JFrame {
         JButton quitButton = new JButton("諦める(GIVE UP)");
 
         //不屈の闘志で立ち上がるボタンを押したら、負けたバトル画面に戻る
-       
-
         retryButton.addActionListener(e -> {
             retryCount--;//リトライ回数を減らす
             if (retryCount <= 0) {
@@ -1350,13 +1355,11 @@ public class BattleGame extends JFrame {
         targetLabel.repaint();
 
         //1.5秒(1500ミリ秒)後に自動で消去するタイマー
-        javax.swing.Timer timer = new javax.swing.Timer(1500, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                targetLabel.remove(popupLabel);
-                targetLabel.revalidate();
-                targetLabel.repaint();
-            }
+        javax.swing.Timer timer = new javax.swing.Timer(1500, e -> {
+            targetLabel.remove(popupLabel);
+            targetLabel.revalidate();
+            targetLabel.repaint();
+            
         });
         timer.setRepeats(false);
         timer.start();
@@ -1485,6 +1488,67 @@ public class BattleGame extends JFrame {
             }
         }   
         return result;
+    }
+
+    //マップ画面のクラス
+    class MapPanel extends JPanel {
+        public MapPanel() {
+            setBackground(new Color(34, 139, 34)); // 背景色を緑に設定
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            // マップの描画処理をここに追加する
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            //道の描画
+            g2.setColor(new Color(245, 222, 179)); // 茶色
+            g2.fillRect(w / 10, h / 2 - 20, w * 8/10, 40); //横道
+            g2.fillRect(w / 2 - 20, h / 10, 40, h * 8/10); //縦道
+
+            //文字・エリア枠の描画
+            Font font = new Font("MS ゴシック", Font.BOLD, 22);
+            g2.setFont(font);
+
+            //ボスエリア
+            g2.setColor(Color.BLACK);
+            g2.fillRect(w / 2 - 50, h / 10, 100, 50);
+            g2.setColor(Color.RED);
+            g2.drawString("ボス", w / 2 - 22, h / 10 + 35);
+
+            //街エリア
+            g2.setColor(Color.LIGHT_GRAY);
+            g2.fillRect(w / 2 - 50, h * 9/10 - 50, 100, 50);
+            g2.setColor(Color.BLUE);
+            g2.drawString("街", w / 2 - 11, h * 9/10 - 15);
+
+            //深い森エリア
+            g2.setColor(Color.DARK_GRAY);
+            g2.fillRect(w / 10, h / 2 - 60, 50, 120);
+            g2.setColor(Color.WHITE);
+            g2.drawString("深", w / 10 + 14, h / 2 - 20);
+            g2.drawString("い", w / 10 + 14, h / 2 + 10);
+            g2.drawString("森", w / 10 + 14, h / 2 + 40);
+
+            //ダンジョンエリア
+            g2.setColor(new Color(139, 69, 19)); // 茶色
+            g2.fillRect(w * 9/10 - 50, h / 2 - 60, 50, 120);
+            g2.setColor(new Color(144, 238, 144)); // 薄い緑
+            g2.drawString("ダ", w * 9/10 - 38, h / 2 - 30);
+            g2.drawString("ン", w * 9/10 - 38, h / 2);
+            g2.drawString("ジ", w * 9/10 - 38, h / 2 + 30);
+            g2.drawString("ョ", w * 9/10 - 38, h / 2 + 60);
+            g2.drawString("ン", w * 9/10 - 38, h / 2 + 90);
+
+            //現在地(プレイヤーの位置)の描画
+            g2.setColor(Color.RED);
+            g2.fillRect(w / 2 - 15, h * 9/10 - 90, 30, 30);
+        }
     }
 
 }
