@@ -2,8 +2,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
-
 import javax.swing.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class BattleGame extends JFrame {
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
@@ -16,6 +17,8 @@ public class BattleGame extends JFrame {
     private JProgressBar[] enemyHpBars = new JProgressBar[5];  // 敵のHPをひょうじするプログレスバー（Progress Bar）
     private JPanel statusPanel; // ステータスをひょうじするパネル（Panel）
     private ImageIcon currentBackgroundImage; // 現在の背景画像を保持するフィールド
+    private String currentField = "FOREST"; // 現在のフィールドを保持するフィールド（例: "FOREST", "DUNGEON", "BOSS"）
+    private int bossStage = 1; // ボスステージを保持するフィールド（1: ドラゴン, 2: 魔王）
 
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // 背景画像のラベル
@@ -58,7 +61,7 @@ public class BattleGame extends JFrame {
         mainPanel.add(battlePanel,"BATTLE");
         mainPanel.add(gameOverPanel,"GAMEOVER");
         mainPanel.add(gameClearPanel,"GAMECLEAR");
-        mainPanel.add(new MapPanel(),"MAP"); // マップ画面を追加
+        mainPanel.add(new MapPanel(this),"MAP"); // マップ画面を追加
 
         //全体をウィンドウに追加
         add(mainPanel);
@@ -442,44 +445,56 @@ public class BattleGame extends JFrame {
         enemyParty.clear();
         for (int i = 0; i < 5; i++){
             enemyImageLabels[i].setIcon(null);
+            if (enemyHpBars != null){
+                enemyHpBars[i].setVisible(false);
+            }
         }
 
         int numberOfEnemies = 1;//出現する敵の数
 
-        if (enemyCount == 1) {
+        //深い森の処理
+        if (currentField.equals("FOREST")) {
            if (backgroundLabel != null) {
                 //背景画像を変更する
-                backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのダンジョン.jpg"));
+                backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルの森.jpg"));
             }
             numberOfEnemies = (int)(Math.random() * 5) + 1;
-            logTextArea.append("第一戦　スライムが" + numberOfEnemies + "体あらわれた！\n");
+            logTextArea.append("スライムが" + numberOfEnemies + "体あらわれた！\n");
 
             for (int i = 0; i < numberOfEnemies; i++){
                 //スライムA、スライムB…と名付ける
                 char suffix = (char)('A' + i);
                 enemyParty.add(new Enemy("スライム" + suffix, 20, 5, 5,"fantasy_game_character_slime.png", 1));
             }
-        } else if (enemyCount == 2) {
+
+            //ダンジョンの処理 
+        } else if (currentField.equals("DUNGEON")) {
             if (backgroundLabel != null) {
                 //背景画像を変更する
-                backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルの森.jpg"));
+                backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのダンジョン.jpg"));
             }
             numberOfEnemies = (int)(Math.random() * 5) + 1;
-            logTextArea.append("第二戦　ゴブリンが" + numberOfEnemies + "体あらわれた！\n");
+            logTextArea.append("ゴブリンが" + numberOfEnemies + "体あらわれた！\n");
 
             for (int i = 0; i < numberOfEnemies; i++){
                 char suffix = (char)('A' + i);
                 enemyParty.add(new Enemy("ゴブリン" + suffix, 25, 10, 5, "fantasy_goblin.png", 1));
             }
-        } else if (enemyCount == 3) {
+
+            //ボスエリアの処理
+        } else if (currentField.equals("BOSS")) {
             if (backgroundLabel != null) {
                 //背景画像を変更する
                 backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのボス.jpg"));
             }
-            //ドラゴンは一体だけに固定
-            numberOfEnemies = 1;
-            logTextArea.append("最終決戦　伝説の ドラゴン があらわれた！\n");
-            enemyParty.add(new Enemy("ドラゴン" ,500, 30, 130, "fantasy_dragon.png", 1));
+            
+            if (bossStage == 1) {
+                logTextArea.append("伝説の ドラゴン があらわれた！\n");
+                enemyParty.add(new Enemy("ドラゴン" ,500, 30, 130, "fantasy_dragon.png", 1));
+            } else if (bossStage == 2) {
+                logTextArea.append("伝説の 魔王 があらわれた！\n");
+                enemyParty.add(new Enemy("魔王" ,800, 50, 200, "fantasy_maou_devil.png", 1));
+            }
         }
         
         for (int i = 0; i < enemyParty.size(); i++){
@@ -1492,8 +1507,33 @@ public class BattleGame extends JFrame {
 
     //マップ画面のクラス
     class MapPanel extends JPanel {
-        public MapPanel() {
+        public MapPanel(BattleGame game) {
             setBackground(new Color(34, 139, 34)); // 背景色を緑に設定
+            //マップでクリックできるようにする
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    //クリックしたら移動する
+                    int x = e.getX();
+                    int y = e.getY();
+                    int w = getWidth();
+                    int h = getHeight();
+
+                    if (x >= w / 2 - 50 && x <= w / 2 + 50 && y >= h * 9/10 - 50 && y <= h * 9/10) {
+                        //街エリアをクリックした場合
+                        game.openShopScreen();
+                    } else if (x >= w / 10 && x <= w / 10 + 50 && y >= h / 2 - 60 && y <= h / 2 + 60) {
+                        //深い森エリアをクリックした場合
+                        game.startFieldBattle("FOREST");
+                    } else if (x >= w * 9/10 - 50 && x <= w * 9/10 && y >= h / 2 - 60 && y <= h / 2 + 60) {
+                        //ダンジョンエリアをクリックした場合
+                        game.startFieldBattle("DUNGEON");
+                    } else if (x >= w / 2 - 50 && x <= w / 2 + 50 && y >= h / 10 && y <= h / 10 + 50) {
+                        //ボスエリアをクリックした場合
+                        game.startFieldBattle("BOSS");
+                    }
+                }   
+            });
         }
 
         @Override
@@ -1551,4 +1591,57 @@ public class BattleGame extends JFrame {
         }
     }
 
+    //ショップ画面のメソッド
+    private void openShopScreen() {
+        //ショップ画面の作成
+        JPanel shopPanel = new JPanel(new BorderLayout());
+        shopPanel.setBackground(Color.LIGHT_GRAY);
+
+        JLabel shopLabel = new JLabel("ショップ", JLabel.CENTER);
+        shopLabel.setFont(new Font("MS ゴシック", Font.BOLD, 32));
+        shopLabel.setForeground(Color.BLACK);
+        shopPanel.add(shopLabel, BorderLayout.NORTH);
+
+        JTextArea shopTextArea = new JTextArea();
+        shopTextArea.setEditable(false);
+        shopTextArea.setFont(new Font("MS ゴシック", Font.PLAIN, 16));
+        shopTextArea.setText("ここではアイテムを購入できます。\n\n" +
+                "1. 回復薬 (HPを20回復) - 100ゴールド\n" +
+                "2. 強化薬 (攻撃力を10%アップ) - 200ゴールド\n" +
+                "3. 魔力薬 (魔力を10%アップ) - 200ゴールド\n");
+        shopPanel.add(shopTextArea, BorderLayout.CENTER);
+
+        JButton backButton = new JButton("戻る");
+        backButton.setFont(new Font("Arial", Font.PLAIN, 24));
+        backButton.addActionListener(e -> {
+            //マップ画面に戻る
+            cardLayout.show(mainPanel, "MAP");
+            updateDisplay();
+        });
+        shopPanel.add(backButton, BorderLayout.SOUTH);
+
+        mainPanel.add(shopPanel, "SHOP");
+        cardLayout.show(mainPanel, "SHOP");
+    }
+
+    //クリックしたマップごとの処理
+    public void startFieldBattle(String fieldType) {
+        this.currentField = fieldType;
+
+        if (fieldType.equals("BOSS")) {
+            //ボス戦の処理
+            backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのボス.jpg"));
+        } else if (fieldType.equals("FOREST")) {
+            //通常戦の処理
+            backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルの森.jpg"));
+        } else if (fieldType.equals("DUNGEON")) {
+            //ダンジョン戦の処理
+            backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのダンジョン.jpg"));
+        }
+
+        spawnEnemy();
+        enemyIcon();
+        updateDisplay();
+        cardLayout.show(mainPanel, "BATTLE");
+    } 
 }
