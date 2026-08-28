@@ -19,6 +19,8 @@ public class BattleGame extends JFrame {
     private ImageIcon currentBackgroundImage; // 現在の背景画像を保持するフィールド
     private String currentField = "FOREST"; // 現在のフィールドを保持するフィールド（例: "FOREST", "DUNGEON", "BOSS"）
     private int bossStage = 1; // ボスステージを保持するフィールド（1: ドラゴン, 2: 魔王）
+    private int currentround = 1; // 現在のラウンドを保持するフィールド
+    private int maxRounds = 5; // 最大ラウンド数を保持するフィールド
 
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // 背景画像のラベル
@@ -985,18 +987,42 @@ public class BattleGame extends JFrame {
                     }
                 }
 
+                //敵が全滅したときの処理
                 if(aliveEnemies.isEmpty()){
-                    logTextArea.append("敵の群れを倒した！\n");
-                    if(enemyCount < 3){
-                        enemyCount++;
-                        spawnEnemy();
-                        enemyIcon();
-                        updateDisplay();
-                        return;
+                    //ボスエリアの判定
+                    if (currentField.equals("BOSS")) {
+                        if (bossStage == 1) {
+                            bossStage = 2;
+                            logTextArea.append("ドラゴンを倒した！\n");
+                            logTextArea.append("魔王が現れた！\n");
+                            spawnEnemy();
+                            enemyIcon();
+                            updateDisplay();
+                            return;
+                        } else {
+                            //魔王撃破からクリア画面に
+                            logTextArea.append("魔王を倒した！\n");
+                            bossStage = 1;
+                            gameScreen(2);
+                            return;
+                        }
                     } else {
-                        logTextArea.append("すべての魔物を倒した！\n");
-                        gameScreen(2);
-                    }
+                        //森、ダンジョンの判定
+                        logTextArea.append("敵の群れを倒した！\n");
+                        if (enemyCount < 5) {
+                            enemyCount++;
+                            spawnEnemy();
+                            enemyIcon();
+                            updateDisplay();
+                            return;
+                        } else {
+                            logTextArea.append("すべての魔物を倒した");
+                            enemyCount = 1;
+                            gameScreen(4);
+                            return;
+                        }
+                        
+                    } 
                 }
             
                 //３．次のプレイヤーにチェンジ
@@ -1630,12 +1656,15 @@ public class BattleGame extends JFrame {
 
         if (fieldType.equals("BOSS")) {
             //ボス戦の処理
+            this.currentround = 1; // ラウンド数をリセット
             backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのボス.jpg"));
         } else if (fieldType.equals("FOREST")) {
             //通常戦の処理
+            this.currentround = 1; // ラウンド数をリセット
             backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルの森.jpg"));
         } else if (fieldType.equals("DUNGEON")) {
             //ダンジョン戦の処理
+            this.currentround = 1; // ラウンド数をリセット
             backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのダンジョン.jpg"));
         }
 
