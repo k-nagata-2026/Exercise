@@ -1626,13 +1626,13 @@ public class BattleGame extends JFrame {
         //２．タイトル
         JLabel titleLabel = new JLabel("ショップ(SHOP)");
         titleLabel.setFont(new Font("MS ゴシック", Font.BOLD, 28));
-        titleLabel.setBounds(30,20,250,40);
+        titleLabel.setBounds(30,30,220,40);
         shopPanel.add(titleLabel);
 
         //３．所持金
         JLabel coinLabel = new JLabel("所持コイン：" + gold + "コイン");
         coinLabel.setFont(new Font("MSゴシック", Font.BOLD,24));
-        coinLabel.setBounds(200,20,350,40);
+        coinLabel.setBounds(260,30,300,40);
         shopPanel.add(coinLabel);
 
         //４．マップに戻るボタン
@@ -1641,7 +1641,7 @@ public class BattleGame extends JFrame {
         backButton.setBackground(Color.BLUE);
         backButton.setForeground(Color.WHITE);
         backButton.setFocusPainted(false);
-        backButton.setBounds(600,20,160,40);
+        backButton.setBounds(1080,30,160,40);
         backButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1654,17 +1654,17 @@ public class BattleGame extends JFrame {
         //商品棚の棚板
         JPanel shelf1 = new JPanel();
         shelf1.setBackground(new Color(120, 60, 20));
-        shelf1.setBounds(100,190,450,10);
+        shelf1.setBounds(50,350,880,12);
         shopPanel.add(shelf1);
 
         JPanel shelf2 = new JPanel();
         shelf2.setBackground(new Color(120, 60, 20));
-        shelf2.setBounds(100,370,450,10);
+        shelf2.setBounds(50,650,880,12);
         shopPanel.add(shelf2);
 
         //アイテムの生成
         Item item1 = new Item("Herb", 50,"回復", 15, "kanpou.png");
-        Item item2 = new Item("Smokebomb", 30, "離脱", 50, "ninja_dough_kemuridama.png");
+        Item item2 = new Item("Smokebomb", 30, "離脱", 50, "ninja_dougu_kemuridama.png");
         Item item3 = new Item("Panacea", 80, "回復", 0, "medical_medicine.png");
         Item item4 = new Item("CamouflageCloth", 10, "隠れる", 250, "ninja_kakuremi.png");
         Item item5 = new Item("StrongSword", 300, "装備", 30, "game_ken_seiken.png");
@@ -1676,7 +1676,7 @@ public class BattleGame extends JFrame {
 
         //アイテム１
         JButton item1Btn = createItemButton(item1.getImagePath(), String.valueOf(item1.getPrice()));
-        item1Btn.setBounds(180,80,100,100);
+        item1Btn.setBounds(60,200,140,120);
         item1Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1687,7 +1687,7 @@ public class BattleGame extends JFrame {
 
         //アイテム２
         JButton item2Btn = createItemButton(item2.getImagePath(), String.valueOf(item2.getPrice()));
-        item2Btn.setBounds(180,80,100,100);
+        item2Btn.setBounds(230,200,140,120);
         item2Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1698,7 +1698,7 @@ public class BattleGame extends JFrame {
 
         //アイテム３
         JButton item3Btn = createItemButton(item3.getImagePath(), String.valueOf(item3.getPrice()));
-        item3Btn.setBounds(180,80,100,100);
+        item3Btn.setBounds(400,200,140,120);
         item3Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1709,7 +1709,7 @@ public class BattleGame extends JFrame {
 
         //アイテム４
         JButton item4Btn = createItemButton(item4.getImagePath(), String.valueOf(item4.getPrice()));
-        item4Btn.setBounds(180,80,100,100);
+        item4Btn.setBounds(570,200,140,120);
         item4Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1720,7 +1720,7 @@ public class BattleGame extends JFrame {
 
         //アイテム５
         JButton item5Btn = createItemButton(item5.getImagePath(), String.valueOf(item5.getPrice()));
-        item5Btn.setBounds(180,80,100,100);
+        item5Btn.setBounds(740,200,140,120);
         item5Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1731,7 +1731,7 @@ public class BattleGame extends JFrame {
 
         //アイテム６
         JButton item6Btn = createItemButton(item6.getImagePath(), String.valueOf(item6.getPrice()));
-        item6Btn.setBounds(180,80,100,100);
+        item6Btn.setBounds(60,500,140,120);
         item6Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1742,7 +1742,7 @@ public class BattleGame extends JFrame {
 
         //アイテム７
         JButton item7Btn = createItemButton(item7.getImagePath(), String.valueOf(item7.getPrice()));
-        item7Btn.setBounds(180,80,100,100);
+        item7Btn.setBounds(230,500,140,120);
         item7Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1753,7 +1753,7 @@ public class BattleGame extends JFrame {
 
         //アイテム８
         JButton item8Btn = createItemButton(item8.getImagePath(), String.valueOf(item8.getPrice()));
-        item8Btn.setBounds(180,80,100,100);
+        item8Btn.setBounds(400,500,140,120);
         item8Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1764,7 +1764,7 @@ public class BattleGame extends JFrame {
 
         //アイテム９
         JButton item9Btn = createItemButton(item9.getImagePath(), String.valueOf(item9.getPrice()));
-        item9Btn.setBounds(180,80,100,100);
+        item9Btn.setBounds(570,500,140,120);
         item9Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1775,7 +1775,7 @@ public class BattleGame extends JFrame {
 
         //アイテム１０
         JButton item10Btn = createItemButton(item10.getImagePath(), String.valueOf(item10.getPrice()));
-        item10Btn.setBounds(180,80,100,100);
+        item10Btn.setBounds(740,500,140,120);
         item10Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1786,23 +1786,23 @@ public class BattleGame extends JFrame {
 
         //店員
         JLabel teninLabel = new JLabel(new ImageIcon("job_tenin_man.png"));
-        teninLabel.setBounds(600,100,150,200);
+        teninLabel.setBounds(970,100,250,430);
         shopPanel.add(teninLabel);
 
         //店員のセリフ
         JLabel dialogLabel = new JLabel("いらっしゃいませ！",JLabel.CENTER);
-        dialogLabel.setFont(new Font("MSゴシック",Font.BOLD,20));
+        dialogLabel.setFont(new Font("MSゴシック",Font.BOLD,16));
         dialogLabel.setOpaque(true);
         dialogLabel.setBackground(Color.WHITE);
         dialogLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY, 2));
-        dialogLabel.setBounds(600,300,150,40);
+        dialogLabel.setBounds(1040,550,180,40);
         shopPanel.add(dialogLabel);
 
         //売るボタン
         JButton sellButton = new JButton("売る(SELL)");
         sellButton.setFont(new Font("MSゴシック",Font.BOLD,18));
         sellButton.setBackground(Color.WHITE);
-        sellButton.setBounds(600,350,150,40);
+        sellButton.setBounds(1080,600,140,45);
         sellButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -1822,12 +1822,14 @@ public class BattleGame extends JFrame {
         button.setLayout(new BorderLayout());
 
         //アイテム画像の設定
-        JLabel imageLabel = new JLabel(new ImageIcon(imagePath), JLabel.CENTER);
+        ImageIcon rawIcon = new ImageIcon(imagePath);
+        Image scaledImage = rawIcon.getImage().getScaledInstance(80, 80, Image.SCALE_SMOOTH);//画像を80x80に縮小
+        JLabel imageLabel = new JLabel(new ImageIcon(scaledImage), JLabel.CENTER);
         button.add(imageLabel, BorderLayout.CENTER);
 
         //価格ラベルの設定
         JLabel priceLabel = new JLabel(price + "コイン", JLabel.CENTER);
-        priceLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        priceLabel.setFont(new Font("MSゴシック", Font.BOLD, 14));
         priceLabel.setOpaque(true);
         priceLabel.setBackground(Color.WHITE);
         button.add(priceLabel, BorderLayout.SOUTH);
