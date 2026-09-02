@@ -311,7 +311,7 @@ public class BattleGame extends JFrame implements KeyListener {
         defendButton.setForeground(Color.WHITE);
 
         healButton = new JButton("💚 回復 (残り: " + itemUsesLeft + ")");
-        healButton.setBackground(Color.decode("#006400")); 
+        healButton.setBackground(Color.decode("#22d222")); 
         healButton.setForeground(Color.WHITE);
 
         runButton = new JButton("🏃 逃げる");
@@ -319,7 +319,7 @@ public class BattleGame extends JFrame implements KeyListener {
         runButton.setForeground(Color.WHITE);
 
         nextStageButton = new JButton("⏭️ 次へ");
-        nextStageButton.setBackground(Color.decode("#D2691E")); 
+        nextStageButton.setBackground(Color.decode("#4d2395")); 
         nextStageButton.setForeground(Color.WHITE);
         nextStageButton.setVisible(false);
 
