@@ -1620,18 +1620,33 @@ public class BattleGame extends JFrame {
     //ショップ画面のメソッド
     private void openShopScreen() {
         //１．ショップパネルの作成
-        JPanel shopPanel = new JPanel(null);
-        shopPanel.setBackground(new Color(220, 220, 220));
+        JPanel shopPanel = new JPanel(null) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                //背景画像の描画
+                ImageIcon backgroundIcon = new ImageIcon("ターン制コマンドバトルの街.jpg");
+                Image backgroundImage = backgroundIcon.getImage();
+                g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+
+                //背景の上に半透明の黒いオーバーレイを描画
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setColor(new Color(0, 0, 0, 100)); // 半透明の黒
+                g2d.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
 
         //２．タイトル
         JLabel titleLabel = new JLabel("ショップ(SHOP)");
         titleLabel.setFont(new Font("MS ゴシック", Font.BOLD, 28));
+        titleLabel.setForeground(Color.WHITE);
         titleLabel.setBounds(30,30,220,40);
         shopPanel.add(titleLabel);
 
         //３．所持金
         JLabel coinLabel = new JLabel("所持コイン：" + gold + "コイン");
         coinLabel.setFont(new Font("MSゴシック", Font.BOLD,24));
+        coinLabel.setForeground(Color.YELLOW);
         coinLabel.setBounds(260,30,300,40);
         shopPanel.add(coinLabel);
 
