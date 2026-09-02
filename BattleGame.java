@@ -442,7 +442,7 @@ public class BattleGame extends JFrame {
         }
     }
 
-    //敵のスポーンメソッド
+    //敵のスポーンメソッド(敵のステータスもここで決める)
     private void spawnEnemy() {
         //戦いの前に敵パーティをクリア
         enemyParty.clear();
@@ -467,7 +467,7 @@ public class BattleGame extends JFrame {
             for (int i = 0; i < numberOfEnemies; i++){
                 //スライムA、スライムB…と名付ける
                 char suffix = (char)('A' + i);
-                enemyParty.add(new Enemy("スライム" + suffix, 20, 5, 5,"fantasy_game_character_slime.png", 1));
+                enemyParty.add(new Enemy("スライム" + suffix, 20, 5, 5,"fantasy_game_character_slime.png", 1, 1));
             }
 
             //ダンジョンの処理 
@@ -481,7 +481,7 @@ public class BattleGame extends JFrame {
 
             for (int i = 0; i < numberOfEnemies; i++){
                 char suffix = (char)('A' + i);
-                enemyParty.add(new Enemy("ゴブリン" + suffix, 25, 10, 5, "fantasy_goblin.png", 1));
+                enemyParty.add(new Enemy("ゴブリン" + suffix, 25, 10, 5, "fantasy_goblin.png", 1,5));
             }
 
             //ボスエリアの処理
@@ -493,10 +493,10 @@ public class BattleGame extends JFrame {
             
             if (bossStage == 1) {
                 logTextArea.append("伝説の ドラゴン があらわれた！\n");
-                enemyParty.add(new Enemy("ドラゴン" ,500, 30, 130, "fantasy_dragon.png", 1));
+                enemyParty.add(new Enemy("ドラゴン" ,500, 30, 130, "fantasy_dragon.png", 1,0));
             } else if (bossStage == 2) {
                 logTextArea.append("伝説の 魔王 があらわれた！\n");
-                enemyParty.add(new Enemy("魔王" ,800, 50, 200, "fantasy_maou_devil.png", 1));
+                enemyParty.add(new Enemy("魔王" ,800, 50, 200, "fantasy_maou_devil.png", 1,1000));
             }
         }
         
@@ -598,7 +598,7 @@ public class BattleGame extends JFrame {
         }
     }
 
-    //バトル画面の設定
+    //バトル画面の設定(技はここ、敵を倒したときの処理もここ)
     private JPanel createBattlePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -831,6 +831,11 @@ public class BattleGame extends JFrame {
                             int index = enemyParty.indexOf(aliveEnemy);
                             enemyImageLabels[index].setEnabled(false);
 
+                            //コインをあげる処理
+                            int getCoin = aliveEnemy.getDropCoin();
+                            gold += getCoin;
+                            logTextArea.append(getCoin + "コインを手に入れた！\n");
+
                             //現在行動中のプレイヤーに経験値をあげる
                             player.setExp(player.getExp() + aliveEnemy.getRewardExp());
 
@@ -861,6 +866,11 @@ public class BattleGame extends JFrame {
                                 logTextArea.append(enemyInside.getName() + " をたおした！\n");
                                 int index = enemyParty.indexOf(enemyInside);
                                 enemyImageLabels[index].setEnabled(false);
+
+                                //コインをあげる処理
+                                int getCoin = enemyInside.getDropCoin();
+                                gold += getCoin;
+                                logTextArea.append(getCoin + "コインを手に入れた！\n");
 
                                 //全体攻撃をしたプレイヤーに経験値をあげる
                                 player.setExp(player.getExp() + enemyInside.getRewardExp());

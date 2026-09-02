@@ -1,9 +1,10 @@
 public class Enemy extends Character {
     private int rewardExp;
+    private int dropCoin;
     // わくぐみのみ（つぎのステップでなかみをかきます）
-    public Enemy(String name, int hp, int atk, int mgc, String imagePath, int level) {
+    public Enemy(String name, int hp, int atk, int mgc, String imagePath, int level, int dropCoin) {
         super(name, hp, atk, mgc, imagePath, level); // おやクラスのコンストラクタをよびだす
-
+        this.dropCoin = dropCoin * this.level; // ドロップするコインの量を設定
         //最大Lv10
         if (this.level > 10) {
             this.level = 10;
@@ -30,5 +31,9 @@ public class Enemy extends Character {
 
     public int getRewardExp() {
         return this.rewardExp;
+    }
+
+    public int getDropCoin() {
+        return this.dropCoin;
     }
 }
