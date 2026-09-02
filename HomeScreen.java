@@ -25,12 +25,12 @@ public class HomeScreen extends JFrame {
         startButton.setBackground(new Color(25, 25, 25));
         startButton.setFocusPainted(false);
 
-        JButton exitButton = new JButton("EXIT");
+       JButton exitButton = new JButton("EXIT");
         exitButton.setBounds(535, 500, 350, 60);
-        exitButton.setFont(new Font("Times New Roman", Font.BOLD, 26));
-        exitButton.setForeground(new Color(255, 215, 0));
-        exitButton.setBackground(new Color(25, 25, 25));
-        exitButton.setFocusPainted(false);
+       exitButton.setFont(new Font("Times New Roman", Font.BOLD, 26));
+       exitButton.setForeground(new Color(255, 215, 0));
+       exitButton.setBackground(new Color(25, 25, 25));
+       exitButton.setFocusPainted(false);
 
         background.add(startButton);
         background.add(exitButton);
@@ -45,10 +45,10 @@ public class HomeScreen extends JFrame {
 
 });
 
-        exitButton.addActionListener(e -> {
-            System.exit(0);
-        });
-    }
+     exitButton.addActionListener(e -> {
+         System.exit(0);
+       });
+ }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

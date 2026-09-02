@@ -20,7 +20,6 @@ public class BattleGame extends JFrame {
    final  private JProgressBar playerHpBar;
    final  private JProgressBar enemyHpBar;
 
-   private JProgressBar hpBar;
     private Player player;
     private Enemy enemy;
     private int enemyCount = 0; // 0から開始するように修正
@@ -316,7 +315,6 @@ private void handleEnemyDefeat() {
         buttonPanel.add(potionButton);
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        add(hpPanel, BorderLayout.NORTH);
         add(backgroundLabel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
         
@@ -412,8 +410,24 @@ backgroundLabel.add(playerHpBar);
         enemyImageLabel.setIcon(enemy.getIcon());
         updateDisplay();
         logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
-    }
+    
+    
+enemyHpBar.setBounds(900, 40, 250, 25);
+enemyHpBar.setMaximum(enemy.getMaxHp());
+enemyHpBar.setValue(enemy.getHp());
+enemyHpBar.setStringPainted(true);
+enemyHpBar.setForeground(Color.RED);
 
+backgroundLabel.add(enemyHpBar);
+    enemyHpBar.setMaximum(enemy.getMaxHp());
+enemyHpBar.setValue(enemy.getHp());
+enemyHpBar.setMaximum(enemy.getMaxHp());
+enemyHpBar.setValue(enemy.getHp());
+
+
+ }
+
+    
  
     // 他メソッド（updateDisplay, endGame, choicePlayer, spawnEnemy 等）はそのまま記述
     private void updateDisplay() {
@@ -432,8 +446,15 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
 } else {
     playerHpBar.setForeground(Color.RED);
 }
+
+    if (enemy.getHp() > enemy.getMaxHp() * 0.6) {
+    enemyHpBar.setForeground(Color.GREEN);
+} else if (enemy.getHp() > enemy.getMaxHp() * 0.3) {
+    enemyHpBar.setForeground(Color.ORANGE);
+} else {
+    enemyHpBar.setForeground(Color.RED);
+}
     }
-    
        
 
     private void endGame() {
