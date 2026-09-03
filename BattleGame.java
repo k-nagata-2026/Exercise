@@ -22,6 +22,8 @@ public class BattleGame extends JFrame {
     private int currentround = 1; // 現在のラウンドを保持するフィールド
     private int maxRounds = 5; // 最大ラウンド数を保持するフィールド
     private int gold = 0;//所持コインのフィールド
+    private Item[] itembox = new Item[10]; // アイテムリストを保持するフィールド
+    private JLabel coinLabel; // 所持コインを表示するラベル
 
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // 背景画像のラベル
@@ -43,6 +45,7 @@ public class BattleGame extends JFrame {
     private int retryCount = 1; // リトライ回数を数えるためのフィールド
     private Player coveringPlayer; // かばうを使ったプレイヤーを保持するフィールド
 
+    //コンストラクタ(一番最初に実行されるメソッド)
     public BattleGame() {
         setTitle("ターン制コマンドバトル");
         setSize(1220,750);
@@ -71,6 +74,9 @@ public class BattleGame extends JFrame {
 
         //最初はタイトル画面を表示する
         cardLayout.show(mainPanel,"TITLE");
+
+        itembox[0] = new Item("強い剣", 10, "装備", 20, "geme_ken_seiken.png");
+        itembox[1] = new Item("強い剣", 20, "装備", 15, "geme_ken_kusuri.png");
     }
 
     public static void main(String[] args) {
@@ -674,7 +680,7 @@ public class BattleGame extends JFrame {
         bottomPanel.add(statusPanel, BorderLayout.NORTH); // ステータスパネルをしたがわのうえにはいち
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
         
-        // ぶひん（Parts）をメインウィンドウにはいち
+        // ぶひん（Parts）をメインウィンドウに追加
         panel.add(backgroundLabel, BorderLayout.CENTER); // 背景を真ん中に配置
         panel.add(bottomPanel, BorderLayout.SOUTH);       // 操作エリアを下側に配置
         buttonPanel.add(skillButton); // スキルボタンを下の左側に配置
@@ -1074,29 +1080,79 @@ public class BattleGame extends JFrame {
 
         //アイテムボタンの追加
         itemButton.addActionListener(new ActionListener() {
-            @Override
+           @Override
             public void actionPerformed(ActionEvent e) {
-                player.guardFlg = 0; // ガードフラグをリセット
-                logTextArea.append(player.getName() + " はアイテムをつかった！ HPが20かいふくした！\n");
-                showPopupText("+20" , Color.GREEN, playerImageLabels[currentPlayerIndex]);
-                player.hp += 20; // HPを20かいふくする
-                if (player.hp > player.maxHp) {
-                    player.hp = player.maxHp; // HPがさいだいHPをこえないようにする
-                }
-                updateDisplay();
 
+                // 1. ダイアログに表示（ひょうじ）するための「選択肢（せんたくし）リスト（文字列（もじれつ））」を作る（つくる）
+                String[] choices = new String[10];
+                for (int i = 0; i < itembox.length; i++) {
+                    if (itembox[i] != null) {
+                        choices[i] = "スロット " + (i + 1) + " : " + itembox[i].getName();
+                    } else {
+                        choices[i] = "スロット " + (i + 1) + " : (からっぽ)";
+                    }
+                }
+
+                // 2. Swingの便利（べんり）なインプットダイアログを表示（ひょうじ）（プルダウン形式（けいしき））
+                Object selected = JOptionPane.showInputDialog(
+                    BattleGame.this,
+                    "使用するアイテムを選択してください",
+                    "アイテムボックス (最大10個)",
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    choices, // 10個（こ）のスロットの文字（もじ）配列（はいれつ）
+                    choices[0] // 最初（さいしょ）から選択（せんたく）されている項目（こうもく）
+                );
+
+                // キャンセルされた（×ボタンやCancel）場合（ばあい）は処理（しょり）を中断（ちゅうだん）する
+                if (selected == null) { return; }
+
+                // 3. 選択（せんたく）された項目（こうもく）が「何（なん）番（ばん）目（め）のスロットか」を特定（とくてい）する
+                int selectedIndex = -1;
+                for (int i = 0; i < choices.length; i++) {
+                    if (choices[i].equals(selected)) {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+
+                // 4. そのスロットの中身（なかみ）が「からっぽ（null）」じゃないかチェック
+                Item selectedItem = itembox[selectedIndex];
+                if (selectedItem == null) {
+                    logTextArea.append("そのスロットはからっぽです！\n");
+                    return;
+                }
+
+                // 5. アイテムを使用（しよう）し、使（つか）ったスロットをnullにして消（け）す
+                //アイテムを使うメソッドをここで呼び出す
+                //String resultLog = 使ったアイテム
+                itembox[selectedIndex] = null; // ★ 使（つか）ったら消（け）える！
+                //logTextArea.append(resultLog + "\n");
+
+                // 6. 敵（てき）が倒（たお）れたかチェック
+                if (enemy.getHp() <= 0) {
+                    logTextArea.append(enemy.getName() + " を倒した！\n");
+                    // ★ 10%の確率（かくりつ）でアイテムドロップ
+                    if (Math.random() < 0.1) {
+                        //addItemToBox(new Item(なんらかの引数));
+                        logTextArea.append("★ " + enemy.getName() + " が薬草を落とした！\n");
+                    }
+                }
+            
+                spawnEnemy();
+                updateDisplay();
                 //チェンジする前に今のプレイヤーのインデックスを覚えておく
                 int oldIndex = currentPlayerIndex;
 
-                //３．次のプレイヤーにチェンジ
+                //７．次のプレイヤーにチェンジ
                 switchNextPlayer();
 
-                //４．敵のターン
+                //８．敵のターン
                 if (currentPlayerIndex <= oldIndex){
                     startEnemyTurn();
                 }
-
             }
+            
         });
 
         //技辞典ボタンの追加
@@ -1654,7 +1710,7 @@ public class BattleGame extends JFrame {
         shopPanel.add(titleLabel);
 
         //３．所持金
-        JLabel coinLabel = new JLabel("所持コイン：" + gold + "コイン");
+        coinLabel = new JLabel("所持コイン：" + gold + "コイン");
         coinLabel.setFont(new Font("MSゴシック", Font.BOLD,24));
         coinLabel.setForeground(Color.YELLOW);
         coinLabel.setBounds(260,30,300,40);
@@ -1892,11 +1948,25 @@ public class BattleGame extends JFrame {
     private void buyItem(Item item) {
         if (gold >= item.getPrice()) {
             gold -= item.getPrice();//コインを減らす
+            addItemToBox(item);
             logTextArea.append(item.getName() + "を買いました！\n");
             updateDisplay();
         } else {
             logTextArea.append("所持金が足りない！\n");
         }
+    }
+
+    //アイテムボックスの空きスロットにアイテムを追加するメソッド
+    private void addItemToBox(Item item) {
+        for (int i = 0; i < itembox.length; i++) {
+            if (itembox[i] == null) {       // 空（あ）きスロットを発見（はっけん）！
+                itembox[i] = item;           // アイテムをセット
+                logTextArea.append("アイテムボックスのスロット " + (i + 1) + " に " + item.getName() + " を追加しました。\n");
+                return;                      // 1つ入れたら終了（しゅうりょう）
+            }
+        }
+        // ここまで来たら全スロットが埋まっている
+        logTextArea.append("アイテムボックスがいっぱいです！ " + item.getName() + " は拾えませんでした。\n");
     }
 
 }
