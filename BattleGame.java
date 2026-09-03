@@ -204,7 +204,7 @@ if (!enemy.isAlive()) {
         });
         // ★ インスタンスをしょきか（Initialize）
         choicePlayer();
-        enemy = new Enemy("スライム", 80, 15, 12, "Picture5.png");
+        enemy = new Enemy("スライム", 180, 35, 15, "Picture5.png");
         enemy2 = new Enemy("インフェルノドラゴン", 250, 40, 20, "dragon1.png");
         enemy3 = new Enemy("魔王 (Demon King)", 500, 65, 35, "Demon king1.png");
         // ★ がぞうをがめんのラベルにセットする

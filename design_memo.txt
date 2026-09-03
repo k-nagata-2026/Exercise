@@ -25,8 +25,8 @@
 ４．勝ったら低確率でアイテムゲット。次の敵（Enemy）に遭遇。負けたらゲームオーバー
 5.  敵に対抗する
  6．レベルアップする
-7．低確率で　イテむ　を　げっおする
-8．Enemy　を　１０　隊　倒す　と　Boss 【Enemy】が　登場　する
+7．低確率で イテむ を げっおする
+8．Enemy を １０ 隊 倒す と Boss 【Enemy】が 登場 する
 【GameClear条件】
 敵（Enemy）を10体倒すと、BossEnemyが登場。BossEnemyを倒すとゲームクリア
 
@@ -51,3 +51,66 @@
 【Item】
   ・Herb（hpを+15）//薬草
   ・Bom（自分と敵のhpを-20）//爆弾
+
+
+# ==============================================================================
+# ADDITIONAL DESIGN MEMO: SYSTEM EXPANSION & MECHANICS SPECIFICATION
+# ==============================================================================
+
+【1. SYSTEM CORE PARAMETERS & MECHANICS】
+上記仕様書（Specification）のコアデータを基に、ゲームプレイの深みを増すための拡張ロジック（Extension Logic）を以下のように定義・実装します。
+
+■ 素早さ（Speed）による先行判定（Priority Turn System）
+・毎ターンの開始時に Player.Speed と Enemy.Speed を比較（Compare）します。
+・Formula: 
+  if (Player.Speed >= Enemy.Speed) -> Player Turn Priority = True (先行)
+  else -> Enemy Turn Priority = True (後攻)
+
+■ 防衛（Defense）によるダメージ軽減式（Damage Calculation Formula）
+・敵の攻撃力（AttackPower）の数値をそのまま受けるのではなく、キャラクター固有の防御値で減算します。
+・Formula:
+  Calculated Damage = Attacker.AttackPower - Defender.Defense
+  ※最小ダメージ保証（Minimum Damage Lock）：計算結果が 0 以下の場合でも、一律 1 ダメージを与えます。
+
+■ 逃げる（Run）のペナルティ制御（Escape Management Loop）
+・「逃げる」を選択した場合、即座に現在の戦闘を破棄（Reset Environment）し、次の敵（Next Enemy）を生成します。
+・ただし、勝利判定（Victory State）ではないため、討伐カウント（KillCounter）は加算されません。これにより、プレイヤーが意図的に強敵を回避し続ける戦略にリスクを与えます。
+
+
+【2. CHARACTER & ENEMY SKILL EXTRA SPECIFICATIONS】
+各キャラクターの個性を際立たせるため、スキル（skill）および防衛（Defense）の数値を以下のように設計拡張（Design Expansion）します。
+
+■ Human Class Details
+・Hero（勇者）   : Base Defense = 5  | Active Skill = "Absolute Slash"
+  -> 効果 (Effect): 敵単体に通常攻撃の 1.5倍 の物理ダメージを与える。（クールダウン: 2ターン）
+・Wizard（魔法使い）: Base Defense = 3  | Active Skill = "Meteor Strike"
+  -> 効果 (Effect): 敵の Defense 値を完全に無視（Bypassing Armor）し、固定 20 ダメージを与える。
+・Knight（騎士） : Base Defense = 8  | Active Skill = "Holy Sanctuary"
+  -> 効果 (Effect): 1ターンの間、敵から受ける全てのダメージ（Incoming Damage）を完全に 0 に無効化する。
+
+■ Enemy AI & Loot Details
+・Slime（スライム）: Base Defense = 1  | AI Behavior = "Cell Division"
+  -> 効果 (Effect): 残りHPが 3 以下になった時、自身のターン開始時に自動で HP を +3 回復する。
+  -> ドロップ (Loot): 撃破時、10% の低確率（Low Probability）で『Herb』をドロップ。
+・Dragon（ドラゴン）: Base Defense = 4  | AI Behavior = "Flame Breath"
+  -> 効果 (Effect): 3ターン経過するごとに、回避不能かつ防御無視の全体 10 ダメージを放射する。
+  -> ドロップ (Loot): 撃破時、25% の中確率（Medium Probability）で『Bom』をドロップ。
+・Demon（魔王）  : Base Defense = 6  | Boss Passive = "Abyssal Curse"
+  -> 効果 (Effect): 戦闘開始フェーズ（Pre-battle Phase）に発動。プレイヤーの Speed を永続的に 50% デバフ（半減）させる。
+
+
+【3. LEVEL UP PROGRESSION MATRIX】
+敵を倒して勝利した際、キャラクターが成長する数値を以下のように固定定義します。
+
+・Level Up Trigger: 敵の HitPoint が 0 以下になった場合、自動的に実行。
+・Stat Increment Rate: 
+  - Player.Level += 1
+  - Player.AttackPower += 2
+  - Player.MaxHitPoint += 10
+・HP Refresh Matrix: レベルアップの瞬間、プレイヤーの現在の HitPoint は最大値（Max HitPoint）まで完全全回復します。
+
+
+【4. ITEM MECHANICS & SUICIDE PREVENTION LOCK】
+・Herb（薬草）: プレイヤーの現HPにそのまま +15 加算。ただし、最大体力（Max HP）の上限を越えることはできないクリッピング処理（Clipping Filter）を実装。
+・Bom（爆弾） : 自分と敵のHPを同時に 20 減算するハイリスクアイテム。
+  - 【自爆防止ロック（Suicide Prevention Lock）】: プレイヤー自身のHPが 20 以下の場合、アイテムリスト内での使用を選択不可（Disabled）にし、不慮のゲームオーバーを回避するシステムを導入。
