@@ -75,8 +75,6 @@ public class BattleGame extends JFrame {
         //最初はタイトル画面を表示する
         cardLayout.show(mainPanel,"TITLE");
 
-        itembox[0] = new Item("強い剣", 10, "装備", 20, "geme_ken_seiken.png");
-        itembox[1] = new Item("強い剣", 20, "装備", 15, "geme_ken_kusuri.png");
     }
 
     public static void main(String[] args) {
@@ -1744,16 +1742,16 @@ public class BattleGame extends JFrame {
         shopPanel.add(shelf2);
 
         //アイテムの生成
-        Item item1 = new Item("Herb", 50,"回復", 15, "kanpou.png");
-        Item item2 = new Item("Smokebomb", 30, "離脱", 50, "ninja_dougu_kemuridama.png");
-        Item item3 = new Item("Panacea", 80, "回復", 0, "medical_medicine.png");
-        Item item4 = new Item("CamouflageCloth", 10, "隠れる", 250, "ninja_kakuremi.png");
-        Item item5 = new Item("StrongSword", 300, "装備", 30, "game_ken_seiken.png");
-        Item item6 = new Item("StrongCane", 300, "装備", 30, "tsue_sennin.png");
-        Item item7 = new Item("StrongArmor", 300, "装備", 60, "gogatsu_ningyou.png");
-        Item item8 = new Item("Bag", 300, "装備", 0, "toy_waraibukuro.png");
-        Item item9 = new Item("Book", 300, "装備", 0, "book_yoko.png");
-        Item item10 = new Item("Ohnusa", 300, "装備", 0, "oharai_bou.png");
+        Item item1 = new HealItem("Herb", 50,"回復", 15, "kanpou.png");
+        Item item2 = new EscapeItem("Smokebomb", 30, "離脱", 50, "ninja_dougu_kemuridama.png");
+        Item item3 = new HealItem("Panacea", 80, "回復", 0, "medical_medicine.png");
+        Item item4 = new EscapeItem("CamouflageCloth", 10, "隠れる", 250, "ninja_kakuremi.png");
+        Item item5 = new EquipmentItem("StrongSword", 300, "装備", 30, "game_ken_seiken.png");
+        Item item6 = new EquipmentItem("StrongCane", 300, "装備", 30, "tsue_sennin.png");
+        Item item7 = new EquipmentItem("StrongArmor", 300, "装備", 60, "gogatsu_ningyou.png");
+        Item item8 = new EquipmentItem("Bag", 300, "装備", 0, "toy_waraibukuro.png");
+        Item item9 = new EquipmentItem("Book", 300, "装備", 0, "book_yoko.png");
+        Item item10 = new EquipmentItem("Ohnusa", 300, "装備", 0, "oharai_bou.png");
 
         //アイテム１
         JButton item1Btn = createItemButton(item1.getImagePath(), String.valueOf(item1.getPrice()));
@@ -1948,8 +1946,9 @@ public class BattleGame extends JFrame {
     private void buyItem(Item item) {
         if (gold >= item.getPrice()) {
             gold -= item.getPrice();//コインを減らす
-            addItemToBox(item);
-            logTextArea.append(item.getName() + "を買いました！\n");
+            if (addItemToBox(item)) {
+                logTextArea.append(item.getName() + "を買いました！\n");
+            }
             updateDisplay();
         } else {
             logTextArea.append("所持金が足りない！\n");
@@ -1957,16 +1956,16 @@ public class BattleGame extends JFrame {
     }
 
     //アイテムボックスの空きスロットにアイテムを追加するメソッド
-    private void addItemToBox(Item item) {
+    private boolean addItemToBox(Item item) {
         for (int i = 0; i < itembox.length; i++) {
             if (itembox[i] == null) {       // 空（あ）きスロットを発見（はっけん）！
                 itembox[i] = item;           // アイテムをセット
-                logTextArea.append("アイテムボックスのスロット " + (i + 1) + " に " + item.getName() + " を追加しました。\n");
-                return;                      // 1つ入れたら終了（しゅうりょう）
+                return true;                 // 1つ入れたら終了（しゅうりょう）
             }
         }
         // ここまで来たら全スロットが埋まっている
         logTextArea.append("アイテムボックスがいっぱいです！ " + item.getName() + " は拾えませんでした。\n");
+        return false;
     }
 
 }

@@ -84,6 +84,11 @@ public class Player extends Character {
             this.hp = this.maxHp;
         }
         return leveledUp;
+
+    }
+
+    public void setHp(int hp) {
+        this.hp = hp;
     }
 
 }
