@@ -1759,7 +1759,7 @@ public class BattleGame extends JFrame {
         item1Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item1);//オブジェクトごと渡す
+                showItemDetailDialog(item1);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item1Btn);
@@ -1770,7 +1770,7 @@ public class BattleGame extends JFrame {
         item2Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item2);//オブジェクトごと渡す
+                showItemDetailDialog(item2);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item2Btn);
@@ -1781,7 +1781,7 @@ public class BattleGame extends JFrame {
         item3Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item3);//オブジェクトごと渡す
+                showItemDetailDialog(item3);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item3Btn);
@@ -1792,7 +1792,7 @@ public class BattleGame extends JFrame {
         item4Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item4);//オブジェクトごと渡す
+                showItemDetailDialog(item4);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item4Btn);
@@ -1803,7 +1803,7 @@ public class BattleGame extends JFrame {
         item5Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item5);//オブジェクトごと渡す
+                showItemDetailDialog(item5);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item5Btn);
@@ -1814,7 +1814,7 @@ public class BattleGame extends JFrame {
         item6Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item6);//オブジェクトごと渡す
+                showItemDetailDialog(item6);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item6Btn);
@@ -1825,7 +1825,7 @@ public class BattleGame extends JFrame {
         item7Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item7);//オブジェクトごと渡す
+                showItemDetailDialog(item7);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item7Btn);
@@ -1836,7 +1836,7 @@ public class BattleGame extends JFrame {
         item8Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item8);//オブジェクトごと渡す
+                showItemDetailDialog(item8);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item8Btn);
@@ -1847,7 +1847,7 @@ public class BattleGame extends JFrame {
         item9Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item9);//オブジェクトごと渡す
+                showItemDetailDialog(item9);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item9Btn);
@@ -1858,7 +1858,7 @@ public class BattleGame extends JFrame {
         item10Btn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buyItem(item10);//オブジェクトごと渡す
+                showItemDetailDialog(item10);//オブジェクトごと渡す
             }
         });
         shopPanel.add(item10Btn);
@@ -1893,6 +1893,84 @@ public class BattleGame extends JFrame {
 
         mainPanel.add(shopPanel, "SHOP");
         cardLayout.show(mainPanel, "SHOP");
+    }
+
+    //ショップ画面でクリックしたときにアイテムの説明を表示するメソッド
+    private void showItemDetailDialog(Item item) {
+        //1.ダイアログの設定
+        JDialog dialog = new JDialog((Frame) null, "アイテム確認", true);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(this); // 画面中央に表示
+        dialog.setLayout(null);
+        dialog.getContentPane().setBackground(Color.WHITE);//背景色を白にする
+        
+        //2.アイテムの画像
+        JLabel imageLabel = new JLabel();
+        if (item.getImagePath() != null && !item.getImagePath().isEmpty()) {
+            ImageIcon originalIcon = new ImageIcon(item.getImagePath());
+            Image scaledImage = originalIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(scaledImage));
+        }
+        imageLabel.setBounds(20, 20, 100, 100);
+        dialog.add(imageLabel);
+
+        //3.アイテムの名前
+        JLabel nameLabel = new JLabel(item.getName());
+        nameLabel.setFont(new Font("MS ゴシック", Font.BOLD, 20));
+        nameLabel.setBounds(140, 20, 200, 30);
+        dialog.add(nameLabel);
+
+        //4.「効果」見出し
+        JLabel effectLabel = new JLabel("効果");
+        effectLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 16));
+        effectLabel.setBounds(140, 60, 200, 30);
+        dialog.add(effectLabel);
+
+        //5.アイテムの効果の説明
+        String effectText = "";
+        if (item instanceof HealItem) {
+            effectText = "HPを" + ((HealItem) item).getValue() + "回復する";
+        } else if (item instanceof EscapeItem) {
+            effectText = "戦闘から逃げる";
+        } else if (item instanceof EquipmentItem) {
+            effectText = "効果を発動する";
+        }
+        JLabel descriptionLabel = new JLabel("<html>" + effectText + "</html>");
+        descriptionLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 14));
+        descriptionLabel.setBounds(140, 90, 220, 100);
+        dialog.add(descriptionLabel);
+        
+        //6.赤色の買うボタン
+        JButton buyButton = new JButton("買う");
+        buyButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        buyButton.setBackground(Color.RED);
+        buyButton.setForeground(Color.WHITE);
+        buyButton.setBounds(140, 200, 100, 30);
+        buyButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                buyItem(item);
+                dialog.dispose(); // ダイアログを閉じる
+            }
+        });
+        dialog.add(buyButton);
+
+        //7.青色の買わないボタン
+        JButton closeButton = new JButton("買わない");
+        closeButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        closeButton.setBackground(Color.BLUE);
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setBounds(250, 200, 100, 30);
+        closeButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose(); // ダイアログを閉じる
+            }
+        });
+        dialog.add(closeButton);
+
+        //8.ダイアログを表示
+        dialog.setVisible(true);
     }
 
     //アイテムボタンを作るメソッド
@@ -1944,15 +2022,22 @@ public class BattleGame extends JFrame {
 
     //ショップでアイテムを買うメソッド
     private void buyItem(Item item) {
-        if (gold >= item.getPrice()) {
-            gold -= item.getPrice();//コインを減らす
-            if (addItemToBox(item)) {
-                logTextArea.append(item.getName() + "を買いました！\n");
-            }
+        //所持金が足りるかチェック
+        if (gold <= item.getPrice()) {
+            logTextArea.append("所持金が足りません！\n");
+            return;
+        }
+
+        //アイテムボックスに空きがあるかチェック
+        if (addItemToBox(item)) {
+            gold -= item.getPrice();
+            coinLabel.setText("所持コイン：" + gold + "コイン");
+            logTextArea.append(item.getName() + " を購入しました！\n");
             updateDisplay();
         } else {
-            logTextArea.append("所持金が足りない！\n");
+            logTextArea.append("アイテムボックスがいっぱいです！ " + item.getName() + " は購入できませんでした。\n");
         }
+
     }
 
     //アイテムボックスの空きスロットにアイテムを追加するメソッド
