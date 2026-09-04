@@ -1080,6 +1080,11 @@ public class BattleGame extends JFrame {
         itemButton.addActionListener(new ActionListener() {
            @Override
             public void actionPerformed(ActionEvent e) {
+                //敵がいるかの確認の処理
+                if (enemyParty ==null || enemyParty.isEmpty()) {
+                    logTextArea.append("敵がいないためアイテムは使えません！\n");
+                    return;
+                }
 
                 // 1. ダイアログに表示（ひょうじ）するための「選択肢（せんたくし）リスト（文字列（もじれつ））」を作る（つくる）
                 String[] choices = new String[10];
@@ -1121,19 +1126,37 @@ public class BattleGame extends JFrame {
                     return;
                 }
 
-                // 5. アイテムを使用（しよう）し、使（つか）ったスロットをnullにして消（け）す
-                //アイテムを使うメソッドをここで呼び出す
-                //String resultLog = 使ったアイテム
-                itembox[selectedIndex] = null; // ★ 使（つか）ったら消（け）える！
-                //logTextArea.append(resultLog + "\n");
+                // 5. アイテムを使用し、使ったスロットをnullにして消す
+                itembox[selectedIndex] = null; // ★ 使ったら消える
 
                 // 6. 敵（てき）が倒（たお）れたかチェック
-                if (enemy.getHp() <= 0) {
-                    logTextArea.append(enemy.getName() + " を倒した！\n");
-                    // ★ 10%の確率（かくりつ）でアイテムドロップ
-                    if (Math.random() < 0.1) {
-                        //addItemToBox(new Item(なんらかの引数));
-                        logTextArea.append("★ " + enemy.getName() + " が薬草を落とした！\n");
+                for (int i = enemyParty.size() - 1; i >= 0; i--) {
+                    Enemy enemyInside = enemyParty.get(i);
+                    if (!enemyInside.isAlive()) {
+                        logTextArea.append(enemyInside.getName() + " をたおした！\n");
+
+                        //敵の画像をグレーアウトする処理
+                        if (i < enemyImageLabels.length) {
+                            enemyImageLabels[i].setEnabled(false);
+
+                            if (enemyHpBars != null && i < enemyHpBars.length) {
+                                enemyHpBars[i].setVisible(false);
+                            }
+                        }
+                    
+                        //コインをあげる処理
+                        int getCoin = enemyInside.getDropCoin();
+                        gold += getCoin;
+                        logTextArea.append(getCoin + "コインを手に入れた！\n");
+
+                        //アイテムを使ったプレイヤーに経験値をあげる
+                        player.setExp(player.getExp() + enemyInside.getRewardExp());
+                        if (player.checkLevelUp()) {
+                            JOptionPane.showMessageDialog(
+                                BattleGame.this,
+                                player.getName() + "はLv" + player.getLevel() + "に上がった"
+                            );
+                        }
                     }
                 }
             
