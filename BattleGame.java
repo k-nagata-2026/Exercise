@@ -1086,92 +1086,8 @@ public class BattleGame extends JFrame {
                     return;
                 }
 
-                // 1. ダイアログに表示（ひょうじ）するための「選択肢（せんたくし）リスト（文字列（もじれつ））」を作る（つくる）
-                String[] choices = new String[10];
-                for (int i = 0; i < itembox.length; i++) {
-                    if (itembox[i] != null) {
-                        choices[i] = "スロット " + (i + 1) + " : " + itembox[i].getName();
-                    } else {
-                        choices[i] = "スロット " + (i + 1) + " : (からっぽ)";
-                    }
-                }
-
-                // 2. Swingの便利（べんり）なインプットダイアログを表示（ひょうじ）（プルダウン形式（けいしき））
-                Object selected = JOptionPane.showInputDialog(
-                    BattleGame.this,
-                    "使用するアイテムを選択してください",
-                    "アイテムボックス (最大10個)",
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    choices, // 10個（こ）のスロットの文字（もじ）配列（はいれつ）
-                    choices[0] // 最初（さいしょ）から選択（せんたく）されている項目（こうもく）
-                );
-
-                // キャンセルされた（×ボタンやCancel）場合（ばあい）は処理（しょり）を中断（ちゅうだん）する
-                if (selected == null) { return; }
-
-                // 3. 選択（せんたく）された項目（こうもく）が「何（なん）番（ばん）目（め）のスロットか」を特定（とくてい）する
-                int selectedIndex = -1;
-                for (int i = 0; i < choices.length; i++) {
-                    if (choices[i].equals(selected)) {
-                        selectedIndex = i;
-                        break;
-                    }
-                }
-
-                // 4. そのスロットの中身（なかみ）が「からっぽ（null）」じゃないかチェック
-                Item selectedItem = itembox[selectedIndex];
-                if (selectedItem == null) {
-                    logTextArea.append("そのスロットはからっぽです！\n");
-                    return;
-                }
-
-                // 5. アイテムを使用し、使ったスロットをnullにして消す
-                itembox[selectedIndex] = null; // ★ 使ったら消える
-
-                // 6. 敵（てき）が倒（たお）れたかチェック
-                for (int i = enemyParty.size() - 1; i >= 0; i--) {
-                    Enemy enemyInside = enemyParty.get(i);
-                    if (!enemyInside.isAlive()) {
-                        logTextArea.append(enemyInside.getName() + " をたおした！\n");
-
-                        //敵の画像をグレーアウトする処理
-                        if (i < enemyImageLabels.length) {
-                            enemyImageLabels[i].setEnabled(false);
-
-                            if (enemyHpBars != null && i < enemyHpBars.length) {
-                                enemyHpBars[i].setVisible(false);
-                            }
-                        }
-                    
-                        //コインをあげる処理
-                        int getCoin = enemyInside.getDropCoin();
-                        gold += getCoin;
-                        logTextArea.append(getCoin + "コインを手に入れた！\n");
-
-                        //アイテムを使ったプレイヤーに経験値をあげる
-                        player.setExp(player.getExp() + enemyInside.getRewardExp());
-                        if (player.checkLevelUp()) {
-                            JOptionPane.showMessageDialog(
-                                BattleGame.this,
-                                player.getName() + "はLv" + player.getLevel() + "に上がった"
-                            );
-                        }
-                    }
-                }
-            
-                spawnEnemy();
-                updateDisplay();
-                //チェンジする前に今のプレイヤーのインデックスを覚えておく
-                int oldIndex = currentPlayerIndex;
-
-                //７．次のプレイヤーにチェンジ
-                switchNextPlayer();
-
-                //８．敵のターン
-                if (currentPlayerIndex <= oldIndex){
-                    startEnemyTurn();
-                }
+                //アイテムを使う処理
+                showItemBox();
             }
             
         });
@@ -2076,4 +1992,63 @@ public class BattleGame extends JFrame {
         return false;
     }
 
+    //アイテムボックスの中身を表示するメソッド
+    private void showItemBox() {
+        //1.ダイアログの設定
+        JDialog dialog = new JDialog((Frame) null, "アイテムボックス", true);
+        dialog.setSize(600, 400);
+        dialog.setLocationRelativeTo(this); // 画面中央に表示するコード
+        dialog.setLayout(null);//ボタンや文字の配置を自由に決めるようにするコード
+        dialog.getContentPane().setBackground(Color.WHITE);//背景色を白にするコード
+
+        //2.タイトルラベル
+        JLabel titleLabel = new JLabel("アイテムボックス", JLabel.CENTER);
+        titleLabel.setFont(new Font("MS ゴシック", Font.BOLD, 24));
+        titleLabel.setBounds(0, 10, 600, 30);
+        dialog.add(titleLabel);
+
+        //3.アイテムボックスの中身を表示するパネル
+        JPanel itemBoxPanel = new JPanel();
+        itemBoxPanel.setLayout(new GridLayout(2, 5, 10, 10)); // 2行5列のグリッドレイアウト
+        itemBoxPanel.setBounds(20, 65, 540, 200);
+        itemBoxPanel.setBackground(Color.WHITE);
+
+        //4.アイテムボックスの中身をループで表示
+        for (int i = 0; i < itembox.length; i++) {
+            Item item = itembox[i];
+            JButton itemButton;
+            if (item != null) {
+                itemButton = createItemButton(item.getImagePath(), String.valueOf(item.getPrice()));
+                int index = i; // ローカル変数にコピーして、ActionListener内で使用
+                itemButton.addActionListener(e -> {
+                    showItemDetailDialog(item); // アイテム詳細ダイアログを表示
+                });
+            } else {
+                itemButton = new JButton("");
+                itemButton.setFont(new Font("MSゴシック", Font.PLAIN, 14));
+                itemButton.setBackground(Color.LIGHT_GRAY);
+            }
+            itemBoxPanel.add(itemButton);
+        }
+
+        dialog.add(itemBoxPanel);
+
+        //5.閉じるボタン
+        JButton closeButton = new JButton("閉じる");
+        closeButton.setFont(new Font("MSゴシック", Font.BOLD, 16));
+        closeButton.setBackground(Color.BLUE);
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setBounds(460, 15, 100, 30);
+        closeButton.addActionListener(e -> dialog.dispose());
+        dialog.add(closeButton);
+
+        //6.所持コインを表示
+        JLabel coinLabel = new JLabel("所持コイン：" + gold + "コイン");
+        coinLabel.setFont(new Font("MSゴシック", Font.BOLD, 16));
+        coinLabel.setBounds(300, 325, 260, 30);
+        dialog.add(coinLabel);
+
+        //7.ダイアログを表示
+        dialog.setVisible(true);
+    }
 }
