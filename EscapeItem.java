@@ -9,4 +9,8 @@ public class EscapeItem extends Item {
         return targetPlayer.getName() + "は" + getName() + "を使った！戦闘から逃げ出した！";
     }
     
+    //getterメソッド
+    public int getEscapeChance() {
+        return this.getValue();
+    }
 }

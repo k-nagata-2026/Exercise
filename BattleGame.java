@@ -2021,7 +2021,7 @@ public class BattleGame extends JFrame {
                 itemButton = createItemButton(item.getImagePath(), String.valueOf(item.getPrice()));
                 int index = i; // ローカル変数にコピーして、ActionListener内で使用
                 itemButton.addActionListener(e -> {
-                    showItemDetailDialog(item); // アイテム詳細ダイアログを表示
+                    showUseItemDialog(item, index, dialog); // アイテム使用ダイアログを表示
                 });
             } else {
                 itemButton = new JButton("");
@@ -2051,4 +2051,110 @@ public class BattleGame extends JFrame {
         //7.ダイアログを表示
         dialog.setVisible(true);
     }
+
+    //戦闘中にアイテムを使用するか確認するダイアログを表示するメソッド
+    private void showUseItemDialog(Item item, int itemIndex, JDialog parentDialog) {
+        //1.ダイアログの設定
+        JDialog dialog = new JDialog((Frame) null, "アイテム使用確認", true);
+        dialog.setSize(400, 200);
+        dialog.setLocationRelativeTo(this); // 画面中央に表示するコード
+        dialog.setLayout(null);//ボタンや文字の配置を自由に決めるようにするコード
+        dialog.getContentPane().setBackground(Color.WHITE);//背景色を白にするコード
+
+        //2.アイテムの名前と効果を表示するラベル
+        JLabel itemNameLabel = new JLabel(item.getName(), JLabel.CENTER);
+        itemNameLabel.setFont(new Font("MS ゴシック", Font.BOLD, 20));
+        itemNameLabel.setBounds(0, 20, 400, 30);
+        dialog.add(itemNameLabel);
+
+        String effectText = "";
+        if (item instanceof HealItem) {
+            effectText = "HPを" + ((HealItem) item).getValue() + "回復する";
+        } else if (item instanceof EscapeItem) {
+            effectText = "戦闘から逃げる";
+        } else if (item instanceof EquipmentItem) {
+            effectText = "効果を発動する";
+        }
+        JLabel effectLabel = new JLabel(effectText, JLabel.CENTER);
+        effectLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 16));
+        effectLabel.setBounds(0, 60, 400, 30);
+        dialog.add(effectLabel);
+
+        //3.使用ボタン
+        JButton useButton = new JButton("使う");
+        useButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        useButton.setBackground(Color.RED);
+        useButton.setForeground(Color.WHITE);
+        useButton.setBounds(80, 120, 100, 30);
+        useButton.addActionListener(e -> {
+            dialog.dispose(); // ダイアログを閉じる
+            parentDialog.dispose(); // アイテムボックスダイアログも閉じる
+            useItemDuringBattle(item, itemIndex); // 戦闘中にアイテムを使用する処理
+            
+        });
+        dialog.add(useButton);
+
+        //4.キャンセルボタン
+        JButton cancelButton = new JButton("使わない");
+        cancelButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        cancelButton.setBackground(Color.BLUE);
+        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setBounds(220, 120, 100, 30);
+        cancelButton.addActionListener(e -> {
+            dialog.dispose(); // ダイアログを閉じる
+        });
+        dialog.add(cancelButton);
+
+        //5.ダイアログを表示
+        dialog.setVisible(true);
+    }
+
+    //戦闘中にアイテムの処理のメソッド
+    private void useItemDuringBattle(Item item, int itemIndex) {
+        //現在のターンのプレイヤーの情報を取得
+        Player targetPlayer = party.get(currentPlayerIndex);
+
+        //1.回復アイテム
+        if (item instanceof HealItem) {
+            HealItem healItem = (HealItem) item;
+            int healAmount = healItem.getValue();
+            targetPlayer.hp += healAmount;
+            if (targetPlayer.hp > targetPlayer.getMaxHp()) {
+                targetPlayer.hp = targetPlayer.getMaxHp();
+            }
+            logTextArea.append(targetPlayer.getName() + " は " + healAmount + " 回復した！\n");
+        } else if (item instanceof EscapeItem) {
+            //2.逃げるアイテム
+            EscapeItem escapeItem = (EscapeItem) item;
+            int escapeChance = escapeItem.getEscapeChance();
+            int randomValue = (int)(Math.random() * 100);
+            if (randomValue < escapeChance) {
+                logTextArea.append(targetPlayer.getName() + " は戦闘から逃げることに成功した！\n");
+                // 戦闘から逃げる処理を追加
+                cardLayout.show(mainPanel, "MAP");
+                return;
+            } else {
+                logTextArea.append(targetPlayer.getName() + " は戦闘から逃げることに失敗した…\n");
+            }
+        } else if (item instanceof EquipmentItem) {
+            //3.装備アイテム
+            EquipmentItem equipmentItem = (EquipmentItem) item;
+            // 装備の効果を発動する処理を追加
+            logTextArea.append(targetPlayer.getName() + " は " + equipmentItem.getName() + " を装備した！\n");
+        }
+
+        // 使用したアイテムをアイテムボックスから削除
+        itembox[itemIndex] = null; //アイテムボックスのスロットを空にする
+        updateDisplay();
+
+        //ターンの処理
+        int OldPlayerIndex = currentPlayerIndex;
+        switchNextPlayer();
+
+        if (!enemyParty.isEmpty() && currentPlayerIndex <= OldPlayerIndex) {
+            // プレイヤーが交代しなかった場合、敵のターンを開始
+            startEnemyTurn();
+        }
+    }
+
 }
