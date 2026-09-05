@@ -1536,8 +1536,51 @@ public class BattleGame extends JFrame {
 
     //マップ画面のクラス
     class MapPanel extends JPanel {
+        private JButton itemButton;
+        private JButton partyButton;
+
         public MapPanel(BattleGame game) {
             setBackground(new Color(34, 139, 34)); // 背景色を緑に設定
+            setLayout(null); // レイアウトをnullに設定して自由配置にする
+
+            //1.アイテムボタンの作成(カバンのアイコン)
+            itemButton = new JButton();
+            ImageIcon origItemIcon = new ImageIcon("持ち物アイコン.png");
+            Image scaledItemIcon = origItemIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+            itemButton.setIcon(new ImageIcon(scaledItemIcon));
+            add(itemButton);
+
+            //ボタンの背景や枠を透明にする
+            itemButton.setContentAreaFilled(false);// 背景を透明にする
+            itemButton.setBorderPainted(false);// 枠を透明にする
+            itemButton.setFocusPainted(false);// フォーカスの点線を消す
+            itemButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    //アイテムボックスを開く処理
+                    game.showItemBox();
+                }
+            });
+
+            //2.パーティー情報ボタンの作成
+            partyButton = new JButton();
+            ImageIcon origPartyIcon = new ImageIcon("チームアイコン.png");
+            Image scaledPartyIcon = origPartyIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+            partyButton.setIcon(new ImageIcon(scaledPartyIcon));
+            add(partyButton);
+
+            //ボタンの背景や枠を透明にする
+            partyButton.setContentAreaFilled(false);
+            partyButton.setBorderPainted(false);
+            partyButton.setFocusPainted(false);
+            partyButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    //パーティー情報を表示する処理
+                    game.showPartyInfo();
+                }
+            });
+
             //マップでクリックできるようにする
             addMouseListener(new MouseAdapter() {
                 @Override
@@ -1563,6 +1606,21 @@ public class BattleGame extends JFrame {
                     }
                 }   
             });
+        }
+
+        //画面の大きさに応じてボタンの位置を調整する処理
+        @Override
+        public void doLayout() {
+            super.doLayout();
+            int h = getHeight();
+
+            //底から80ピクセル上に配置するように調整
+            if (itemButton != null) {
+                itemButton.setBounds(40, h - 80, 60, 60);
+            }
+            if (partyButton != null) {
+                partyButton.setBounds(120, h - 80, 60, 60);
+            }
         }
 
         @Override
