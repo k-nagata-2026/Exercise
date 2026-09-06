@@ -3,6 +3,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 import javax.swing.*;
+import javax.swing.border.Border;
+
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -1558,7 +1560,7 @@ public class BattleGame extends JFrame {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     //アイテムボックスを開く処理
-                    game.showItemBox();
+                    game.showMapItemBox();
                 }
             });
 
@@ -1577,7 +1579,7 @@ public class BattleGame extends JFrame {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     //パーティー情報を表示する処理
-                    game.showPartyInfo();
+                    game.showMapPartyInfo();
                 }
             });
 
@@ -1676,6 +1678,157 @@ public class BattleGame extends JFrame {
             g2.setColor(Color.RED);
             g2.fillRect(w / 2 - 15, h * 9/10 - 90, 30, 30);
         }
+    }
+
+    //マップ用のアイテム確認画面
+    public void showMapItemBox() {
+        //アイテムボックスの作成
+        JDialog itemDialog = new JDialog(this, "持ち物(ITEM BOX)", true);
+        itemDialog.setSize(400, 400);
+        itemDialog.setLocationRelativeTo(this);
+        itemDialog.setLayout(new BorderLayout(10, 10));
+
+        //ラベル
+        JLabel label = new JLabel("持ち物(ITEM BOX)", JLabel.CENTER);
+        label.setFont(new Font("MS ゴシック", Font.BOLD, 24));
+        label.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        itemDialog.add(label, BorderLayout.NORTH);
+
+        //マス目を作るパネル
+        JPanel gridPanel = new JPanel(new GridLayout(2, 5, 10, 10));
+        gridPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        int slotCount = 10; // スロットの数
+        for (int i = 0; i < slotCount; i++) {
+            if (i < itembox.length && itembox[i] != null) {
+                Item item = itembox[i];
+                JButton itemButton = createItemButton(item.getImagePath(), String.valueOf(item.getPrice()));
+                itemButton.addActionListener(e -> showItemDetailDialog(item));
+                gridPanel.add(itemButton);
+            } else {
+                // 空のスロットを作成
+                JButton emptySlot = new JButton("");
+                emptySlot.setEnabled(false);
+                gridPanel.add(emptySlot);
+            }
+        }
+
+        //閉じるボタンの作成
+        JButton closeButton = new JButton("閉じる(CLOSE)");
+        closeButton.addActionListener(e -> itemDialog.dispose());
+
+        //レイアウトの設定
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.add(gridPanel, BorderLayout.CENTER);
+        panel.add(closeButton, BorderLayout.SOUTH);
+
+        itemDialog.add(panel);
+        itemDialog.setVisible(true);
+    }
+
+    //マップ用のパーティー情報確認画面
+    public void showMapPartyInfo() {
+        if (party == null || party.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "パーティーが存在しません。");
+            return;
+        }
+
+        //パーティー情報のダイアログを作成
+        JDialog partyDialog = new JDialog(this, "パーティー情報(PARTY INFO)", true);
+        partyDialog.setSize(900, 500);
+        partyDialog.setLocationRelativeTo(this);
+        partyDialog.setLayout(new BorderLayout(10, 10));
+        partyDialog.getContentPane().setBackground(new Color(230,230,230));//背景色を薄いグレーに設定
+
+        final int[] currentIndex = {0}; // 現在表示しているメンバーのインデックス
+
+        //キャラクターの画像のラベル
+        JLabel imageLabel = new JLabel("",JLabel.CENTER);
+        imageLabel.setPreferredSize(new Dimension(250,250));
+
+        JTextArea infoArea = new JTextArea();
+        infoArea.setEditable(false);
+        infoArea.setFont(new Font("MS ゴシック", Font.PLAIN, 18));
+        infoArea.setBackground(new Color(230,230,230));
+        infoArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        //情報を更新するメソッド
+        Runnable updateInfo = () -> {
+            Player currentMember = party.get(currentIndex[0]);
+            StringBuilder infoText = new StringBuilder();
+            infoText.append("名前(Name): ").append(currentMember.getName()).append("\n");
+            infoText.append("HP: ").append(currentMember.getHp()).append("/").append(currentMember.getMaxHp()).append("\n");
+            infoText.append("攻撃力(ATK): ").append(currentMember.getAtk()).append("\n");
+            infoText.append("魔力(MGC): ").append(currentMember.getMgc()).append("\n");
+            infoText.append("特徴(TRAITS): ").append(getCharacterFeatures(currentMember.getName()));
+        };
+
+        //アイコンをクリックできるようにする処理
+        JLabel[] teamSlots = new JLabel[4];
+        JPanel teamPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        teamPanel.setOpaque(false);
+        teamPanel.add(new JLabel("チーム："));
+
+        for (int i = 0; i < 4; i++) {
+            final int memberIndex = i;//内部イベント処理から外側の変数を参照する場合、定数でないといけない
+            teamSlots[i] = new JLabel("", JLabel.CENTER);
+            teamSlots[i].setPreferredSize(new Dimension(60,60));//アイコンが入る枠のサイズを決める
+            teamSlots[i].setBorder(BorderFactory.createLineBorder(Color.GRAY,2));//枠の周りにグレーの太さ2ピクセルの線を作る
+
+            //パーティメンバーが存在するスロットの処理
+            if (i < party.size()) {
+                teamSlots[i].setIcon(party.get(i).getIcon());
+                teamSlots[i].setCursor(new Cursor(Cursor.HAND_CURSOR));//カーソルを指マークにする
+
+                //アイコンクリック時にそのキャラに切り替える
+                teamSlots[i].addMouseListener(new MouseAdapter(){
+                    @Override 
+                    public void mouseClicked(MouseEvent e){
+                        currentIndex[0] = memberIndex;
+                        updateInfo.run();
+                    }
+                });
+            }
+
+            teamPanel.add(teamSlots[i]);
+        }
+
+        updateInfo.run();//初期表示
+
+        //閉じるボタン
+        JButton closeButton = new JButton("閉じる");
+        closeButton.setFont(new Font("MSゴシック", Font.BOLD,14));
+        closeButton.addActionListener(new ActionListener() {
+            @Override 
+            public void actionPerformed(ActionEvent e) {
+                partyDialog.dispose();
+            }
+        });
+
+        //中央レイアウト
+        JPanel charInfoPanel = new JPanel(new GridLayout(1,2,10,0));
+        charInfoPanel.setOpaque(false);//後ろの背景の色を透過する
+        charInfoPanel.setBorder(BorderFactory.createEmptyBorder(20,20,10,20));
+        charInfoPanel.add(imageLabel);
+        charInfoPanel.add(infoArea);
+
+        //下部のレイアウト
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setOpaque(false);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10,20,15,20));
+        bottomPanel.add(teamPanel,BorderLayout.WEST);
+
+        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,0,0));
+        actionButtonPanel.setOpaque(false);
+        actionButtonPanel.add(closeButton);
+        bottomPanel.add(actionButtonPanel,BorderLayout.EAST);
+
+        partyDialog.add(charInfoPanel,BorderLayout.CENTER);
+        partyDialog.add(bottomPanel,BorderLayout.SOUTH);
+
+        partyDialog.setVisible(true);
+
+        
     }
 
     //ショップ画面のメソッド
