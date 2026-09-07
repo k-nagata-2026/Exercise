@@ -228,12 +228,21 @@ public class BattleGame extends JFrame {
         prevButton.setPreferredSize(new Dimension(40, 120));
         nextButton.setPreferredSize(new Dimension(40, 120));
 
+        //選択するボタン
         JButton selectButton = new JButton("選択する(SELECT)");
+        selectButton.setEnabled(true);
+        selectButton.setBackground(new Color(46,204,113));//緑色
+        selectButton.setForeground(Color.WHITE);
+        selectButton.setFont(new Font("MS ゴシック",Font.BOLD,16));
+        selectButton.setFocusPainted(false);
+
+        //出発ボタン
         JButton startButton = new JButton("出発!!(START)");
         startButton.setEnabled(false); // 最初は無効化しておく
         startButton.setBackground(new Color(255, 215, 0)); // ゴールド色に設定
         startButton.setForeground(Color.WHITE); // 文字色を白に設定
         startButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        selectButton.setFocusPainted(false);
 
         //チーム4人のアイコン枠
         JLabel[] teamSlots = new JLabel[4];
@@ -251,7 +260,16 @@ public class BattleGame extends JFrame {
             @Override
             public void run() {
                 Player currentPlayer = availableList.get(currentIndex[0]);
-                imageLabel.setIcon(currentPlayer.getIcon());
+                //画面の更新
+                ImageIcon rawIcon = currentPlayer.getIcon();
+                if (rawIcon != null) {
+                    Image img = rawIcon.getImage();
+                    Image scaledImg = img.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
+                    imageLabel.setIcon(new ImageIcon(scaledImg));        
+                } else {
+                    imageLabel.setIcon(null);
+                }
+
                 statusArea.setText("名前: " + currentPlayer.getName() + "\n" +
                                    "体力(HP): " + currentPlayer.getHp() + "\n" +
                                    "攻撃力(ATK): " + currentPlayer.getAtk() + "\n" +
@@ -1863,8 +1881,17 @@ public class BattleGame extends JFrame {
         //情報を更新するメソッド
         Runnable updateInfo = () -> {
             Player currentMember = party.get(currentIndex[0]);
+
             //画面の更新
-            imageLabel.setIcon(currentMember.getIcon());
+            ImageIcon rawIcon = currentMember.getIcon();
+            if (rawIcon != null) {
+                Image img = rawIcon.getImage();
+                Image scaledImg = img.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
+                imageLabel.setIcon(new ImageIcon(scaledImg));        
+            } else {
+                imageLabel.setIcon(null);
+            }
+
             //ステータス更新
             StringBuilder infoText = new StringBuilder();
             infoText.append("名前(Name): ").append(currentMember.getName()).append("\n");
