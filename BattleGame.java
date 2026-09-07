@@ -1842,7 +1842,7 @@ public class BattleGame extends JFrame {
 
         //パーティー情報のダイアログを作成
         JDialog partyDialog = new JDialog(this, "パーティー情報(PARTY INFO)", true);
-        partyDialog.setSize(900, 500);
+        partyDialog.setSize(1220, 750);
         partyDialog.setLocationRelativeTo(this);
         partyDialog.setLayout(new BorderLayout(10, 10));
         partyDialog.getContentPane().setBackground(new Color(230,230,230));//背景色を薄いグレーに設定
@@ -1853,21 +1853,26 @@ public class BattleGame extends JFrame {
         JLabel imageLabel = new JLabel("",JLabel.CENTER);
         imageLabel.setPreferredSize(new Dimension(250,250));
 
+        //ステータス表示エリア
         JTextArea infoArea = new JTextArea();
         infoArea.setEditable(false);
         infoArea.setFont(new Font("MS ゴシック", Font.PLAIN, 18));
-        infoArea.setBackground(new Color(230,230,230));
+        infoArea.setBackground(new Color(255,255,255));
         infoArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         //情報を更新するメソッド
         Runnable updateInfo = () -> {
             Player currentMember = party.get(currentIndex[0]);
+            //画面の更新
+            imageLabel.setIcon(currentMember.getIcon());
+            //ステータス更新
             StringBuilder infoText = new StringBuilder();
             infoText.append("名前(Name): ").append(currentMember.getName()).append("\n");
             infoText.append("HP: ").append(currentMember.getHp()).append("/").append(currentMember.getMaxHp()).append("\n");
             infoText.append("攻撃力(ATK): ").append(currentMember.getAtk()).append("\n");
             infoText.append("魔力(MGC): ").append(currentMember.getMgc()).append("\n");
             infoText.append("特徴(TRAITS): ").append(getCharacterFeatures(currentMember.getName()));
+            infoArea.setText(infoText.toString());
         };
 
         //アイコンをクリックできるようにする処理
@@ -1905,6 +1910,9 @@ public class BattleGame extends JFrame {
         //閉じるボタン
         JButton closeButton = new JButton("閉じる");
         closeButton.setFont(new Font("MSゴシック", Font.BOLD,14));
+        closeButton.setBackground(new Color(60,130,220));
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setFocusPainted(false);
         closeButton.addActionListener(new ActionListener() {
             @Override 
             public void actionPerformed(ActionEvent e) {
@@ -1922,20 +1930,21 @@ public class BattleGame extends JFrame {
         //下部のレイアウト
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setOpaque(false);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10,20,15,20));
+        //10ピクセルの枠を作る
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
         bottomPanel.add(teamPanel,BorderLayout.WEST);
 
-        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,0,0));
+        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
         actionButtonPanel.setOpaque(false);
         actionButtonPanel.add(closeButton);
         bottomPanel.add(actionButtonPanel,BorderLayout.EAST);
 
+        //ダイアログへ配置
         partyDialog.add(charInfoPanel,BorderLayout.CENTER);
         partyDialog.add(bottomPanel,BorderLayout.SOUTH);
 
         partyDialog.setVisible(true);
 
-        
     }
 
     //ショップ画面のメソッド
