@@ -12,6 +12,7 @@ public class BattleGame extends JFrame {
    final  private JButton speedButton;
    final  private JButton skillButton;
    final  private JButton potionButton;
+   final private JButton itemButton;
           private int playerX = 150;
           private int playerY = 250;
    final  private JLabel backgroundLabel;
@@ -28,6 +29,7 @@ public class BattleGame extends JFrame {
     private int skillUseCount = 0;
     private final int MAX_SKILL_USE = 2;
     private Clip bgmClip;
+     private Item[] itemBox = new Item[10];
     
 
 
@@ -230,6 +232,39 @@ private void shakePlayer() {
     timer.start();
 }
 
+
+private void showThunderEffect() {
+
+    // White screen flash
+    JPanel flash = new JPanel();
+    flash.setBackground(Color.WHITE);
+    flash.setBounds(0, 0, getWidth(), getHeight());
+    flash.setOpaque(true);
+
+    // Lightning
+    JLabel lightning = new JLabel("⚡");
+    lightning.setFont(new Font("Serif", Font.BOLD, 220));
+    lightning.setForeground(Color.WHITE);
+    lightning.setHorizontalAlignment(SwingConstants.CENTER);
+    lightning.setBounds(0, 20, getWidth(), 500);
+
+    getLayeredPane().add(flash, JLayeredPane.POPUP_LAYER);
+    getLayeredPane().add(lightning, JLayeredPane.POPUP_LAYER);
+
+    getLayeredPane().repaint();
+
+    // Flash हटाउने
+    Timer timer = new Timer(500, e -> {
+        getLayeredPane().remove(flash);
+        getLayeredPane().remove(lightning);
+        getLayeredPane().repaint();
+    });
+
+    timer.setRepeats(false);
+    timer.start();
+}
+
+
 private void handleEnemyDefeat() {
 
     playSound("sounds/enemy_dead.wav");
@@ -293,6 +328,7 @@ private void handleEnemyDefeat() {
         speedButton = new JButton("speed");
         skillButton = new JButton("skill");
         potionButton = new JButton("potion");
+        itemButton = new JButton("item");
 
         playerHpBar = new JProgressBar();
         enemyHpBar = new JProgressBar();
@@ -307,20 +343,27 @@ private void handleEnemyDefeat() {
         bottomPanel.add(statusLabel, BorderLayout.NORTH);
         bottomPanel.add(scrollPane, BorderLayout.CENTER);
         
-
         JPanel buttonPanel = new JPanel();
+        //JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15,5));
         buttonPanel.add(attackButton);
        // buttonPanel.add(speedButton);
         buttonPanel.add(skillButton);
         buttonPanel.add(potionButton);
+        buttonPanel.add(itemButton);
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        add(backgroundLabel, BorderLayout.CENTER);
+         add(backgroundLabel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
-        
+       
+      itemBox[0] = new Herb();
+      itemBox[1] = new Bomb();
+      itemBox[2] = new ThunderStick();
+      itemBox[3] = new FireOrb();
+      spawnEnemy();
 
        
         // ボタンの処理
+
+
        
 
        attackButton.addActionListener(e -> {
@@ -393,6 +436,70 @@ private void handleEnemyDefeat() {
     updateDisplay();
 
 });
+
+
+itemButton.addActionListener(e -> {
+
+        // 1. ダイアログに表示（ひょうじ）するための「選択肢（せんたくし）リスト（文字列（もじれつ））」を作る（つくる）
+        String[] choices = new String[10];
+        for (int i = 0; i < itemBox.length; i++) {
+            if (itemBox[i] != null) {
+                choices[i] = "スロット " + (i + 1) + " : " + itemBox[i].getName();
+            } else {
+                choices[i] = "スロット " + (i + 1) + " : (からっぽ)";
+            }
+        }
+
+        // 2. Swingの便利（べんり）なインプットダイアログを表示（ひょうじ）（プルダウン形式（けいしき））
+        Object selected = JOptionPane.showInputDialog(
+            BattleGame.this,
+            "使用するアイテムを選択してください",
+            "アイテムボックス (最大10個)",
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            choices, // 10個（こ）のスロットの文字（もじ）配列（はいれつ）
+            choices[0] // 最初（さいしょ）から選択（せんたく）されている項目（こうもく）
+        );
+
+        // キャンセルされた（×ボタンやCancel）場合（ばあい）は処理（しょり）を中断（ちゅうだん）する
+        if (selected == null) { return; }
+
+        // 3. 選択（せんたく）された項目（こうもく）が「何（なん）番（ばん）目（め）のスロットか」を特定（とくてい）する
+        int selectedIndex = -1;
+        for (int i = 0; i < choices.length; i++) {
+            if (choices[i].equals(selected)) {
+                selectedIndex = i;
+                break;
+            }
+        }
+
+        // 4. そのスロットの中身（なかみ）が「からっぽ（null）」じゃないかチェック
+        Item selectedItem = itemBox[selectedIndex];
+        if (selectedItem == null) {
+            logTextArea.append("そのスロットはからっぽです！\n");
+            return;
+        }
+        if (selectedItem instanceof ThunderStick) {
+            showThunderEffect();
+        }
+
+        // 5. アイテムを使用（しよう）し、使（つか）ったスロットをnullにして消（け）す
+        String resultLog = selectedItem.use(player, enemy);
+        itemBox[selectedIndex] = null; // ★ 使（つか）ったら消（け）える！
+        logTextArea.append(resultLog + "\n");
+
+        // 6. 敵（てき）が倒（たお）れたかチェック
+        if (enemy.getHp() <= 0) {
+            logTextArea.append(enemy.getName() + " を倒した！\n");
+            // ★ 10%の確率（かくりつ）でアイテムドロップ
+            if (Math.random() < 0.1) {
+                addItemToBox(new Herb());
+                logTextArea.append("★ " + enemy.getName() + " が薬草を落とした！\n");
+            }
+            spawnEnemy();
+        }
+        updateDisplay();
+    });
         
 
         // 初期化
@@ -403,6 +510,7 @@ playerHpBar.setMaximum(player.getMaxHp());
 playerHpBar.setValue(player.getHp());
 playerHpBar.setStringPainted(true);
 playerHpBar.setForeground(Color.GREEN);
+
 
 backgroundLabel.add(playerHpBar);
 
@@ -417,6 +525,7 @@ enemyHpBar.setMaximum(enemy.getMaxHp());
 enemyHpBar.setValue(enemy.getHp());
 enemyHpBar.setStringPainted(true);
 enemyHpBar.setForeground(Color.RED);
+
 
 backgroundLabel.add(enemyHpBar);
     enemyHpBar.setMaximum(enemy.getMaxHp());
@@ -500,12 +609,12 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
             logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
         } else if (enemyCount == 1) {
             enemy = new Enemy("boss", 90, 15, 5, 5, 10, "enemyboss.png");
-            logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
+            logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれbた！\n");
         } else if (enemyCount == 2) {
             enemy = new Enemy("tiger", 160, 24, 5, 5, 10, "tiger.png");
             logTextArea.append("⚠ WARNING ⚠\\nFINAL BOSS APPEARED! \n");
         } else if (enemyCount == 3) {
-            enemy = new Enemy("lagartha", 180, 30, 10, 10, 10, "lagartha.png");
+            enemy = new Enemy("lagartha", 180, 25, 10, 10, 10, "lagartha.png");
             logTextArea.append("WARNING\\nLAGARTHA IS COMMING! \n");
         } else if (enemyCount == 4) {
             enemy = new Enemy("IRONBOSS", 200, 20, 10, 7, 15, "ironman.png");
@@ -526,6 +635,18 @@ setVisible(true);
     }    public static void main(String[] args) {
     new HomeScreen().setVisible(true);
    }
+
+   private void addItemToBox(Item item) {
+    for (int i = 0; i < itemBox.length; i++) {
+        if (itemBox[i] == null) {       // 空（あ）きスロットを発見（はっけん）！
+            itemBox[i] = item;           // アイテムをセット
+            logTextArea.append("アイテムボックスのスロット " + (i + 1) + " に " + item.getName() + " を追加しました。\n");
+            return;                      // 1つ入れたら終了（しゅうりょう）
+        }
+    }
+    // ここまで来たら全スロットが埋まっている
+    logTextArea.append("アイテムボックスがいっぱいです！ " + item.getName() + " は拾えませんでした。\n");
+}
    
     }
     
