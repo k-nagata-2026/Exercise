@@ -23,12 +23,12 @@ public class Player extends Character {
 
     //技をおぼえるメソッド
     public void learnSkill(String skill, double multiplier, String type) {
-        skills.add(new Skill(skill, multiplier, type, 0,1,null));
+        skills.add(new Skill(skill, multiplier, type, 0,1,null,0,0,0));
     }
 
     //召喚士用の技を覚えるメソッド
-    public void learnSkill(String skill, double multiplier, String type, int hpCost, int requiredLevel, String imagePath) {
-        skills.add(new Skill(skill, multiplier, type, hpCost, requiredLevel,imagePath));
+    public void learnSkill(String skill, double multiplier, String type, int hpCost, int requiredLevel, String imagePath, int spiritHp, int spiritAtk, int spiritMgc) {
+        skills.add(new Skill(skill, multiplier, type, hpCost, requiredLevel,imagePath,spiritHp,spiritAtk,spiritMgc));
     }
 
     //技のリストを取得するメソッド
@@ -88,11 +88,11 @@ public class Player extends Character {
             //召喚士の場合精霊を開放する
             if (this.name.contains("召喚士(SUMMONER)")) {
                 if (this.level == 4) {
-                    learnSkill("普通の精霊召喚", 2.0, "召喚", 30, 4, "youkai_tengu.png");
+                    learnSkill("普通の精霊召喚", 2.0, "召喚", 30, 4, "youkai_tengu.png", 70, 15, 65);
                 } else if (this.level == 7) {
-                    learnSkill("強い精霊召喚", 4.0, "召喚", 50, 7, "youkai_kyubinokitsune.png");
+                    learnSkill("強い精霊召喚", 4.0, "召喚", 50, 7, "youkai_kyubinokitsune.png", 90, 5, 130);
                 } else if (this.level == 10) {
-                    learnSkill("超強い精霊", 8.0, "召喚", 90, 10,"setsubun_oni_kowai.png");
+                    learnSkill("超強い精霊", 8.0, "召喚", 90, 10,"setsubun_oni_kowai.png", 150, 300, 5);
                 }
             }
 
@@ -107,4 +107,15 @@ public class Player extends Character {
         this.hp = hp;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setAtk(int atk) {
+        this.atk = atk;
+    }
+
+    public void setMaxHp(int maxHp) {
+        this.maxHp = maxHp;
+    }
 }

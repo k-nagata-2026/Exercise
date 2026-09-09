@@ -182,25 +182,25 @@ public class BattleGame extends JFrame {
         wizard.learnSkill("炎魔法(FIRE)", 0.5, "全体攻撃");
         availableList.add(wizard);
 
-        Player knight = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0, 1, 0, 100);
+        Player knight = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0, 1, 0, 10);
         knight.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
         knight.learnSkill("かばう(COVER)", 0.25, "かばう");
         availableList.add(knight);
 
-        Player thief = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0, 1, 0, 100);
+        Player thief = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0, 1, 0, 10);
         thief.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
         availableList.add(thief);
 
-        Player summoner = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 100);
-        summoner.learnSkill("召喚(SUMMON)", 1.0, "召喚", 15, 1, "youkai_nurikabe.png");
+        Player summoner = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 10);
+        summoner.learnSkill("召喚(SUMMON)", 1.0, "召喚", 15, 1, "youkai_nurikabe.png", 120, 5, 5);
         availableList.add(summoner);
 
-        Player shaman = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 100);
+        Player shaman = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 10);
         shaman.learnSkill("攻撃力UP(ATK BUFF)", 1.5, "単体バフ");
         shaman.learnSkill("魔力UP(MGC BUFF)", 1.5, "単体バフ");
         availableList.add(shaman);
 
-        Player healer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0, 1, 0, 100);
+        Player healer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0, 1, 0, 10);
         healer.learnSkill("回復(HEAL)", 1.0, "単体回復");
         healer.learnSkill("全体回復(MASS HEAL)", 0.5, "全体回復");
         availableList.add(healer);
@@ -497,7 +497,7 @@ public class BattleGame extends JFrame {
             for (int i = 0; i < numberOfEnemies; i++){
                 //スライムA、スライムB…と名付ける
                 char suffix = (char)('A' + i);
-                enemyParty.add(new Enemy("スライム" + suffix, 20, 5, 5,"fantasy_game_character_slime.png", 1, 1));
+                enemyParty.add(new Enemy("スライム" + suffix, 30, 10, 10,"fantasy_game_character_slime.png", 1, 1));
             }
 
             //ダンジョンの処理 
@@ -511,7 +511,7 @@ public class BattleGame extends JFrame {
 
             for (int i = 0; i < numberOfEnemies; i++){
                 char suffix = (char)('A' + i);
-                enemyParty.add(new Enemy("ゴブリン" + suffix, 25, 10, 5, "fantasy_goblin.png", 1,5));
+                enemyParty.add(new Enemy("ゴブリン" + suffix, 45, 15, 15, "fantasy_goblin.png", 1,5));
             }
 
             //ボスエリアの処理
@@ -523,10 +523,10 @@ public class BattleGame extends JFrame {
             
             if (bossStage == 1) {
                 logTextArea.append("伝説の ドラゴン があらわれた！\n");
-                enemyParty.add(new Enemy("ドラゴン" ,500, 30, 130, "fantasy_dragon.png", 1,0));
+                enemyParty.add(new Enemy("ドラゴン" ,1500, 50, 130, "fantasy_dragon.png", 1,0));
             } else if (bossStage == 2) {
                 logTextArea.append("伝説の 魔王 があらわれた！\n");
-                enemyParty.add(new Enemy("魔王" ,800, 50, 200, "fantasy_maou_devil.png", 1,1000));
+                enemyParty.add(new Enemy("魔王" ,2800, 80, 200, "fantasy_maou_devil.png", 1,1000));
             }
         }
         
@@ -1017,7 +1017,6 @@ public class BattleGame extends JFrame {
                     logTextArea.append(player.getName() + " は仲間をかばった！\n");
                     showPopupText("かばう", Color.BLUE, playerImageLabels[currentPlayerIndex]);
                 } else if (selectedSkill.getType().equals("召喚")){
-                    System.out.println("--- 召喚処理開始 ---");
                     //1.召喚士が覚えている召喚タイプの技を取得する
                     List<Skill> summonSkills = new ArrayList<>();//Skillオブジェクトを入れるリスト
                     //全スキルの中から召喚タイプの技を追加する
@@ -1079,13 +1078,17 @@ public class BattleGame extends JFrame {
                                 ImageIcon spiritIcon = new ImageIcon(chosenSummon.getImagePath());
                                 Image img = spiritIcon.getImage().getScaledInstance(120,120,Image.SCALE_SMOOTH);
                                 playerImageLabels[currentPlayerIndex].setIcon(new ImageIcon(img));
-                                System.out.println("通っている");
+
+                                player.setName(chosenSummon.getName());//名前の変更
+                                player.setAtk(chosenSummon.getSpiritAtk());//攻撃力の変更
+                                player.setMaxHp(chosenSummon.getSpiritHp());//最大HPの変更
+                                player.setHp(chosenSummon.getSpiritHp());//最大HPをHPにする(回復するために必要)
+
+                                
                             } else {
                                 //画僧ファイルが見つからなかった場合
                                 System.out.println("画像ファイルが見つかりません");
                             }
-                        }else {
-                            System.out.println("画像がない");
                         }
                     }
                 }

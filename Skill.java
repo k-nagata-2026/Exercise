@@ -5,20 +5,26 @@ public class Skill {
     private int hpCost;//消費するHP
     private int requiredLevel;
     private String imagePath;
+    private int spiritHp;
+    private int spiritAtk;
+    private int spiritMgc;
 
     //召喚士用のコンストラクタ
-    public Skill(String name, double multiplier, String type, int hpCost, int requiredLevel, String imagePath) {
+    public Skill(String name, double multiplier, String type, int hpCost, int requiredLevel, String imagePath, int spiritHp, int spiritAtk, int spiritMgc) {
         this.name = name;
         this.multiplier = multiplier;
         this.type = type;
         this.hpCost = hpCost;
         this.requiredLevel = requiredLevel;
         this.imagePath = imagePath;
+        this.spiritHp = spiritHp;
+        this.spiritAtk = spiritAtk;
+        this.spiritMgc = spiritMgc;
     }
 
     //普通のコンストラクタ
     public Skill(String name, double multiplier, String type) {
-        this(name, multiplier, type, 0,1,null);
+        this(name, multiplier, type, 0,1,null,0,0, 0);
     }
 
     //ゲッター
@@ -44,5 +50,13 @@ public class Skill {
 
     public String getImagePath() {
         return imagePath;
+    }
+
+    public int getSpiritHp() {
+        return spiritHp;
+    }
+
+    public int getSpiritAtk() {
+        return spiritAtk;
     }
 }
