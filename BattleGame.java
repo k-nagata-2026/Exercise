@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -191,7 +192,7 @@ public class BattleGame extends JFrame {
         availableList.add(thief);
 
         Player summoner = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 100);
-        summoner.learnSkill("召喚(SUMMON)", 1.0, "全体攻撃");
+        summoner.learnSkill("召喚(SUMMON)", 1.0, "召喚");
         availableList.add(summoner);
 
         Player shaman = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 100);
@@ -316,8 +317,13 @@ public class BattleGame extends JFrame {
                     //チーム枠にアイコンを表示
                     teamSlots[party.size() - 1].setIcon(selectedPlayer.getIcon());
 
-                    //選んだらインデックス処理
+                    //選んだら削除
                     availableList.remove(currentIndex[0]);
+
+                    //末尾のキャラクターを削除した場合
+                    if (!availableList.isEmpty() && currentIndex[0] >= availableList.size()) {
+                        currentIndex[0] = availableList.size() - 1;
+                    }
 
                     //選択後の処理
                     if (party.size() == 4) {
@@ -1010,6 +1016,78 @@ public class BattleGame extends JFrame {
                     //かばうを使ったログを表示
                     logTextArea.append(player.getName() + " は仲間をかばった！\n");
                     showPopupText("かばう", Color.BLUE, playerImageLabels[currentPlayerIndex]);
+                } else if (selectedSkill.getType().equals("召喚")){
+                    System.out.println("--- 召喚処理開始 ---");
+                    //1.召喚士が覚えている召喚タイプの技を取得する
+                    List<Skill> summonSkills = new ArrayList<>();//Skillオブジェクトを入れるリスト
+                    //全スキルの中から召喚タイプの技を追加する
+                    for (Skill s : player.getSkills()) {
+                        if (s.getType().equals("召喚")) {
+                            summonSkills.add(s);
+                        }
+                    }
+
+                    //2.選択肢用の配列
+                    String[] options = new String[summonSkills.size()];
+                    for (int i = 0; i < summonSkills.size(); i++) {
+                        Skill s = summonSkills.get(i);
+                        options[i] = s.getName() + "(消費HP:" + s.getHpCost() + " / 必要Lv." + s.getRequiredLevel() + ")";
+                    }
+
+                    //3.どの精霊を選ぶかのポップアップダイアログ
+                    int choice = JOptionPane.showOptionDialog(
+                        BattleGame.this,
+                        "召喚する精霊を選んでください",
+                        "精霊召喚",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        options,
+                        options[0]
+                    );
+
+                    //4.キャンセルしたらターンは進まない
+                    if (choice >= 0 && choice < summonSkills.size()) {
+                        //選ばれた精霊の情報を取得する
+                        Skill chosenSummon = summonSkills.get(choice);
+
+                        //5.レベルチェック(レベル未満の場合)
+                        if (player.getLevel() < chosenSummon.getRequiredLevel()) {
+                            JOptionPane.showMessageDialog(BattleGame.this,"レベルが足りません");
+                            return;//ターンを消費せずに中断
+                        }
+
+                        //6.HPチェック(消費HP以下の場合)
+                        if (player.getHp() < chosenSummon.getHpCost()) {
+                            JOptionPane.showMessageDialog(BattleGame.this,"HPが足りません(Not enough HP to summon)");
+                            return;
+                        }
+
+                        //7.HPを消費する
+                        player.hp -= chosenSummon.getHpCost();
+                        showPopupText("-" + chosenSummon.getHpCost(),Color.MAGENTA,playerImageLabels[currentPlayerIndex]);
+                        logTextArea.append(chosenSummon.getName() + "を召喚した！");
+
+                        //8.精霊の画像処理
+                        if (chosenSummon.getImagePath() != null) {
+                            //画僧ファイル情報を作成
+                            java.io.File imgFile = new java.io.File(chosenSummon.getImagePath());
+
+                            //画像ファイルが存在するかチェック
+                            if (imgFile.exists()) {
+                                //後で使えるようにspiritIconに画像をオブジェクト化して入れる
+                                ImageIcon spiritIcon = new ImageIcon(chosenSummon.getImagePath());
+                                Image img = spiritIcon.getImage().getScaledInstance(120,120,Image.SCALE_SMOOTH);
+                                playerImageLabels[currentPlayerIndex].setIcon(new ImageIcon(img));
+                                System.out.println("通っている");
+                            } else {
+                                //画僧ファイルが見つからなかった場合
+                                System.out.println("画像ファイルが見つかりません");
+                            }
+                        }else {
+                            System.out.println("画像がない");
+                        }
+                    }
                 }
                 updateDisplay();
 
