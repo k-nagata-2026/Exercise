@@ -87,7 +87,7 @@ private void stopBGM() {
     
      private void showVictoryScreen() {
         
-playSound("sounds/victory.wav");
+playSound("gameclearsound.wav");
 
     JFrame victoryFrame = new JFrame("GAME CLEAR!");
     victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -130,7 +130,7 @@ playSound("sounds/victory.wav");
  private void showGameOverScreen() {
 
     
-    playSound("sounds/gameover.wav");
+    playSound("gameoversound.wav");
 
     JFrame gameOverFrame = new JFrame("GAME OVER");
     gameOverFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -235,26 +235,37 @@ private void shakePlayer() {
 
 private void showThunderEffect() {
 
-    // White screen flash
-    JPanel flash = new JPanel();
-    flash.setBackground(Color.WHITE);
-    flash.setBounds(0, 0, getWidth(), getHeight());
-    flash.setOpaque(true);
+    // Enemy ko position लिनु
+    int enemyX = enemyImageLabel.getX();
+    int enemyY = enemyImageLabel.getY();
 
     // Lightning
     JLabel lightning = new JLabel("⚡");
-    lightning.setFont(new Font("Serif", Font.BOLD, 220));
+    lightning.setFont(new Font("Serif", Font.BOLD, 180));
     lightning.setForeground(Color.WHITE);
     lightning.setHorizontalAlignment(SwingConstants.CENTER);
-    lightning.setBounds(0, 20, getWidth(), 500);
+
+    // Enemy ko mathi lightning राख्ने
+    lightning.setBounds(
+        enemyX + 100,
+        enemyY - 120,
+        300,
+        300
+    );
+
+    // White flash
+    JPanel flash = new JPanel();
+    flash.setBackground(new Color(255, 255, 255, 170));
+    flash.setOpaque(true);
+    flash.setBounds(0, 0, getWidth(), getHeight());
 
     getLayeredPane().add(flash, JLayeredPane.POPUP_LAYER);
     getLayeredPane().add(lightning, JLayeredPane.POPUP_LAYER);
 
     getLayeredPane().repaint();
 
-    // Flash हटाउने
-    Timer timer = new Timer(500, e -> {
+    // 150ms पछि हटाउने
+    Timer timer = new Timer(200, e -> {
         getLayeredPane().remove(flash);
         getLayeredPane().remove(lightning);
         getLayeredPane().repaint();
@@ -264,6 +275,46 @@ private void showThunderEffect() {
     timer.start();
 }
 
+private void showFireEffect() {
+
+    // Screen ko orange/red fire flash
+    JPanel fireFlash = new JPanel();
+    fireFlash.setBackground(new Color(255, 80, 0, 150));
+    fireFlash.setOpaque(true);
+    fireFlash.setBounds(0, 0, getWidth(), getHeight());
+
+    // Fire emoji
+    JLabel fire = new JLabel("🔥");
+    fire.setFont(new Font("Serif", Font.BOLD, 180));
+    fire.setForeground(Color.ORANGE);
+    fire.setHorizontalAlignment(SwingConstants.CENTER);
+
+    // Enemy ko mathi fire
+    int enemyX = enemyImageLabel.getX();
+    int enemyY = enemyImageLabel.getY();
+
+    fire.setBounds(
+        enemyX + 100,
+        enemyY + 80,
+        300,
+        300
+    );
+
+    getLayeredPane().add(fireFlash, JLayeredPane.POPUP_LAYER);
+    getLayeredPane().add(fire, JLayeredPane.POPUP_LAYER);
+
+    getLayeredPane().repaint();
+
+    // Fire effect हटाउने
+    Timer timer = new Timer(500, e -> {
+        getLayeredPane().remove(fireFlash);
+        getLayeredPane().remove(fire);
+        getLayeredPane().repaint();
+    });
+
+    timer.setRepeats(false);
+    timer.start();
+}
 
 private void handleEnemyDefeat() {
 
@@ -483,6 +534,10 @@ itemButton.addActionListener(e -> {
             showThunderEffect();
         }
 
+        if (selectedItem instanceof FireOrb) {
+            showFireEffect();
+        }
+
         // 5. アイテムを使用（しよう）し、使（つか）ったスロットをnullにして消（け）す
         String resultLog = selectedItem.use(player, enemy);
         itemBox[selectedIndex] = null; // ★ 使（つか）ったら消（け）える！
@@ -508,6 +563,8 @@ itemButton.addActionListener(e -> {
          playerHpBar.setBounds(40, 40, 250, 25);
 playerHpBar.setMaximum(player.getMaxHp());
 playerHpBar.setValue(player.getHp());
+enemyHpBar.setMaximum(enemy.getMaxHp());
+enemyHpBar.setValue(enemy.getHp());
 playerHpBar.setStringPainted(true);
 playerHpBar.setForeground(Color.GREEN);
 
@@ -547,6 +604,9 @@ enemyHpBar.setValue(enemy.getHp());
                 
                playerHpBar.setMaximum(player.getMaxHp());
 playerHpBar.setValue(player.getHp());
+
+enemyHpBar.setMaximum(enemy.getMaxHp());
+enemyHpBar.setValue(enemy.getHp());
 
 if (player.getHp() > player.getMaxHp() * 0.6) {
     playerHpBar.setForeground(Color.GREEN);
