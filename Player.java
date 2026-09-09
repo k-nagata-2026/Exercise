@@ -85,9 +85,6 @@ public class Player extends Character {
             this.atk += atkUp;
             this.mgc += mgcUp;
 
-            //レベル１の召喚士の技
-            learnSkill("弱い精霊", 1.0, "召喚", 15, 1,"youkai_nurikabe.png");
-
             //召喚士の場合精霊を開放する
             if (this.name.contains("召喚士(SUMMONER)")) {
                 if (this.level == 4) {

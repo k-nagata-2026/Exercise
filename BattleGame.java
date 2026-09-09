@@ -192,7 +192,7 @@ public class BattleGame extends JFrame {
         availableList.add(thief);
 
         Player summoner = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 100);
-        summoner.learnSkill("召喚(SUMMON)", 1.0, "召喚");
+        summoner.learnSkill("召喚(SUMMON)", 1.0, "召喚", 15, 1, "youkai_nurikabe.png");
         availableList.add(summoner);
 
         Player shaman = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 100);
