@@ -35,6 +35,12 @@ public class Character {
         return hp;
     }
 
+    public int setHp(int hp) {
+        this.hp = hp;
+        return this.hp;
+        
+    }
+
     public int getMaxHp() {
         return maxHp;
     }
