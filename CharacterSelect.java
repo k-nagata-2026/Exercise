@@ -1,4 +1,6 @@
 import java.awt.*;
+import java.io.File;
+import javax.sound.sampled.*;
 import javax.swing.*;
 
 public class CharacterSelect extends JFrame {
@@ -15,8 +17,15 @@ public class CharacterSelect extends JFrame {
     private JLabel speedLabel;
     private Player selectedPlayer;
     private JButton startButton;
+    private Clip bgmClip;
+
+    
 
     public CharacterSelect() {
+
+
+    playBGM();
+
         System.out.println("CharacterSelect opened");
         setTitle("Character Select");
         setSize(1800,1000);
@@ -41,10 +50,9 @@ public class CharacterSelect extends JFrame {
         hero1 = new JButton(new ImageIcon("BHOLA.png"));
         hero1.setOpaque(false);
         hero1.setContentAreaFilled(false);
-        hero1.setBorderPainted(false);
+        hero1.setBorderPainted(true);
         hero1.setBounds(30,130,220,320);
         hero1.setBorder(BorderFactory.createLineBorder(Color.WHITE,2));
-        hero1.setContentAreaFilled(false);
         hero1.setFocusPainted(false);
         bg.add(hero1);
 
@@ -192,12 +200,18 @@ startButton.setEnabled(false);
 bg.add(startButton);
         startButton.addActionListener(e -> {
 
+
     if(selectedPlayer == null){
         JOptionPane.showMessageDialog(this,"Please Select Character");
         return;
     }
-
-    new BattleGame(selectedPlayer);
+    //Character Select BGM stop
+    if (bgmClip != null) {
+        bgmClip.stop();
+        bgmClip.close();
+        bgmClip = null;
+    }
+     new BattleGame(selectedPlayer);
     dispose();
 
         });
@@ -241,5 +255,30 @@ private void addHoverEffect(JButton button) {
 
     });
   
+}
+
+
+
+private void playBGM() {
+    try {
+
+        File soundFile = new File("characterselectbgm.wav");
+
+        System.out.println("BGM PATH: " + soundFile.getAbsolutePath());
+        System.out.println("BGM EXISTS: " + soundFile.exists());
+
+        AudioInputStream audio =
+                AudioSystem.getAudioInputStream(soundFile);
+
+        bgmClip = AudioSystem.getClip();
+        bgmClip.open(audio);
+        bgmClip.loop(Clip.LOOP_CONTINUOUSLY);
+        bgmClip.start();
+
+        System.out.println("BGM STARTED!");
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
 }
 }

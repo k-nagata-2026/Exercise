@@ -85,9 +85,9 @@ private void stopBGM() {
     }
 }
     
-     private void showVictoryScreen() {
-        
-playSound("gameclearsound.wav");
+    private void showVictoryScreen() {
+
+    playSound("gameclearsound.wav");
 
     JFrame victoryFrame = new JFrame("GAME CLEAR!");
     victoryFrame.setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -98,38 +98,36 @@ playSound("gameclearsound.wav");
     bg.setLayout(null);
 
     JButton homeButton = new JButton();
+
     homeButton.setBounds(800, 540, 460, 90);
 
     homeButton.setOpaque(false);
     homeButton.setContentAreaFilled(false);
     homeButton.setBorderPainted(false);
+    homeButton.setFocusPainted(false);
 
-   
+    // BACK TO HOME
     homeButton.addActionListener(e -> {
-        System.exit(0);
+
+        victoryFrame.dispose();
+        dispose();
+
+        HomeScreen home = new HomeScreen();
+        home.setVisible(true);
     });
 
-    homeButton.addActionListener(e -> {
-        victoryFrame.dispose();
-        enemyCount = 0;
-        player.setHp(player.getMaxHp());
-        spawnEnemy();
-        updateDisplay();
-        this.setVisible(true);
-     });
-
     bg.add(homeButton);
-    
+
     victoryFrame.add(bg);
+
     victoryFrame.setVisible(true);
 
     this.setVisible(false);
 }
 
-      
- private void showGameOverScreen() {
 
-    
+private void showGameOverScreen() {
+
     playSound("gameoversound.wav");
 
     JFrame gameOverFrame = new JFrame("GAME OVER");
@@ -138,64 +136,46 @@ playSound("gameclearsound.wav");
 
     ImageIcon icon = new ImageIcon("GAME OVER.png");
     Image img = icon.getImage();
-    Image resizedImg = img.getScaledInstance(1420, 700, Image.SCALE_SMOOTH);
+
+    Image resizedImg = img.getScaledInstance(
+            1420,
+            700,
+            Image.SCALE_SMOOTH
+    );
 
     JLabel label = new JLabel(new ImageIcon(resizedImg));
-    label.setHorizontalAlignment(JLabel.CENTER);
     label.setLayout(null);
 
-    // BACK TO HOME button
+    // BACK TO HOME BUTTON
     JButton homeButton = new JButton();
     homeButton.setBounds(780, 520, 350, 55);
     homeButton.setOpaque(false);
     homeButton.setContentAreaFilled(false);
     homeButton.setBorderPainted(false);
     homeButton.setFocusPainted(false);
-    homeButton.setBorder(null);
-    stopBGM();
-dispose();
-new HomeScreen().setVisible(true);
-     // RETRY button
+
+    homeButton.addActionListener(e -> {
+        gameOverFrame.dispose();
+        dispose();
+        stopBGM();
+
+        HomeScreen home = new HomeScreen();
+        home.setVisible(true);
+    });
+
+    // RETRY BUTTON
     JButton retryButton = new JButton();
     retryButton.setBounds(780, 420, 350, 55);
     retryButton.setOpaque(false);
     retryButton.setContentAreaFilled(false);
     retryButton.setBorderPainted(false);
     retryButton.setFocusPainted(false);
-    retryButton.setBorder(null);
-    retryButton.addActionListener(e -> {
-    gameOverFrame.dispose();
-    dispose();
-    new BattleGame(player);
 
-    // Player reset
-    player.setHp(player.getMaxHp());
-    player.setLevel(1);
-    player.setExp(0);
-
-    // Enemy reset
-    enemyCount = 0;
-    spawnEnemy();
-
-    // UI reset
-    logTextArea.setText("");
-    playerImageLabel.setEnabled(true);
-    enemyImageLabel.setEnabled(true);
-
-    updateDisplay();
-    this.setVisible(true);
-});
-    // Button actions
-    homeButton.addActionListener(e -> {
-        System.exit(0);
-    });
     retryButton.addActionListener(e -> {
         gameOverFrame.dispose();
-       enemyCount = 0;
-        player.setHp(player.getMaxHp());
-         spawnEnemy();
-        updateDisplay();
-     this.setVisible(true);
+        dispose();
+
+        new BattleGame(player);
     });
 
     label.add(homeButton);
@@ -204,7 +184,7 @@ new HomeScreen().setVisible(true);
     gameOverFrame.add(label);
     gameOverFrame.setVisible(true);
 
-    this.dispose();
+    this.setVisible(false);
 }
 
 private void shakePlayer() {
