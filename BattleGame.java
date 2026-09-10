@@ -7,6 +7,7 @@ import java.io.File;
 import javax.sound.sampled.*;
 import javax.swing.*;
 
+
 public class BattleGame extends JFrame implements KeyListener {
     private JLabel statusLabel;
     private JTextArea logTextArea;
@@ -41,7 +42,7 @@ public class BattleGame extends JFrame implements KeyListener {
     private JButton buySwordButton;
     private JLabel goldAnimLabel;
 
-    private Item[] itemBox = new Item[6];
+    private Item[] itemBox = new Item[10];
 
     // --- START SCREEN VARIABLES ---
     private JLabel startScreenLabel;
@@ -99,6 +100,7 @@ public class BattleGame extends JFrame implements KeyListener {
         itemBox[0] = new Bomb();
         itemBox[1] = new Herb();
         itemBox[2] = new mp();
+         itemBox[3] = new Shield();
 
         // ==========================================
         // १. START SCREEN process
@@ -237,6 +239,7 @@ public class BattleGame extends JFrame implements KeyListener {
 
         try {
             ImageIcon clearIcon = new ImageIcon("game clear.png");
+            switchBGM("game win.wav");
             Image scaledClear = clearIcon.getImage().getScaledInstance(800, 350, Image.SCALE_SMOOTH);
             bigGameClearButton = new JButton(new ImageIcon(scaledClear));
         } catch (Exception e) {
@@ -250,6 +253,7 @@ public class BattleGame extends JFrame implements KeyListener {
 
         try {
             ImageIcon overIcon = new ImageIcon("game over.png");
+            switchBGM("game lose.wav");
             Image scaledOver = overIcon.getImage().getScaledInstance(800, 350, Image.SCALE_SMOOTH);
             bigGameOverButton = new JButton(new ImageIcon(scaledOver));
         } catch (Exception e) {
@@ -1026,7 +1030,7 @@ public class BattleGame extends JFrame implements KeyListener {
             if (choice == JOptionPane.CLOSED_OPTION || choice == 0) {
                 int calculatedHp = 100 + (heroLevel - 1) * 20;
                 int calculatedAtk = 120 + (heroLevel - 1) * 10;
-                player = new Player("ゆうしゃ（Hero）", calculatedHp, calculatedAtk, 10, 10, "k night pyayer.png");
+                player = new Player("ゆうしゃ（Hero）", calculatedHp, calculatedAtk, 10, 10, "hero.png");
                 player.setLevel(heroLevel);
                 currentSelectedType = "hero";
                 break;
@@ -1065,6 +1069,14 @@ public class BattleGame extends JFrame implements KeyListener {
             System.out.println("Player image load failed!");
         }
     }
+      private void switchBGM(String fileName) {
+      if (bgmClip != null && bgmClip.isRunning()) {
+        bgmClip.stop();
+        bgmClip.close();
+    }
+    playBGM(fileName);
+}
+
 
     private void spawnEnemy() {
         int currentMaxLevel = Math.max(heroLevel, Math.max(wizardLevel, humanLevel));
@@ -1075,11 +1087,14 @@ public class BattleGame extends JFrame implements KeyListener {
             int atk = (int) (18 * levelMultiplier);
             enemy = new Enemy("スライム (Lv." + currentMaxLevel + ")", hp, atk, 25, 20, "smile enamy.png");
             setBackgroundImage("fristbackgroud.png");
+            switchBGM("backgroundmusic.wav");
+
         } else if (enemyCount == 2) {
             int hp = (int) (300 * levelMultiplier);
             int atk = (int) (28 * levelMultiplier);
             enemy = new Enemy("ゴブリン (Lv." + currentMaxLevel + ")", hp, atk, 25, 20, "dargon enamy.png");
             setBackgroundImage("second backgroud.png");
+            switchBGM("background music2.wav");
         } else if (enemyCount == 3) {
             int hp = (int) (500 * levelMultiplier);
             int atk = (int) (42 * levelMultiplier);
@@ -1090,6 +1105,7 @@ public class BattleGame extends JFrame implements KeyListener {
             int atk = (int) (65 * levelMultiplier);
             enemy = new Enemy("魔王 (BOSS - FINAL FORM)", hp, atk, 25, 20, "dargon.png");
             setBackgroundImage("final backgroud.png");
+            switchBGM("backgroud music 3.wav");
         }
 
         try {
