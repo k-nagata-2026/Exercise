@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class Skill {
     private String name;//技の名前
     private double multiplier;//技の倍率
@@ -8,6 +11,7 @@ public class Skill {
     private int spiritHp;
     private int spiritAtk;
     private int spiritMgc;
+    private List<Skill> spiritSkills = new ArrayList<>();//精霊たちの技専用リスト
 
     //召喚士用のコンストラクタ
     public Skill(String name, double multiplier, String type, int hpCost, int requiredLevel, String imagePath, int spiritHp, int spiritAtk, int spiritMgc) {
@@ -58,5 +62,17 @@ public class Skill {
 
     public int getSpiritAtk() {
         return spiritAtk;
+    }
+
+    public int getSpiritMgc() {
+        return spiritMgc;
+    }
+
+    public void addSpiritSkill(Skill skill) {
+        this.spiritSkills.add(skill);
+    }
+
+    public List<Skill> getSpiritSkills() {
+        return spiritSkills;
     }
 }

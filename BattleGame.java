@@ -192,7 +192,10 @@ public class BattleGame extends JFrame {
         availableList.add(thief);
 
         Player summoner = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 10);
-        summoner.learnSkill("召喚(SUMMON)", 1.0, "召喚", 15, 1, "youkai_nurikabe.png", 120, 5, 5);
+        Skill nurikabe = new Skill("弱い精霊", 1.0, "召喚", 15, 1, "youkai_nurikabe.png", 120, 5, 5);
+        nurikabe.addSpiritSkill(new Skill("かばう", 0.25, "かばう"));
+        nurikabe.addSpiritSkill(new Skill("斬る",1.0,"単体攻撃"));
+        summoner.learnSkill(nurikabe);
         availableList.add(summoner);
 
         Player shaman = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 10);
@@ -1017,6 +1020,8 @@ public class BattleGame extends JFrame {
                     logTextArea.append(player.getName() + " は仲間をかばった！\n");
                     showPopupText("かばう", Color.BLUE, playerImageLabels[currentPlayerIndex]);
                 } else if (selectedSkill.getType().equals("召喚")){
+                    player.setSummoned(true);//召喚フラグ
+
                     //1.召喚士が覚えている召喚タイプの技を取得する
                     List<Skill> summonSkills = new ArrayList<>();//Skillオブジェクトを入れるリスト
                     //全スキルの中から召喚タイプの技を追加する
@@ -1083,12 +1088,23 @@ public class BattleGame extends JFrame {
                                 player.setAtk(chosenSummon.getSpiritAtk());//攻撃力の変更
                                 player.setMaxHp(chosenSummon.getSpiritHp());//最大HPの変更
                                 player.setHp(chosenSummon.getSpiritHp());//最大HPをHPにする(回復するために必要)
+                                player.setLevel(chosenSummon.getRequiredLevel());
 
-                                
+                                //召喚士の技と精霊の技を入れ替える
+                                if (chosenSummon.getSpiritSkills() != null && !chosenSummon.getSpiritSkills().isEmpty()) {
+                                    player.setSkills(chosenSummon.getSpiritSkills());
+                                }
                             } else {
                                 //画僧ファイルが見つからなかった場合
                                 System.out.println("画像ファイルが見つかりません");
                             }
+                        }
+
+                        //精霊が攻撃後召喚士に戻す処理
+                        if(player.isSummoned() && !selectedSkill.getType().equals("召喚")) {
+                            revertToSummoner(player, currentPlayerIndex);
+                            player.setSummoned(false);
+                            logTextArea.append("精霊は元に戻った");
                         }
                     }
                 }
@@ -1280,6 +1296,25 @@ public class BattleGame extends JFrame {
         return panel;
     }
 
+    //精霊が一回攻撃したら召喚士に戻るメソッド
+    public void revertToSummoner(Player player, int index) {
+        //名前やステータスを戻す
+        player.setName(player.getOriginalName());
+        player.setAtk(player.getOriginalAtk());
+        player.setMaxHp(player.getOriginalMaxHp());
+        player.setSkills(player.getOriginalSkills());
+        player.setLevel(player.getOriginalLevel());
+
+        //アイコンを戻す
+        if (player.getOriginalImagePath() != null) {
+            ImageIcon summonerIcon = new ImageIcon(player.getOriginalImagePath());
+            Image img = summonerIcon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+            playerImageLabels[index].setIcon(new ImageIcon(img));
+        }
+
+        //更新
+        updateDisplay();
+    }
     //タイトル画面のメソッド
     private JPanel createTitlePanel(){
         JPanel panel = new JPanel(new GridBagLayout());
