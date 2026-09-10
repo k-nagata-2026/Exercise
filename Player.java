@@ -12,15 +12,15 @@ public class Player extends Character {
 
     public String levelUp() {
         this.level++;
-        this.maxHp += 20;
+        this.maxHp += 800;
         this.hp = this.maxHp;
         // Raato line hatauna super class ko variable call gareko:
         return this.name + " はレベルアップした！ レベル " + this.level + " になった！\n"
-             + "最大HPが 20、攻撃力が 5、防御力が 3 上がった！\n";
+             + "最大HPが 800、攻撃力が 200、防御力が 100 上がった！\n";
     }
 
     public String heal() {
-        int healAmount = 30;
+        int healAmount = 500;
         this.hp = Math.min(this.maxHp, this.hp + healAmount);
         return this.name + " はポーション（Potion）を使った！ HPが " + healAmount + " 回復した！\n";
     }
@@ -34,7 +34,7 @@ public class Player extends Character {
         return null;
     }
 
-    public void setHp (int hp) {
-        this.hp = hp;
-    }
+    //public void setHp (int hp) {
+      //  this.hp = hp;
+    //}
 }
