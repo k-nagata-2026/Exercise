@@ -295,7 +295,7 @@ public class BattleGame extends JFrame implements KeyListener {
         logTextArea.setForeground(Color.WHITE);
         JScrollPane scrollPane = new JScrollPane(logTextArea); 
 
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 7, 10, 10));
+        JPanel buttonPanel = new JPanel(new GridLayout(2, 10, 10, 10));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         attackButton = new JButton("⚔️ 攻撃");
@@ -324,9 +324,15 @@ public class BattleGame extends JFrame implements KeyListener {
         nextStageButton.setVisible(false);
 
         restartButton = new JButton("🔄 キャラ選択へ");
-        restartButton.setBackground(Color.decode("#2F4F4F"));
+        restartButton.setBackground(Color.decode("#3f2f4f"));
         restartButton.setForeground(Color.WHITE);
         restartButton.setVisible(false);
+
+        JButton saveButton = new JButton("💾 セーブ");
+        saveButton.setBackground(Color.decode("#4f2f36"));
+        saveButton.setForeground(Color.GREEN);
+        saveButton.setVisible(true);
+
 
         JButton[] allButtons = {attackButton, skillButton, defendButton, healButton, runButton, nextStageButton, restartButton};
         Font btnFont = new Font("MS ゴシック", Font.BOLD, 16); 
@@ -344,6 +350,7 @@ public class BattleGame extends JFrame implements KeyListener {
         runButton.addActionListener(e -> triggerRunDialog());
         nextStageButton.addActionListener(e -> goToNextStage());
         restartButton.addActionListener(e -> resetToTitle());
+        saveButton.addActionListener(e -> saveButton());
 
         bigGameClearButton.addActionListener(e -> {
             if (enemyCount >= 4) resetToTitle();
@@ -357,6 +364,7 @@ public class BattleGame extends JFrame implements KeyListener {
         buttonPanel.add(runButton);
         buttonPanel.add(nextStageButton);
         buttonPanel.add(restartButton);
+        buttonPanel.add(saveButton);
 
         bottomPanel.add(statusLabel, BorderLayout.NORTH);
         bottomPanel.add(barsPanel, BorderLayout.CENTER);
@@ -746,8 +754,17 @@ public class BattleGame extends JFrame implements KeyListener {
             } else {
                 showGameClearOrEndScreen(false, "💀 GAME OVER... 敗北しました。タイトルに戻ってレベルを確認しましょう。"); 
             }
+             try {
+            ImageIcon playerIcon = new ImageIcon(player.getImagePath());
+            playerImageLabel.setIcon(new ImageIcon(playerIcon.getImage().getScaledInstance(500, 500, Image.SCALE_SMOOTH)));
+        } catch (Exception e) {
+            System.out.println("Player image load failed!");
+        }
         }
     }
+     
+   
+
 
     private void showGameClearOrEndScreen(boolean isWin, String message) {
         isGameOverState = true;
@@ -814,6 +831,36 @@ public class BattleGame extends JFrame implements KeyListener {
         cl.show(getContentPane(), "GAMEPLAY");
         this.requestFocusInWindow();
     }
+
+ private void saveButton() {
+    try {
+        int playerNo;
+        int level;
+
+        // 文字列の比較は .equals() を使用します
+        if ("ゆうしゃ（Hero）".equals(player.name)) {
+            playerNo = 1;
+            level = heroLevel;
+        } else if ("wizard".equals(player.name)) { // '=' を '.equals()' に修正
+            playerNo = 2;
+            level = wizardLevel;
+        } else {
+            playerNo = 3;
+            level = humanLevel;
+        }
+
+        java.sql.Timestamp currentDate = new java.sql.Timestamp(System.currentTimeMillis());
+
+        // 引数の変数名を「playerNo」に合わせ、3つの値（ID, レベル, 所持金）を渡します
+        GameSaveManager.saveGameData(playerNo, level,currentDate, playerGold);
+        
+        JOptionPane.showMessageDialog(this, "ほぞんしました");
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "セーブエラー: " + ex.getMessage());
+    }
+}
 
     private void triggerFlashEffect(Color color) {
         JPanel flashPanel = new JPanel();
