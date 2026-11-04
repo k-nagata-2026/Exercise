@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
 import javax.swing.border.Border;
-
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -1687,6 +1686,7 @@ public class BattleGame extends JFrame {
     class MapPanel extends JPanel {
         private JButton itemButton;
         private JButton partyButton;
+        private JButton saveButton;
 
         public MapPanel(BattleGame game) {
             setBackground(new Color(34, 139, 34)); // 背景色を緑に設定
@@ -1730,6 +1730,25 @@ public class BattleGame extends JFrame {
                 }
             });
 
+            //セーブボタンを追加する
+            saveButton = new JButton();
+            ImageIcon origSaveIcon = new ImageIcon("セーブボタン.png");
+            Image scaledSaveIcon = origSaveIcon.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+            saveButton.setIcon(new ImageIcon(scaledSaveIcon));
+            add(saveButton);
+
+            //ボタンの背景や枠を透明にする
+            saveButton.setContentAreaFilled(false);
+            saveButton.setBorderPainted(false);
+            saveButton.setFocusPainted(false);
+            saveButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    //セーブ処理を行う
+                    game.saveGame();
+                }
+            });
+
             //マップでクリックできるようにする
             addMouseListener(new MouseAdapter() {
                 @Override
@@ -1769,6 +1788,9 @@ public class BattleGame extends JFrame {
             }
             if (partyButton != null) {
                 partyButton.setBounds(120, h - 80, 60, 60);
+            }
+            if (saveButton != null) {
+                saveButton.setBounds(200, h - 80, 60, 60);
             }
         }
 
@@ -2088,6 +2110,18 @@ public class BattleGame extends JFrame {
 
         partyDialog.setVisible(true);
 
+    }
+
+    //マップ用のセーブボタン
+    public void saveGame() {
+        //1.現在の「年、月、日、時、分、秒」のデータを作る
+        java.sql.Timestamp currentDate = new java.sql.Timestamp(System.currentTimeMillis());
+
+        //2.GameSaveManagerを使ってデータベースへ保存する(goldとcurrentDateを渡す)
+        GameSaveManager.saveGameData(gold, currentDate);
+
+        //3.保存完了のメッセージを表示する
+        JOptionPane.showMessageDialog(this, "ゲームを保存しました。");
     }
 
     //ショップ画面のメソッド

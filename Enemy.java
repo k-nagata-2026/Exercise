@@ -27,6 +27,7 @@ public class Enemy extends Character {
 
     public void setAtk(int atk) {
         this.atk = atk;
+
     }
 
     public int getRewardExp() {
