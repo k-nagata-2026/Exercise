@@ -23,9 +23,11 @@ public class BattleGame extends JFrame {
     private int bossStage = 1; // ボスステージを保持するフィールド（1: ドラゴン, 2: 魔王）
     private int currentround = 1; // 現在のラウンドを保持するフィールド
     private int maxRounds = 5; // 最大ラウンド数を保持するフィールド
-    private int gold = 0;//所持コインのフィールド
+    public static int gold = 0;//所持コインのフィールド
     private Item[] itembox = new Item[10]; // アイテムリストを保持するフィールド
     private JLabel coinLabel; // 所持コインを表示するラベル
+    private JPanel saveSelectPanel; // セーブ選択画面のパネルを保持するフィールド
+    private JPanel saveSelectContainer; // セーブ選択画面のコンテナパネルを保持するフィールド
 
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // 背景画像のラベル
@@ -63,6 +65,7 @@ public class BattleGame extends JFrame {
         JPanel battlePanel = createBattlePanel();      //バトル画面
         JPanel gameOverPanel = createGameOverPanel();  //ゲームオーバーの画面
         JPanel gameClearPanel = createGameClearPanel();//ゲームクリアの画面
+        saveSelectPanel = createSaveSelectPanel(); //セーブ選択画面
 
         //メインパネルに名前を付けて重ねる
         mainPanel.add(titlePanel,"TITLE");
@@ -70,6 +73,7 @@ public class BattleGame extends JFrame {
         mainPanel.add(gameOverPanel,"GAMEOVER");
         mainPanel.add(gameClearPanel,"GAMECLEAR");
         mainPanel.add(new MapPanel(this),"MAP"); // マップ画面を追加
+        mainPanel.add(saveSelectPanel,"SAVE_SELECT"); // セーブ選択画面を追加
 
         //全体をウィンドウに追加
         add(mainPanel);
@@ -625,6 +629,10 @@ public class BattleGame extends JFrame {
                 //マップ画面
                 cardLayout.show(mainPanel,"MAP");
                 break;    
+            case 5 :
+                //セーブセレクト画面
+                cardLayout.show(mainPanel,"SAVE_SELECT");
+                break;
             default:
                 break;
         }
@@ -1314,10 +1322,113 @@ public class BattleGame extends JFrame {
         //更新
         updateDisplay();
     }
+
+    //セーブ選択画面のメソッド
+    private JPanel createSaveSelectPanel() {
+        saveSelectPanel = new JPanel(new BorderLayout());
+        saveSelectPanel.setBackground(new Color(20, 20, 20)); // 背景色を黒に設定
+
+        //上部にラベルを追加
+        JLabel label = new JLabel("プレイするデータを選んでください(PLESE SELECT DATA)", JLabel.CENTER);
+        label.setFont(new Font("MS ゴシック", Font.BOLD, 28));
+        label.setForeground(Color.WHITE);
+        label.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0)); // 上下に余白を追加
+        saveSelectPanel.add(label, BorderLayout.NORTH);
+
+        //ボタンを一列に並べるコンテナ(10行1列、間隔10)
+        saveSelectContainer = new JPanel(new GridLayout(10, 1, 0, 10));
+        saveSelectContainer.setBackground(new Color(20, 20, 20)); // 背景色を黒に設定
+
+        //スクロール可能にする
+        JScrollPane scrollPane = new JScrollPane(saveSelectContainer);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20)); // スクロールペインの境界線を削除
+        scrollPane.getViewport().setBackground(new Color(20, 20, 20)); // スクロールペインの背景色を黒に設定
+        
+        saveSelectPanel.add(scrollPane, BorderLayout.CENTER);
+
+        return saveSelectPanel;
+    }
+
+    //セーブ選択画面を開くたびにセーブデータを更新するメソッド
+    private void updateSaveSelectPanel() {
+        saveSelectContainer.removeAll(); // 既存のボタンを削除
+
+        //データベースからデータをすべて取得
+        List<SaveSlotInfo> slots = GameSaveManager.loadGameData();
+
+       //データの数だけボタンを作成する
+        for (SaveSlotInfo slot : slots) {
+            JButton slotButton = new JButton();
+
+            //デザイン変更
+            slotButton.setPreferredSize(new Dimension(600, 60));//ボタンの幅と高さ
+            slotButton.setFont(new Font("MS ゴシック", Font.PLAIN, 18));
+            slotButton.setHorizontalAlignment(SwingConstants.LEFT); // 左寄せ
+            slotButton.setMargin(new Insets(10, 10, 10, 10)); // ボタンとボタンの中の文字の余白を設定
+
+            if (slot.isEmpty()) {
+                //空スロット(新規ゲーム)
+                slotButton.setText("ファイル" + slot.getSvNo() + "：ーーNO DATAーー");
+                slotButton.setForeground(Color.GRAY); // グレー文字
+                slotButton.addActionListener(e -> {
+                    //新規ゲームを開始する処理
+                    startNewGame(slot.getSvNo());
+                });
+            } else {
+                //データがあるスロット(ロード)
+                String dateStr = slot.getSvDate().toString().substring(0, 19); // 日付を0から19文字で出す(2026-11-05 10:13:45みたいな感じで見やすくする)
+                
+                //左に「ファイル名」、中央に「所持金」、右に「日付」
+                String buttonText = String.format("ファイル%-2d　所持金 %-8dコイン　保存日時 %s", slot.getSvNo(), slot.getSvCoin(), dateStr);
+                slotButton.setText(buttonText);
+                slotButton.setForeground(Color.BLACK); // 黒文字
+                slotButton.addActionListener(e -> {
+                    //ロードする処理
+                    loadGame(slot.getSvNo());
+                });
+            }
+
+            saveSelectContainer.add(slotButton);
+        }
+
+        saveSelectContainer.revalidate(); // レイアウトを再計算
+        saveSelectContainer.repaint();    // 再描画
+    }
+
+    //新規で始める処理
+    private void startNewGame(int svNo) {
+        //新規ゲームの初期化処理
+        System.out.println("新規ゲームを開始します。スロット番号: " + svNo);
+    }
+
+    //ロードする処理
+    private void loadGame(int svNo) {
+        //ロードの初期化処理
+        System.out.println("ゲームをロードします。スロット番号: " + svNo);
+
+        System.out.println("BattleGame側の現在の所持金: " + gold);
+
+        //データベースからデータを取得する
+        GameSaveManager.loadGameDataById(svNo); // ゲームデータをロードする
+
+        //ロード時パーティが空の場合、初期パーティを作る
+        if (party.isEmpty()) {
+            choicePlayer();//パーティ選択画面に移動
+        }
+
+        //エネミーやマップの更新
+        spawnEnemy();
+        enemyIcon();
+        updatePlayerVisuals();
+        updateDisplay();
+
+        gameScreen(4);//ロードしたらマップ画面に移動
+    }
+
     //タイトル画面のメソッド
     private JPanel createTitlePanel(){
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(Color.BLACK);
+        panel.setBackground(new Color(20, 20, 20)); // 背景色を黒に設定
 
         JLabel titleLabel = new JLabel("ターン制コマンドバトル", JLabel.CENTER);
         titleLabel.setFont(new Font("MS　ゴシック",Font.BOLD,36));
@@ -1326,24 +1437,17 @@ public class BattleGame extends JFrame {
         JButton startButton = new JButton("START");
         startButton.setFont(new Font("Arial",Font.PLAIN,24));
 
-        //スタートボタンを押したらマップ画面に移動する
+        //スタートボタンを押したらセーブデータ画面に移動する
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                choicePlayer();
-                //4人選択したらバトルを開始する
-                if (!party.isEmpty()) {
-                    spawnEnemy();
-                    enemyIcon();
-                    updateDisplay();
-                    updatePlayerVisuals();
-                    cardLayout.show(mainPanel,"MAP");//マップ画面に切り替え
-                }
+                updateSaveSelectPanel(); // セーブ選択画面を更新
+                cardLayout.show(mainPanel, "SAVE_SELECT");
             }
         });
 
         JPanel menu = new JPanel(new GridLayout(2,1,0,30));
-        menu.setBackground(Color.BLACK);
+        menu.setBackground(new Color(20, 20, 20));
         menu.add(titleLabel);
         menu.add(startButton);
         panel.add(menu);
@@ -1354,7 +1458,7 @@ public class BattleGame extends JFrame {
     private JPanel createGameOverPanel(){
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(true);//画面が透けないようにする
-        panel.setBackground(Color.BLACK);
+        panel.setBackground(new Color(20, 20, 20)); // 背景色を黒に設定
 
         JLabel label = new JLabel("あなたのチームは力尽きた",JLabel.CENTER);
         label.setFont(new Font("MS　ゴシック",Font.BOLD,32));
@@ -1415,7 +1519,7 @@ public class BattleGame extends JFrame {
 
         //縦に並べる
         JPanel menu = new JPanel(new GridLayout(4,1,0,20));
-        menu.setBackground(Color.BLACK);
+        menu.setBackground(new Color(20, 20, 20));
         menu.add(label);
         menu.add(retryButton);
         menu.add(restartButton);
@@ -1428,7 +1532,7 @@ public class BattleGame extends JFrame {
     //ゲームクリアの画面のメソッド
     private JPanel createGameClearPanel(){
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(Color.WHITE);
+        panel.setBackground(new Color(20, 20, 20));
 
         JLabel label1 = new JLabel("あなたのおかげで世界は平和になった",JLabel.CENTER);
         JLabel label2 = new JLabel("感謝",JLabel.CENTER);
@@ -1480,7 +1584,7 @@ public class BattleGame extends JFrame {
         endButton.addActionListener(e -> System.exit(0));
 
         JPanel menu = new JPanel(new GridLayout(5,1,0,15));
-        menu.setBackground(Color.WHITE);
+        menu.setBackground(new Color(20, 20, 20));
         menu.add(label1);
         menu.add(label2);
         menu.add(continueButton);
@@ -2661,4 +2765,8 @@ public class BattleGame extends JFrame {
         }
     }
 
+    //goldのsetterメソッド
+    public static void setGold(int gold) {
+        BattleGame.gold = gold;
+    }
 }

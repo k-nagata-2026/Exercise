@@ -7,32 +7,6 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-//補助クラス(publicはつけない)管理が楽だかららしい
-class SaveSlotInfo {
-    private int svno;
-    private int svcoin;
-    private Timestamp svdate;
-
-    public SaveSlotInfo(int svno, int svcoin, Timestamp svdate) {
-        this.svno = svno;
-        this.svcoin = svcoin;
-        this.svdate = svdate;
-    }
-
-    public int getSvno() {
-        return svno;
-    }
-
-    public int getSvcoin() {
-        return svcoin;
-    }
-
-    public Timestamp getSvdate() {
-        return svdate;
-    }
-
-}
-
 //メインクラス(publicをつける)
 public class GameSaveManager {
     private static final String DB_URL = "jdbc:oracle:thin:@//3.115.96.237:1521/fds1";
@@ -76,5 +50,27 @@ public class GameSaveManager {
         }
 
         return saveSlots;
+    }
+
+    public static void loadGameDataById(int svNo) {
+        String sql = "SELECT SVNO, SVCOIN, SVDATE FROM save_data WHERE SVNO = ?";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, svNo);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                int svcoin = rs.getInt("SVCOIN");
+                Timestamp svdate = rs.getTimestamp("SVDATE");
+                BattleGame.setGold(svcoin); // BattleGameクラスに所持金を渡す
+                System.out.println("ロードせいこう：" + " (SVNO: " + svNo + ", Gold: " + svcoin + ", Date: " + svdate + ")");
+            } else {
+                System.out.println("指定されたセーブデータは存在しません。");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
