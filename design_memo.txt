@@ -40,23 +40,36 @@
   .potion 3 回だけ使うことができます
   .levelはあがしたら㏋　もあがします。
 　.deffin buttom を押すとenemy のatk でHP を下がらない
-  .
+  .next level buttom 押すと　next level に　なります。
+　. retry buttom 押すとも一度　game することができます。
+　.defance buttom 押すと　enemy の　attack を　deffence します。
+  . home screen bottum 押すと home screen で戻ることができます。
+　.character select でいってcharacter 選ぶことができます。
+　．speed buttom 押すとdamage x2 なります。
+　　
 
 # キャラクター
 【Human】
-  ・Hero（atk:10,hp:100,spd:15）//勇者
-  ・Ladydon（atk:8,hp:100,spd:15）//
-  ・bigboss（atk:10,hp:100,spd:8）//
-   .superhero (atk:20,hp:100,spd:20) //
+  ・Hero（atk:10,hp:100,spd:15 ,defance :30）//勇者
+  ・Ladydon（atk:8,hp:100,spd:15 ,defance :30）//
+  ・bigboss（atk:10,hp:100,spd:8 ,defance :30）//
+   .superhero (atk:20,hp:100,spd:20 ,defance :30) //
 
 【Enemy】
-  ・Chotu（atk:8,hp:80,spd:12）//
-  ・boss（atk:12,hp:80,spd:9）//
-   .Tiger (atk:15,hp:100,spd:18) //
-    .lagartha (atk:30,hp :200 ,speed :15//
+  ・Chotu（atk:8,hp:80,spd:12　,defence : 10）//
+  ・boss（atk:12,hp:80,spd:9 ,defence : 10）//
+   .Tiger (atk:15,hp:100,spd:18 ,defence : 10) //
+    .lagartha (atk:30,hp :200 ,speed :15 ,defence : 10//
 
 【Item】
   ・Herb（hpを+15）//薬草
   ・Bom（自分と敵のhpを-20）//爆弾
    .BigBom (自分と敵は死にます) //
    .supermid (自分と敵のhpを+20) //
+   .potion //
+  .gun//
+  .thunder stone (使うときenemy のhpを４０さがります
+　.fire orb (火のatack )
+  . meteor stone (powerfull attack (60) 一回しかつかいます
+  
+   

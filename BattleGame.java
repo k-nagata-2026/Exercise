@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.io.File;
+import java.util.List;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
@@ -13,6 +14,7 @@ public class BattleGame extends JFrame {
    final  private JButton skillButton;
    final  private JButton potionButton;
    final private JButton itemButton;
+   private JButton saveButton;
           private int playerX = 150;
           private int playerY = 250;
    final  private JLabel backgroundLabel;
@@ -23,13 +25,17 @@ public class BattleGame extends JFrame {
 
     private Player player;
     private Enemy enemy;
-    private int enemyCount = 0; // 0から開始するように修正
-    private int potionUseCount = 0;
-    private final int MAX_POTION_USE = 3;
-    private int skillUseCount = 0;
-    private final int MAX_SKILL_USE = 2;
-    private Clip bgmClip;
-     private Item[] itemBox = new Item[10];
+    private int currentLevel = 1;
+    private int enemyCount = 0;
+
+private int potionUseCount = 0;
+private final int MAX_POTION_USE = 3;
+
+private int skillUseCount = 0;
+private final int MAX_SKILL_USE = 2; // 0から開始するように修正
+
+private Clip bgmClip;
+private Item[] itemBox = new Item[10];
     
 
 
@@ -171,12 +177,17 @@ private void showGameOverScreen() {
     retryButton.setBorderPainted(false);
     retryButton.setFocusPainted(false);
 
-    retryButton.addActionListener(e -> {
-        gameOverFrame.dispose();
-        dispose();
+   retryButton.addActionListener(e -> {
+    gameOverFrame.dispose();
+    dispose();
 
-        new BattleGame(player);
-    });
+    // Player HP full गर्ने
+    player.setHp(player.getMaxHp());
+
+    // नयाँ Battle Game सुरु गर्ने
+    BattleGame game = new BattleGame(player);
+    game.setVisible(true);
+});
 
     label.add(homeButton);
     label.add(retryButton);
@@ -297,43 +308,105 @@ private void showFireEffect() {
 }
 
 private void handleEnemyDefeat() {
-
     playSound("sounds/enemy_dead.wav");
 
-    logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
+    logTextArea.append(
+        "★ " + enemy.getName() + " をたおした！\n"
+    );
 
     enemyCount++;
+    player.gainExp(50);
 
+logTextArea.append("EXP +50!\n");
+
+    // 1 Level = 6 enemies
     if (enemyCount >= 6) {
-        stopBGM();
-        playSound("sounds/victory.wav");
 
-        endGame();
-        showVictoryScreen();
-        return;
+        if (currentLevel >= 5) {
+            stopBGM();
+            playSound("sounds/victory.wav");
+            endGame();
+            showVictoryScreen();
+            return;
+        }
+
+        // Start next level
+        currentLevel++;
+        enemyCount = 0;
+
+        // Player bonus for next level
+        player.setMaxHp(player.getMaxHp() + 50);
+        player.setHp(player.getMaxHp());
+        player.setAtk(player.getAtk() + 10);
+
+        // Reset potion and skill limits for new level
+        potionUseCount = 0;
+        skillUseCount = 0;
+
+        JOptionPane.showMessageDialog(
+            this,
+            "LEVEL " + currentLevel + " START!\n"
+            + "Max HP +50\n"
+            + "Attack +10\n"
+            + "HP fully recovered!"
+        );
     }
-
-    JOptionPane.showMessageDialog(
-        this,
-        "LEVEL " + (enemyCount + 1) + " UNLOCKED!"
-    );
 
     spawnEnemy();
     updateDisplay();
-
-    potionUseCount = 0;
-    skillUseCount = 0;
 }
-
 
  public BattleGame(Player player) {
         // ウィンドウの基本設定
-        setTitle("ターン制コマンドバトル");
         setSize(1200, 750);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
         this.player = player;
+
+        // LOAD SAVE DATA
+List<Integer> idList = GameSaveManager.getSaveIdList();
+
+if (!idList.isEmpty()) {
+
+    Object[] idOptions = idList.toArray();
+
+    Object selected = JOptionPane.showInputDialog(
+        this,
+        "ロードするセーブデータを選んでください",
+        "LOAD GAME",
+        JOptionPane.QUESTION_MESSAGE,
+        null,
+        idOptions,
+        idOptions[idOptions.length - 1]
+    );
+
+    if (selected != null) {
+
+        int chosenId = (Integer) selected;
+
+        GameSaveManager.SaveData data =
+            GameSaveManager.loadGameDataById(chosenId);
+
+        if (data != null) {
+
+            player.setLevel(data.playerLevel);
+
+            potionUseCount = data.usedPotion;
+            skillUseCount = data.usedSkill;
+            enemyCount = data.enemyDefeated;
+
+            JOptionPane.showMessageDialog(
+                this,
+                "SAVE DATA LOADED!\n" +
+                "Player Level: " + data.playerLevel + "\n" +
+                "Potion Used: " + data.usedPotion + "\n" +
+                "Skill Used: " + data.usedSkill + "\n" +
+                "Enemy Defeated: " + data.enemyDefeated
+            );
+        }
+    }
+}
        
         // コンポーネントの初期化
         
@@ -360,6 +433,7 @@ private void handleEnemyDefeat() {
         skillButton = new JButton("skill");
         potionButton = new JButton("potion");
         itemButton = new JButton("item");
+        saveButton = new JButton("SAVE");
 
         playerHpBar = new JProgressBar();
         enemyHpBar = new JProgressBar();
@@ -381,6 +455,7 @@ private void handleEnemyDefeat() {
         buttonPanel.add(skillButton);
         buttonPanel.add(potionButton);
         buttonPanel.add(itemButton);
+        buttonPanel.add(saveButton);
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
          add(backgroundLabel, BorderLayout.CENTER);
         add(bottomPanel, BorderLayout.SOUTH);
@@ -402,7 +477,6 @@ private void handleEnemyDefeat() {
     playSound("sounds/attack.wav");
 
     String playerResult = player.attack(enemy);
-    shakePlayer();
     logTextArea.append(playerResult);
     updateDisplay();
 
@@ -467,6 +541,58 @@ private void handleEnemyDefeat() {
     updateDisplay();
 
 });
+
+
+
+saveButton.addActionListener(e -> {
+    JOptionPane.showMessageDialog(
+    this,
+    "SAVE BUTTON CLICKED!"
+);
+
+    System.out.println("SAVE BUTTON CLICKED!");
+
+    String slotName = JOptionPane.showInputDialog(
+        this,
+        "Enter Save Slot Name:"
+    );
+
+    if (slotName == null || slotName.trim().isEmpty()) {
+        return;
+    }
+
+    String idText = JOptionPane.showInputDialog(
+        this,
+        "Enter Player ID:"
+    );
+
+    if (idText == null || idText.trim().isEmpty()) {
+        return;
+    }
+
+    try {
+        int playerId = Integer.parseInt(idText.trim());
+        System.out.println("CALLING SAVE MANAGER...");
+
+        GameSaveManager.saveGameData(
+            playerId,
+            currentLevel,
+            slotName.trim(),
+            potionUseCount,
+            skillUseCount,
+            enemyCount
+        );
+
+    } catch (NumberFormatException ex) {
+
+        JOptionPane.showMessageDialog(
+            this,
+            "Invalid Player ID!"
+        );
+    }
+});
+
+
 
 
 itemButton.addActionListener(e -> {
@@ -578,9 +704,17 @@ enemyHpBar.setValue(enemy.getHp());
     // 他メソッド（updateDisplay, endGame, choicePlayer, spawnEnemy 等）はそのまま記述
     private void updateDisplay() {
         statusLabel.setText(String.format(
-                "【%s】Lv.%d HP: %d/%d  vs  【%s】 Lv.%d HP: %d/%d",
-                player.getName(), player.getLevel(), player.getHp(), player.getMaxHp(),
-                enemy.getName(), enemy.getLevel(), enemy.getHp(), enemy.getMaxHp()));
+    "【%s】 Player Lv.%d | Stage %d | HP: %d/%d  vs  【%s】 Stage %d | HP: %d/%d",
+    player.getName(),
+    player.getLevel(),
+    currentLevel,
+    player.getHp(),
+    player.getMaxHp(),
+    enemy.getName(),
+    currentLevel,
+    enemy.getHp(),
+    enemy.getMaxHp()
+));
                 
                playerHpBar.setMaximum(player.getMaxHp());
 playerHpBar.setValue(player.getHp());
@@ -643,38 +777,45 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
         }
     }
 
-    private void spawnEnemy() {
-        if (enemyCount == 0) {
-            enemy = new Enemy("chotu", 100, 20, 5, 5, 10, "chotuenemy.png");
-            logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
-        } else if (enemyCount == 1) {
-            enemy = new Enemy("boss", 90, 15, 5, 5, 10, "enemyboss.png");
-            logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれbた！\n");
-        } else if (enemyCount == 2) {
-            enemy = new Enemy("tiger", 160, 24, 5, 5, 10, "tiger.png");
-            logTextArea.append("⚠ WARNING ⚠\\nFINAL BOSS APPEARED! \n");
-        } else if (enemyCount == 3) {
-            enemy = new Enemy("lagartha", 180, 25, 10, 10, 10, "lagartha.png");
-            logTextArea.append("WARNING\\nLAGARTHA IS COMMING! \n");
-        } else if (enemyCount == 4) {
-            enemy = new Enemy("IRONBOSS", 200, 20, 10, 7, 15, "ironman.png");
-            logTextArea.append("WARNING\\nIRONMAN AAGAYA! \n");
-        } else if (enemyCount == 5) {
-            enemy = new Enemy("MONSTAR", 200, 15, 15, 8, 10, "MONSTAR.png");
-            logTextArea.append("IM THE MONSTAR! \n");
-        }
+    
+private void spawnEnemy() {
+    int extraHp = (currentLevel - 1) * 30;
+    int extraAtk = (currentLevel - 1) * 15;
+   if (enemyCount == 0) {
+        enemy = new Enemy("chotu", 100 + extraHp, 20 + extraAtk, 5, 5, 10, "chotuenemy.png");
+        logTextArea.append("【だい（No.）1せん（Battle）】スライム があらわれた！\n");
 
-        playerImageLabel.setIcon(player.getIcon());
-enemyImageLabel.setIcon(enemy.getIcon());
-updateDisplay();
-logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
+    } else if (enemyCount == 1) {
+        enemy = new Enemy("boss", 90 + extraHp, 15 + extraAtk, 5, 5, 10, "enemyboss.png");
+        logTextArea.append("【だい（No.）2せん（Battle）】ゴブリン があらわれた！\n");
 
-setVisible(true);
-        enemyImageLabel.setIcon(enemy.getIcon());
-        logTextArea.append("--------------------------------------------\n");
-    }    public static void main(String[] args) {
-    new HomeScreen().setVisible(true);
-   }
+    } else if (enemyCount == 2) {
+        enemy = new Enemy("tiger", 160 + extraHp, 24 + extraAtk, 5, 5, 10, "tiger.png");
+        logTextArea.append("⚠ WARNING ⚠\nFINAL BOSS APPEARED!\n");
+
+    } else if (enemyCount == 3) {
+        enemy = new Enemy("lagartha", 180 + extraHp, 25 + extraAtk, 10, 10, 10, "lagartha.png");
+        logTextArea.append("WARNING\nLAGARTHA IS COMING!\n");
+
+    } else if (enemyCount == 4) {
+        enemy = new Enemy("IRONBOSS", 200 + extraHp, 20 + extraAtk, 10, 7, 15, "ironman.png");
+        logTextArea.append("WARNING\nIRONMAN AAGAYA!\n");
+
+    } else if (enemyCount == 5) {
+        enemy = new Enemy("MONSTAR", 200 + extraHp, 15 + extraAtk, 15, 8, 10, "MONSTAR.png");
+        logTextArea.append("I'M THE MONSTAR!\n");
+    }
+
+    playerImageLabel.setIcon(player.getIcon());
+    enemyImageLabel.setIcon(enemy.getIcon());
+
+    updateDisplay();
+
+    logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
+    logTextArea.append("--------------------------------------------\n");
+
+    setVisible(true);
+}
 
    private void addItemToBox(Item item) {
     for (int i = 0; i < itemBox.length; i++) {
@@ -687,6 +828,22 @@ setVisible(true);
     // ここまで来たら全スロットが埋まっている
     logTextArea.append("アイテムボックスがいっぱいです！ " + item.getName() + " は拾えませんでした。\n");
 }
-   
-    }
+   public static void main(String[] args) {
+
+    SwingUtilities.invokeLater(() -> {
+
+        Player player = new Player(
+            "BHOLA（Hero）",
+            200, 20, 20, 10, 30,
+            "BHOLA.png"
+        );
+
+        BattleGame game = new BattleGame(player);
+        game.setVisible(true);
+
+    });
+
+}
+
+   }
     
