@@ -7,6 +7,8 @@ public class GameSaveManager {
     private static final String DB_URL = "jdbc:oracle:thin:@//3.115.96.237:1521/fds1";
     private static final String DB_USER = "tomura_db";
     private static final String DB_PASSWORD = "tomura_db";
+
+    //セーブデータを保存するメソッド
     public static void saveGameData(int gold, Timestamp date) {
         String sql = "INSERT INTO save_data (SVNO, SVCOIN, SVDATE) VALUES ((SELECT NVL(MAX(SVNO), 0) + 1 FROM save_data), ?, ?)";
         //game_data_seq.NEXTVALはせんせいがよういしたシーケンスというものをつかって、IDをれんばんでほぞんするきのうです
@@ -47,6 +49,7 @@ public class GameSaveManager {
         return saveSlots;
     }
 
+    //所持金とパーティー情報を取得するメソッド
     public static void loadGameDataById(int svNo) {
         //save_dataテーブルからお金と日付を取得する
         String sql = "SELECT SVNO, SVCOIN, SVDATE FROM save_data WHERE SVNO = ?";
@@ -98,5 +101,61 @@ public class GameSaveManager {
             e.printStackTrace();
         }
         BattleGame.setPartyMembers(partyMembers);
+    }
+
+    //カレントパーティテーブルにパーティを保存するメソッド(保存結果によって次の画面へ進むかどうかを切り替えたいからboolean)
+    public static boolean savePartyData (int svNo, List<Player> partyList) {
+        //既存のセーブデータとの重複を防ぐため、一度該当スロットのデータを削除する
+        String deleteSql = "DELETE FROM current_party WHERE SVNO = ?";
+        String insertSql = "INSERT INTO current_party "
+                         + "(PTNO, SVNO, PLNO, PL_LEVEL, PL_CURRENT_HP, PL_MAX_HP, PL_MAX_POW, PL_MAX_MGC, PL_EQ1, PL_EQ2) "
+                         + "VALUES ((SELECT NVL(MAX(PTNO), 0) + 1 FROM current_party), ?, ?, ?, ?, ?, ?, ?, 0, 0)";
+        
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            conn.setAutoCommit(false); // トランザクションを開始(DBの自動コミットを無効化)
+            
+            //１．古いデータを削除
+            try (PreparedStatement deletePstmt = conn.prepareStatement(deleteSql)) {
+                deletePstmt.setInt(1, svNo);
+                deletePstmt.executeUpdate();
+            }
+
+            //２．今のパーティメンバーを一人ずつINSERT
+            try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql)) {
+                for (Player p : partyList) {
+                    int plNo = getPlNoFromName(p.getName());
+
+                    insertPstmt.setInt(1, svNo);
+                    insertPstmt.setInt(2, plNo);
+                    insertPstmt.setInt(3, p.getLevel());
+                    insertPstmt.setInt(4, p.getHp());
+                    insertPstmt.setInt(5, p.getMaxHp());
+                    insertPstmt.setInt(6, p.getAtk());
+                    insertPstmt.setInt(7, p.getMgc());
+
+                    insertPstmt.addBatch();
+                }
+                insertPstmt.executeBatch();
+            }
+            conn.commit();//コミット
+            System.out.println("セーブしました。");
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+    } 
+    
+    //キャラ名からPLNOを割り出すメソッド
+    private static int getPlNoFromName(String name) {
+        if (name.contains("勇者")) return 1;
+        if (name.contains("魔法使い")) return 2;
+        if (name.contains("騎士")) return 3;
+        if (name.contains("盗賊")) return 4;
+        if (name.contains("召喚士")) return 5;
+        if (name.contains("祈祷師")) return 6;
+        if (name.contains("回復術師")) return 7;
+        return 1;
     }
 }
