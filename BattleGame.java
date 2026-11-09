@@ -38,7 +38,7 @@ public class BattleGame extends JFrame {
 
     // ★ キャラクターのインスタンスをよういする
     private Player player;
-    private java.util.List<Player> party = new java.util.ArrayList<>();//チームにするためのコード（ArrayListは可変式の配列）
+    public static java.util.List<Player> party = new java.util.ArrayList<>();//チームにするためのコード（ArrayListは可変式の配列）
     private Enemy enemy;
     private java.util.List<Enemy> enemyParty = new java.util.ArrayList<>();//敵をチーム（複数体）にするためのコード
     private int enemyCount = 1; // 対峙する敵の数を数えるためのフィールド
@@ -1423,6 +1423,95 @@ public class BattleGame extends JFrame {
         updateDisplay();
 
         gameScreen(4);//ロードしたらマップ画面に移動
+    }
+
+    //ロードずるときパーティを再構築するメソッド
+    public static void setPartyMembers(List<SavePartyMember> dbPartyList) {
+        party.clear(); // 既存のパーティをクリア
+        for (SavePartyMember member : dbPartyList) {
+            String name = "";
+            String imagePath = "";
+
+            //PLNOに応じて名前と画像パスを設定
+            switch (member.plNO) {
+                case 1:
+                    name = "勇者(HERO)";
+                    imagePath = "yuusya_game.png";
+                    break;
+                case 2:
+                    name = "魔法使い(WIZARD)";
+                    imagePath = "mahoutsukai_man.png";
+                    break;
+                case 3:
+                    name = "騎士(KNIGHT)";
+                    imagePath = "knight.png";
+                    break;
+                case 4:
+                    name = "盗賊(THIEF)";
+                    imagePath = "dorobou_hokkamuri.png";
+                    break;
+                case 5:
+                    name = "召喚士(SUMMONER)";
+                    imagePath = "mahoutsukai_necromancer.png";
+                    break;
+                case 6:
+                    name = "祈祷師(SHAMAN)";
+                    imagePath = "oharai_kannushi.png";
+                    break;
+                case 7:
+                    name = "回復術師(HEALER)";
+                    imagePath = "job_doctor_man.png";
+                    break;
+                default:
+                    System.out.println("不明なPLNO: " + member.plNO);
+                    break;
+            }
+            
+            Player player = new Player(
+                name,       //名前
+                member.CurrentHp,//現在HP
+                member.MaxPow,   //攻撃力
+                member.MaxMgc,   //魔力
+                imagePath,  //画像パス
+                0,//ガードフラグ
+                member.Level,    //レベル
+                0,      //経験値
+                10   //成長率
+
+            );
+            //最大HPをDBから取得した値に設定
+            player.setMaxHp(member.MaxHp);
+            //キャラごとのスキルを再設定
+            setupSkillsForPlayer(player, name);
+            party.add(player);
+        }
+        System.out.println("パーティを読み込みました");
+    }
+
+    //キャラクターごとのスキルを再設定するメソッド
+    public static void setupSkillsForPlayer(Player p,String name) {
+        if (name.equals("勇者(HERO)")) {
+            p.learnSkill("斬る(SLASH)",1.0,"単体攻撃");
+            p.learnSkill("かばう(COVER)",0.25,"かばう");
+        } else if (name.equals("魔法使い(WIZARD)")) {
+            p.learnSkill("炎魔法(FIRE)",1.0,"全体攻撃");
+        } else if (name.equals("騎士(KNIGHT)")) {
+            p.learnSkill("斬る(SLASH)",1.0,"単体攻撃");
+            p.learnSkill("かばう(COVER)",0.25,"かばう");
+        } else if (name.equals("盗賊(THIEF)")) {
+            p.learnSkill("斬る",1.0,"単体攻撃");
+        } else if (name.equals("召喚士(SUMMONER)")) {
+            Skill nurikabe = new Skill("弱い精霊",0.0,"召喚",15,1,"youkai_nurikabe.png",120,5,5);
+            nurikabe.addSpiritSkill(new Skill("斬る(SLASH)",1.0,"単体攻撃"));
+            nurikabe.addSpiritSkill(new Skill("かばう(COVER)",0.25,"かばう"));
+            p.learnSkill(nurikabe);
+        } else if (name.equals("祈祷師(SHAMAN)")) {
+            p.learnSkill("攻撃力UP(ATK BUFF)",1.5,"単体バフ");
+            p.learnSkill("魔力UP(MGC BUFF)",1.5,"単体バフ");
+        } else if (name.equals("回復術師(HEALER)")) {
+            p.learnSkill("回復(HEAL)",1.0,"単体回復");
+            p.learnSkill("全体回復(MASS HEAL)",0.5,"全体回復");
+        }
     }
 
     //タイトル画面のメソッド

@@ -1,8 +1,3 @@
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +48,7 @@ public class GameSaveManager {
     }
 
     public static void loadGameDataById(int svNo) {
+        //save_dataテーブルからお金と日付を取得する
         String sql = "SELECT SVNO, SVCOIN, SVDATE FROM save_data WHERE SVNO = ?";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -72,5 +68,35 @@ public class GameSaveManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
+        //current_partyテーブルからパーティー情報を取得する
+        List<SavePartyMember> partyMembers = new ArrayList<>();
+        String partySql = "SELECT PTNO, SVNO, PLNO, PL_LEVEL, PL_CURRENT_HP, PL_MAX_HP, PL_MAX_POW, PL_MAX_MGC, PL_EQ1, PL_EQ2 "
+                        + "FROM current_party WHERE SVNO = ? ORDER BY PTNO ASC";
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(partySql)) {
+
+            pstmt.setInt(1, svNo);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    SavePartyMember member = new SavePartyMember(
+                        rs.getInt("PTNO"),
+                        rs.getInt("SVNO"),
+                        rs.getInt("PLNO"),
+                        rs.getInt("PL_LEVEL"),
+                        rs.getInt("PL_CURRENT_HP"),
+                        rs.getInt("PL_MAX_HP"),
+                        rs.getInt("PL_MAX_POW"),
+                        rs.getInt("PL_MAX_MGC"),
+                        rs.getInt("PL_EQ1"),
+                        rs.getInt("PL_EQ2")
+                    );
+                    partyMembers.add(member);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        BattleGame.setPartyMembers(partyMembers);
     }
 }
