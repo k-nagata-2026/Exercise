@@ -1,6 +1,5 @@
 import java.awt.*;
 import java.io.File;
-import java.util.List;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
@@ -356,57 +355,38 @@ logTextArea.append("EXP +50!\n");
     updateDisplay();
 }
 
- public BattleGame(Player player) {
-        // ウィンドウの基本設定
-        setSize(1200, 750);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setLayout(new BorderLayout());
-        this.player = player;
 
-        // LOAD SAVE DATA
-List<Integer> idList = GameSaveManager.getSaveIdList();
 
-if (!idList.isEmpty()) {
-
-    Object[] idOptions = idList.toArray();
-
-    Object selected = JOptionPane.showInputDialog(
-        this,
-        "ロードするセーブデータを選んでください",
-        "LOAD GAME",
-        JOptionPane.QUESTION_MESSAGE,
-        null,
-        idOptions,
-        idOptions[idOptions.length - 1]
-    );
-
-    if (selected != null) {
-
-        int chosenId = (Integer) selected;
-
-        GameSaveManager.SaveData data =
-            GameSaveManager.loadGameDataById(chosenId);
-
-        if (data != null) {
-
-            player.setLevel(data.playerLevel);
-
-            potionUseCount = data.usedPotion;
-            skillUseCount = data.usedSkill;
-            enemyCount = data.enemyDefeated;
-
-            JOptionPane.showMessageDialog(
-                this,
-                "SAVE DATA LOADED!\n" +
-                "Player Level: " + data.playerLevel + "\n" +
-                "Potion Used: " + data.usedPotion + "\n" +
-                "Skill Used: " + data.usedSkill + "\n" +
-                "Enemy Defeated: " + data.enemyDefeated
-            );
-        }
-    }
+public BattleGame(Player player) {
+    this(player, null);
 }
+
+public BattleGame(GameSaveManager.SaveData data) {
+    this(createPlayerFromSave(data), data);
+}
+
+private BattleGame(Player player, GameSaveManager.SaveData data) {
+
+    this.player = player;
+
+    if (data != null) {
+        currentLevel = data.currentStage;
+        enemyCount = data.enemyDefeated;
+        potionUseCount = data.usedPotion;
+        skillUseCount = data.usedSkill;
+    }
+
+    // Window settings
+    setTitle("RPG BATTLE GAME");
+    setSize(1200, 750);
+    setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    setLocationRelativeTo(null);
+    setLayout(new BorderLayout());
+
+    // Battle BGM
+    playBGM("sounds/bgm.wav");
+
+
        
         // コンポーネントの初期化
         
@@ -464,7 +444,6 @@ if (!idList.isEmpty()) {
       itemBox[1] = new Bomb();
       itemBox[2] = new ThunderStick();
       itemBox[3] = new FireOrb();
-      spawnEnemy();
 
        
         // ボタンの処理
@@ -545,12 +524,6 @@ if (!idList.isEmpty()) {
 
 
 saveButton.addActionListener(e -> {
-    JOptionPane.showMessageDialog(
-    this,
-    "SAVE BUTTON CLICKED!"
-);
-
-    System.out.println("SAVE BUTTON CLICKED!");
 
     String slotName = JOptionPane.showInputDialog(
         this,
@@ -572,12 +545,13 @@ saveButton.addActionListener(e -> {
 
     try {
         int playerId = Integer.parseInt(idText.trim());
-        System.out.println("CALLING SAVE MANAGER...");
 
-        GameSaveManager.saveGameData(
+        GameSaveManager.saveFullGameData(
             playerId,
-            currentLevel,
             slotName.trim(),
+            player,
+            enemy,
+            currentLevel,
             potionUseCount,
             skillUseCount,
             enemyCount
@@ -664,8 +638,15 @@ itemButton.addActionListener(e -> {
         
 
         // 初期化
-        this.player = player;
-        spawnEnemy();
+spawnEnemy();
+
+// Restore saved enemy HP
+if (data != null && data.enemyHp > 0
+        && data.enemyHp <= enemy.getMaxHp()) {
+    enemy.setHp(data.enemyHp);
+}
+
+updateDisplay();
          playerHpBar.setBounds(40, 40, 250, 25);
 playerHpBar.setMaximum(player.getMaxHp());
 playerHpBar.setValue(player.getHp());
@@ -698,7 +679,56 @@ enemyHpBar.setValue(enemy.getHp());
 
 
  }
+private static Player createPlayerFromSave(
+        GameSaveManager.SaveData data) {
 
+    String name = data.playerName;
+
+    if (name == null || name.trim().isEmpty()) {
+        name = "BHOLA";
+    }
+
+    String imagePath;
+
+    switch (name.toUpperCase()) {
+        case "BHOLA":
+            imagePath = "BHOLA.png";
+            break;
+
+        case "BIYON":
+            imagePath = "BIYON.png";
+            break;
+
+        case "LADYBOSS":
+        case "LADY BOSS":
+            imagePath = "ladyboss.png";
+            break;
+
+        case "BIGBOSS":
+        case "BIG BOSS":
+            imagePath = "bigboss.png";
+            break;
+
+        default:
+            imagePath = "BHOLA.png";
+            break;
+    }
+
+    Player p = new Player(
+        name,
+        data.playerMaxHp,
+        data.playerAtk,
+        data.playerDef,
+        data.playerSpeed,
+        30,
+        imagePath
+    );
+
+    p.setHp(data.playerHp);
+    p.setLevel(data.playerLevel);
+
+    return p;
+}
     
  
     // 他メソッド（updateDisplay, endGame, choicePlayer, spawnEnemy 等）はそのまま記述

@@ -1,3 +1,4 @@
+
 import java.awt.*;
 import javax.swing.*;
 
@@ -12,43 +13,86 @@ public class HomeScreen extends JFrame {
 
         ImageIcon icon = new ImageIcon("Homescreen.png");
         Image img = icon.getImage();
-        Image resizedImg = img.getScaledInstance(1420, 700, Image.SCALE_SMOOTH);
+        Image resizedImg = img.getScaledInstance(
+            1420, 700, Image.SCALE_SMOOTH
+        );
 
         JLabel background = new JLabel(new ImageIcon(resizedImg));
         background.setLayout(null);
         setContentPane(background);
 
-        JButton startButton = new JButton("START GAME");
-        startButton.setBounds(535, 420, 350, 60);
-        startButton.setFont(new Font("Times New Roman", Font.BOLD, 26));
-        startButton.setForeground(new Color(255, 215, 0));
-        startButton.setBackground(new Color(25, 25, 25));
-        startButton.setFocusPainted(false);
+        JButton newGameButton = new JButton("NEW GAME");
+        JButton loadGameButton = new JButton("LOAD GAME");
+        JButton exitButton = new JButton("EXIT");
 
-       JButton exitButton = new JButton("EXIT");
-        exitButton.setBounds(535, 500, 350, 60);
-       exitButton.setFont(new Font("Times New Roman", Font.BOLD, 26));
-       exitButton.setForeground(new Color(255, 215, 0));
-       exitButton.setBackground(new Color(25, 25, 25));
-       exitButton.setFocusPainted(false);
+        JButton[] buttons = {
+            newGameButton, loadGameButton, exitButton
+        };
 
-        background.add(startButton);
-        background.add(exitButton);
+        int y = 380;
 
-        startButton.addActionListener(e -> {
+        for (JButton button : buttons) {
+            button.setBounds(535, y, 350, 60);
+            button.setFont(new Font("Times New Roman", Font.BOLD, 26));
+            button.setForeground(new Color(255, 215, 0));
+            button.setBackground(new Color(25, 25, 25));
+            button.setFocusPainted(false);
+            background.add(button);
+            y += 75;
+        }
 
-    JOptionPane.showMessageDialog(this, "Character Select Open");
+        // NEW GAME
+        newGameButton.addActionListener(e -> {
+            new CharacterSelect().setVisible(true);
+            dispose();
+        });
 
-    new CharacterSelect().setVisible(true);
+        // LOAD GAME
+        loadGameButton.addActionListener(e -> {
 
-    dispose();
+            java.util.List<Integer> idList =
+                GameSaveManager.getSaveIdList();
 
-});
+            if (idList == null || idList.isEmpty()) {
+                JOptionPane.showMessageDialog(
+                    this, "No Save Data Found!"
+                );
+                return;
+            }
 
-     exitButton.addActionListener(e -> {
-         System.exit(0);
-       });
- }
+            Object selected = JOptionPane.showInputDialog(
+                this,
+                "Select Your Save Data:",
+                "LOAD GAME",
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                idList.toArray(),
+                idList.get(idList.size() - 1)
+            );
+
+            if (selected == null) return;
+
+            int chosenId = (Integer) selected;
+
+            GameSaveManager.SaveData data =
+                GameSaveManager.loadGameDataById(chosenId);
+
+            if (data == null) {
+                JOptionPane.showMessageDialog(
+                    this, "Failed to Load Save Data!"
+                );
+                return;
+            }
+
+            // Directly open BattleGame - no CharacterSelect
+            BattleGame game = new BattleGame(data);
+            game.setVisible(true);
+            dispose();
+        });
+
+        // EXIT
+        exitButton.addActionListener(e -> System.exit(0));
+    }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

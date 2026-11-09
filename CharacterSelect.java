@@ -16,13 +16,14 @@ public class CharacterSelect extends JFrame {
     private JLabel defLabel;
     private JLabel speedLabel;
     private Player selectedPlayer;
+    private GameSaveManager.SaveData loadedSaveData;
     private JButton startButton;
     private Clip bgmClip;
-
-    
-
     public CharacterSelect() {
-
+        this(null);
+    }
+       public CharacterSelect(GameSaveManager.SaveData saveData) {
+    this.loadedSaveData = saveData;
 
     playBGM();
 
@@ -211,8 +212,16 @@ bg.add(startButton);
         bgmClip.close();
         bgmClip = null;
     }
-     new BattleGame(selectedPlayer);
-    dispose();
+     if (loadedSaveData != null) {
+
+    selectedPlayer.setLevel(loadedSaveData.playerLevel);
+
+    // Saved progress
+    // Potion र Skill को प्रयोग संख्या BattleGame मा पठाउने व्यवस्था पछि जोड्ने
+}
+
+new BattleGame(selectedPlayer);
+dispose();
 
         });
     }

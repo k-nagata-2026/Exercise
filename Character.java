@@ -59,6 +59,24 @@ public class Character {
     public int getAtk() {
         return atk;
     }
+    // Speed Getter and Setter
+public int getSpeed() {
+    return speed;
+}
+
+public void setSpeed(int speed) {
+    this.speed = speed;
+}
+
+// Potion Getter and Setter
+public void setPotion(int potion) {
+    this.potion = potion;
+}
+
+// Level Setter
+public void setLevel(int level) {
+    this.levelup = level;
+}
 
     public void setAtk(int atk) {
         this.atk = atk;
