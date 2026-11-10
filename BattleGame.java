@@ -28,6 +28,7 @@ public class BattleGame extends JFrame {
     private JLabel coinLabel; // 所持コインを表示するラベル
     private JPanel saveSelectPanel; // セーブ選択画面のパネルを保持するフィールド
     private JPanel saveSelectContainer; // セーブ選択画面のコンテナパネルを保持するフィールド
+    private static int currentSaveSlot = 1;//セーブスロット番号を保持する変数
 
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // 背景画像のラベル
@@ -348,11 +349,30 @@ public class BattleGame extends JFrame {
         startButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                dialog.dispose(); // ダイアログを閉じる
-                player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
-                for (int i = 0; i < 4; i++){
-                    playerImageLabels[i].setIcon(party.get(i).getIcon());
+                //ボタンを無効化して、二十押し防止
+                startButton.setEnabled(false);
+
+                //１．DBにパーティをINSERTする
+                boolean success = GameSaveManager.savePartyData(currentSaveSlot,party);
+                
+                //２．保存に成功したら進む
+                if (success) {
+                    dialog.dispose(); // ダイアログを閉じる
+
+                    player = party.get(0); // 最初のキャラクターをプレイヤーとしてセットする
+                    for (int i = 0; i < 4; i++){
+                        playerImageLabels[i].setIcon(party.get(i).getIcon());
+                    }
+
+                    //画面を更新してマップ画面へ
+                    updateDisplay();
+                    gameScreen(4);
+                } else {
+                    //保存できなかった時
+                    startButton.setEnabled(true);
+                    JOptionPane.showMessageDialog(dialog,"保存に失敗しました","エラー",JOptionPane.ERROR_MESSAGE);
                 }
+                
             }
         });
 
@@ -1403,6 +1423,9 @@ public class BattleGame extends JFrame {
 
     //ロードする処理
     private void loadGame(int svNo) {
+        //選択されたスロット番号を保持する
+        currentSaveSlot = svNo;
+
         //ロードの初期化処理
         System.out.println("ゲームをロードします。スロット番号: " + svNo);
 
@@ -1411,9 +1434,10 @@ public class BattleGame extends JFrame {
         //データベースからデータを取得する
         GameSaveManager.loadGameDataById(svNo); // ゲームデータをロードする
 
-        //ロード時パーティが空の場合、初期パーティを作る
-        if (party.isEmpty()) {
+        //ロード時パーティが空もしくは４人そろっていない場合、初期パーティを作る
+        if (party == null || party.size() < 4) {
             choicePlayer();//パーティ選択画面に移動
+            return;//選択が終わるまでマップ移動を中断するため
         }
 
         //エネミーやマップの更新

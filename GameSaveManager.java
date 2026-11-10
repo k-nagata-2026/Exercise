@@ -107,9 +107,11 @@ public class GameSaveManager {
     public static boolean savePartyData (int svNo, List<Player> partyList) {
         //既存のセーブデータとの重複を防ぐため、一度該当スロットのデータを削除する
         String deleteSql = "DELETE FROM current_party WHERE SVNO = ?";
+
+        //PTNOもプレースホルダーという仮の値にする(?のこと)
         String insertSql = "INSERT INTO current_party "
                          + "(PTNO, SVNO, PLNO, PL_LEVEL, PL_CURRENT_HP, PL_MAX_HP, PL_MAX_POW, PL_MAX_MGC, PL_EQ1, PL_EQ2) "
-                         + "VALUES ((SELECT NVL(MAX(PTNO), 0) + 1 FROM current_party), ?, ?, ?, ?, ?, ?, ?, 0, 0)";
+                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)";
         
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
             conn.setAutoCommit(false); // トランザクションを開始(DBの自動コミットを無効化)
@@ -122,16 +124,19 @@ public class GameSaveManager {
 
             //２．今のパーティメンバーを一人ずつINSERT
             try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql)) {
-                for (Player p : partyList) {
+                for (int i = 0; i < partyList.size(); i++) {
+                    Player p = partyList.get(i);
+                    int ptNo = i + 1;
                     int plNo = getPlNoFromName(p.getName());
 
-                    insertPstmt.setInt(1, svNo);
-                    insertPstmt.setInt(2, plNo);
-                    insertPstmt.setInt(3, p.getLevel());
-                    insertPstmt.setInt(4, p.getHp());
-                    insertPstmt.setInt(5, p.getMaxHp());
-                    insertPstmt.setInt(6, p.getAtk());
-                    insertPstmt.setInt(7, p.getMgc());
+                    insertPstmt.setInt(1, ptNo);
+                    insertPstmt.setInt(2,svNo);
+                    insertPstmt.setInt(3, plNo);
+                    insertPstmt.setInt(4, p.getLevel());
+                    insertPstmt.setInt(5, p.getHp());
+                    insertPstmt.setInt(6, p.getMaxHp());
+                    insertPstmt.setInt(7, p.getAtk());
+                    insertPstmt.setInt(8, p.getMgc());
 
                     insertPstmt.addBatch();
                 }
