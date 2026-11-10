@@ -1,16 +1,19 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import javax.sound.sampled.*;
 import javax.swing.*;
-
 
 public class BattleGame extends JFrame implements KeyListener {
     private JLabel statusLabel;
     private JTextArea logTextArea;
+
+
+    private int loadedLvlTemp = -1;
+    private int loadedGoldTemp = -1;
 
     private JLabel backgroundLabel;
     private JLabel playerImageLabel;
@@ -90,7 +93,116 @@ public class BattleGame extends JFrame implements KeyListener {
 
     private Clip bgmClip;
 
-    public BattleGame() {
+
+
+
+
+public BattleGame() {
+        // 1. Start Screen Label Setup
+        startScreenLabel = new JLabel("クリックしてスタート / ロード", SwingConstants.CENTER);
+
+        // 2. ★ Start Screen Click Listener (DB Data Load & Display Refresh) ★
+        startScreenLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                try {
+                    List<Integer> idList = GameSaveManager.getSaveIdList();
+
+                    List<Object> optionsList = new ArrayList<>();
+                    optionsList.add("0: 新しいゲームで始める (New Game)");
+
+                    if (idList != null && !idList.isEmpty()) {
+                        for (int id : idList) {
+                            optionsList.add(id); // 
+                        }
+                    }
+
+                    Object[] idOptions = optionsList.toArray();
+
+                    Object loadSelected = JOptionPane.showInputDialog(
+                            BattleGame.this,
+                            "ゲームの始め方を選択してください（セーブID選択）：",
+                            "ゲーム開始 / ロード (Start & Load)",
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            idOptions,
+                            idOptions[idOptions.length - 1]
+                    );
+
+                    if (loadSelected == null) return; 
+
+                    int savedLvl = 1;
+
+
+                    if (loadSelected instanceof Integer) {
+                        int chosenId = (Integer) loadSelected;
+                        int[] loadedData = GameSaveManager.loadGameDataById(chosenId);
+
+                        if (loadedData != null && loadedData[0] > 0) {
+                            int plyrNo = loadedData[0];       // 1: hero, 2: wizard, 3: human
+                            savedLvl = loadedData[1];         // PLAYER_LVL
+                            int savedBalance = loadedData[2];   // BALANCE
+
+                            // Gold Assign
+                            playerGold = savedBalance;
+
+                            if (plyrNo == 1) {
+                                heroLevel = savedLvl;
+                                currentSelectedType = "hero";
+                            } else if (plyrNo == 2) {
+                                wizardLevel = savedLvl;
+                                currentSelectedType = "wizard";
+                            } else {
+                                humanLevel = savedLvl;
+                                currentSelectedType = "human";
+                            }
+
+                            JOptionPane.showMessageDialog(BattleGame.this, 
+                                "セーブID " + chosenId + " のデータをロードしました！\n" +
+                                "Level: " + savedLvl + " | Gold: " + savedBalance + "G から再開します。");
+                        }
+                    } else {
+                        // New Game (Lv.1)
+                        savedLvl = 1;
+                        playerGold = 0;
+                        JOptionPane.showMessageDialog(BattleGame.this, "新しいゲームで開始します！");
+                    }
+
+                    int maxHp = 100 + (savedLvl - 1) * 20;
+                    int atk = 20 + (savedLvl - 1) * 5;
+                    int def = 5 + (savedLvl - 1) * 2;
+
+                    // Player Object initialize गर्ने
+                    player = new Player("勇者", maxHp, atk, def, 10, "img/hero.png");
+                    player.setLevel(savedLvl);
+                    player.setHp(maxHp);
+
+                    isGameStarted = true;
+                    
+                    if (startScreenLabel != null) {
+                        startScreenLabel.setVisible(false);
+                    }
+                    if (gamePlayPanel != null) {
+                        gamePlayPanel.setVisible(true);
+                    }
+
+                    updateGameScreenUI();
+                    
+                    revalidate();
+                    repaint();
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(BattleGame.this, "ロードエラー: " + ex.getMessage());
+                }
+            }
+        });
+
+
+
+
+
+        // 3. Frame Configuration & Items setup
         setTitle("本格RPG - ハイブリッド・アンロックバトルシステム + Visual FX");
         setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -100,10 +212,10 @@ public class BattleGame extends JFrame implements KeyListener {
         itemBox[0] = new Bomb();
         itemBox[1] = new Herb();
         itemBox[2] = new mp();
-         itemBox[3] = new Shield();
+        itemBox[3] = new Shield();
 
         // ==========================================
-        // १. START SCREEN process
+        // 1. START SCREEN process (Rule -> DB Load Dialog -> Screen Switch)
         // ==========================================
         JPanel mainStartPanel = new JPanel(new GridBagLayout());
         mainStartPanel.setBackground(Color.decode("#1a1c23"));
@@ -111,43 +223,148 @@ public class BattleGame extends JFrame implements KeyListener {
         startScreenLabel = new JLabel();
         startScreenLabel.setLayout(null);
 
+        int imgWidth = 570;
+        int imgHeight = 970;
+
         try {
             ImageIcon startIcon = new ImageIcon("start.png");
-            int imgWidth = 570;
-            int imgHeight = 970;
-
             Image scaledStart = startIcon.getImage().getScaledInstance(imgWidth, imgHeight, Image.SCALE_SMOOTH);
             startScreenLabel.setIcon(new ImageIcon(scaledStart));
             startScreenLabel.setPreferredSize(new Dimension(imgWidth, imgHeight));
+            startScreenLabel.setSize(imgWidth, imgHeight);
         } catch (Exception e) {
             System.out.println("start.png not found");
         }
 
-        startScreenLabel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (isGameStarted)
+        // ⭕️ START ボタン領域用 (透明 JButton)
+        JButton invisibleStartBtn = new JButton();
+        invisibleStartBtn.setBounds(40, 740, 490, 80);
+        invisibleStartBtn.setOpaque(false);
+        invisibleStartBtn.setContentAreaFilled(false);
+        invisibleStartBtn.setBorderPainted(false);
+        invisibleStartBtn.setFocusPainted(false);
+
+        invisibleStartBtn.addActionListener(e -> {
+            System.out.println("[DEBUG] START BUTTON CLICKED!");
+            isGameStarted = true;
+            try {
+                // 1. ルール説明を表示
+                showRulesDialog();
+
+                // 2. Oracle DB बाट Save ID तान्ने
+                List<Integer> idList = GameSaveManager.getSaveIdList();
+                List<Object> optionsList = new ArrayList<>();
+                optionsList.add("0: 新しいゲームで始める (New Game)");
+
+                if (idList != null && !idList.isEmpty()) {
+                    for (int id : idList) {
+                        optionsList.add(id);
+                    }
+                }
+
+                Object[] idOptions = optionsList.toArray();
+
+                // 3. Save ID Select Dialog
+                Object loadSelected = JOptionPane.showInputDialog(
+                        BattleGame.this,
+                        "ゲームの始め方を選択してください（セーブID選択）：",
+                        "ゲーム開始 / ロード (Start & Load)",
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        idOptions,
+                        idOptions[idOptions.length - 1]
+                );
+
+                if (loadSelected == null) {
+                    isGameStarted = false;
                     return;
+                }
 
-                int clickY = e.getY();
-                int labelHeight = startScreenLabel.getHeight();
+                if (loadSelected instanceof Integer) {
+                    // --- 続きから始める (Load Game) ---
+                    int chosenId = (Integer) loadSelected;
+                    int[] loadedData = GameSaveManager.loadGameDataById(chosenId);
 
-                if (clickY >= (labelHeight * 0.79) && clickY <= (labelHeight * 0.86)) {
-                    isGameStarted = true;
-                    showRulesDialog();
+                    if (loadedData != null && loadedData[0] > 0) {
+                        int plyrNo = loadedData[0];
+                        int savedLvl = loadedData[1];
+                        int savedBalance = loadedData[2];
+
+                        playerGold = savedBalance;
+
+                        if (plyrNo == 1) {
+                            heroLevel = savedLvl;
+                            currentSelectedType = "hero";
+                        } else if (plyrNo == 2) {
+                            wizardLevel = savedLvl;
+                            currentSelectedType = "wizard";
+                        } else {
+                            humanLevel = savedLvl;
+                            currentSelectedType = "human";
+                        }
+
+                        int maxHp = 100 + (savedLvl - 1) * 20;
+                        int atk = 20 + (savedLvl - 1) * 5;
+                        int def = 5 + (savedLvl - 1) * 2;
+
+                        player = new Player("勇者", maxHp, atk, def, 10, "img/hero.png");
+                        player.setLevel(savedLvl);
+                        player.setHp(maxHp);
+
+                        initGameSession(true);
+
+                        JOptionPane.showMessageDialog(BattleGame.this, 
+                            "セーブID " + chosenId + " のデータをロードしました！\n" +
+                            "Level: " + savedLvl + " | Gold: " + savedBalance + "G から再開します。");
+                    }
+                } else {
+                    // --- 新しく始める (New Game -> Character Select) ---
                     choicePlayer();
                     initGameSession(false);
-
-                    CardLayout cl = (CardLayout) getContentPane().getLayout();
-                    cl.show(getContentPane(), "GAMEPLAY");
-                    BattleGame.this.requestFocusInWindow();
-                } else if (clickY >= (labelHeight * 0.89) && clickY <= (labelHeight * 0.96)) {
-                    System.exit(0);
                 }
+
+            } catch (Exception ex) {
+                System.out.println("Init error: " + ex.getMessage());
+                ex.printStackTrace();
             }
+
+            // 確実な画面遷移処理
+            LayoutManager layout = getContentPane().getLayout();
+            if (layout instanceof CardLayout) {
+                CardLayout cl = (CardLayout) layout;
+                cl.show(getContentPane(), "GAMEPLAY");
+            }
+            revalidate();
+            repaint();
+            BattleGame.this.requestFocusInWindow();
         });
 
+        // ⭕️ EXIT ボタン領域用 (透明 JButton)
+        JButton invisibleExitBtn = new JButton();
+        invisibleExitBtn.setBounds(40, 850, 490, 80);
+        invisibleExitBtn.setOpaque(false);
+        invisibleExitBtn.setContentAreaFilled(false);
+        invisibleExitBtn.setBorderPainted(false);
+        invisibleExitBtn.setFocusPainted(false);
+
+        invisibleExitBtn.addActionListener(e -> {
+            System.out.println("[DEBUG] EXIT BUTTON CLICKED!");
+            System.exit(0);
+        });
+
+        // 1. ラベルにボタンを追加
+        startScreenLabel.add(invisibleStartBtn);
+        startScreenLabel.add(invisibleExitBtn);
+
+        // 2. メインパネルにラベルを追加
         mainStartPanel.add(startScreenLabel);
+
+        // 3. 全体ウィンドウ (CardLayout) に START 画面を追加登録
+        getContentPane().add(mainStartPanel, "START");
+
+
+
+        
 
         // ==========================================
         // २. GAMEPLAY PANEL
@@ -1008,6 +1225,7 @@ public class BattleGame extends JFrame implements KeyListener {
     }
 }
 
+
     private void triggerFlashEffect(Color color) {
         JPanel flashPanel = new JPanel();
         flashPanel.setBackground(color);
@@ -1181,4 +1399,27 @@ public class BattleGame extends JFrame implements KeyListener {
             game.setVisible(true);
         });
     }
+   private void updateGameScreenUI() {
+    if (this.loadedLvlTemp > 0 && this.player != null) {
+        this.player.setLevel(this.loadedLvlTemp);
+        int calcHp = 100 + (this.loadedLvlTemp - 1) * 20;
+        this.player.setMaxHp(calcHp);
+        this.player.setHp(calcHp);
+    }
+    if (this.loadedGoldTemp >= 0) {
+        this.playerGold = this.loadedGoldTemp;
+    }
+    if (statusLabel != null && this.player != null) {
+        statusLabel.setText("Player Level: " + this.player.getLevel() + " (" + currentSelectedType + ")");
+    }
+    if (goldDisplayLabel != null) {
+        goldDisplayLabel.setText("Gold: " + this.playerGold + "G");
+    }
+    if (playerHpBar != null && this.player != null) {
+        playerHpBar.setMaximum(this.player.getMaxHp());
+        playerHpBar.setValue(this.player.getHp());
+        playerHpBar.setString(this.player.getHp() + " / " + this.player.getMaxHp());
+    }
+}
+
 }

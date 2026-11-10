@@ -32,7 +32,17 @@ public class Player extends Character {
     public void setLevel(int level) {
         this.level = level;
     }
+  public void setBalance(int balance) {
+    this.balance = balance; 
+}
 
+  public void setMaxHp(int maxHp) {
+    this.maxHp = maxHp;
+}
+
+public int getBalance() {
+        return this.balance;
+    }
     // レベルアップ時のステータス上昇
     public void levelUp() {
         this.level++;

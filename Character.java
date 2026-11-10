@@ -9,6 +9,8 @@ public class Character {
     protected int speed;
     protected Icon icon;
     protected String imagePath; 
+    protected int maxHp; 
+    protected int balance;
 
     // スーパークラスのコンストラクタ
     public Character(String name, int hp, int atk, int defenc, int speed, String imagePath) {
@@ -46,6 +48,17 @@ public class Character {
         return this.icon;
     }
 
+    public void setBalance(int balance) {
+    this.balance = balance; 
+}
+
+  public void setMaxHp(int maxHp) {
+    this.maxHp = maxHp;
+}
+
+public int getBalance() {
+        return this.balance; 
+    }
     // キャラクターが生存しているか確認するメソッド
     public boolean isAlive() {
         return this.hp > 0;
