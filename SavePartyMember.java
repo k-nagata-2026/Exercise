@@ -22,4 +22,13 @@ public class SavePartyMember {
         this.Eq1 = plEq1;
         this.Eq2 = plEq2;
     }
+
+    //ゲッターメソッド
+    public int getPlNo() {return plNO;}
+    public int getPlLevel() {return Level;}
+    public int getPlHp() {return CurrentHp;}
+    public int getMaxHp() {return MaxHp;}
+    public int getAtk() {return MaxPow;}
+    public int getMgc() {return MaxMgc;}
+    
 }

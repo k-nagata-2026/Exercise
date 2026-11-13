@@ -178,6 +178,10 @@ public class Player extends Character {
         this.atk = atk;
     }
 
+    public void setMgc(int mgc) {
+        this.mgc = mgc;
+    }
+
     public void setMaxHp(int maxHp) {
         this.maxHp = maxHp;
     }

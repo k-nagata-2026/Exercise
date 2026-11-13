@@ -163,4 +163,6 @@ public class GameSaveManager {
         if (name.contains("回復術師")) return 7;
         return 1;
     }
+
+    
 }

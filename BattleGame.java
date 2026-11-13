@@ -1147,6 +1147,10 @@ public class BattleGame extends JFrame {
 
                 //敵が全滅したときの処理
                 if(aliveEnemies.isEmpty()){
+                    //敵が全滅したので、ここでカレントパーティテーブルとセーブデータテーブルを更新
+                    GameSaveManager.savePartyData(currentSaveSlot,party);
+                    GameSaveManager.saveGameData(gold, new java.sql.Timestamp(System.currentTimeMillis()));
+
                     //ボスエリアの判定
                     if (currentField.equals("BOSS")) {
                         if (bossStage == 1) {
@@ -1436,8 +1440,16 @@ public class BattleGame extends JFrame {
 
         //ロード時パーティが空もしくは４人そろっていない場合、初期パーティを作る
         if (party == null || party.size() < 4) {
+            System.out.println("新しいデータのためキャラクター選択画面を開きます");
             choicePlayer();//パーティ選択画面に移動
             return;//選択が終わるまでマップ移動を中断するため
+        }
+
+        //4人分の画像を画面ラベルにセットする
+        player = party.get(0);
+        currentPlayerIndex = 0;
+        for (int i = 0; i < party.size(); i++) {
+            playerImageLabels[i].setIcon(party.get(i).getIcon());
         }
 
         //エネミーやマップの更新
@@ -1452,64 +1464,64 @@ public class BattleGame extends JFrame {
     //ロードずるときパーティを再構築するメソッド
     public static void setPartyMembers(List<SavePartyMember> dbPartyList) {
         party.clear(); // 既存のパーティをクリア
-        for (SavePartyMember member : dbPartyList) {
-            String name = "";
-            String imagePath = "";
 
-            //PLNOに応じて名前と画像パスを設定
-            switch (member.plNO) {
-                case 1:
-                    name = "勇者(HERO)";
-                    imagePath = "yuusya_game.png";
-                    break;
-                case 2:
-                    name = "魔法使い(WIZARD)";
-                    imagePath = "mahoutsukai_man.png";
-                    break;
-                case 3:
-                    name = "騎士(KNIGHT)";
-                    imagePath = "knight.png";
-                    break;
-                case 4:
-                    name = "盗賊(THIEF)";
-                    imagePath = "dorobou_hokkamuri.png";
-                    break;
-                case 5:
-                    name = "召喚士(SUMMONER)";
-                    imagePath = "mahoutsukai_necromancer.png";
-                    break;
-                case 6:
-                    name = "祈祷師(SHAMAN)";
-                    imagePath = "oharai_kannushi.png";
-                    break;
-                case 7:
-                    name = "回復術師(HEALER)";
-                    imagePath = "job_doctor_man.png";
-                    break;
-                default:
-                    System.out.println("不明なPLNO: " + member.plNO);
-                    break;
-            }
-            
-            Player player = new Player(
-                name,       //名前
-                member.CurrentHp,//現在HP
-                member.MaxPow,   //攻撃力
-                member.MaxMgc,   //魔力
-                imagePath,  //画像パス
-                0,//ガードフラグ
-                member.Level,    //レベル
-                0,      //経験値
-                10   //成長率
-
-            );
-            //最大HPをDBから取得した値に設定
-            player.setMaxHp(member.MaxHp);
-            //キャラごとのスキルを再設定
-            setupSkillsForPlayer(player, name);
-            party.add(player);
+        //セーブデータにメンバーがいるかチェック
+        if (dbPartyList == null || dbPartyList.isEmpty()) {
+            System.out.println("セーブデータにパーティが存在しません");
+            return;
         }
+        
+        
+
+        for (SavePartyMember m : dbPartyList) {
+            //PLNOからキャラクター名や画像を特定してPlayerオブジェクトを生成
+            Player p = createPlayerByPlNo(m.getPlNo());
+            if (p != null) {
+                p.setLevel(m.getPlLevel());
+                p.setHp(m.getPlHp());
+                p.setMaxHp(m.getMaxHp());
+                p.setAtk(m.getAtk());
+                p.setMgc(m.getMgc());
+                party.add(p);
+            }
+        }
+
         System.out.println("パーティを読み込みました");
+    }
+
+    //PLNO(1~7)から対応するキャラクターを生成して返すメソッド
+    public static Player createPlayerByPlNo(int plNo) {
+        Player p = null;
+
+        switch(plNo) {
+            case 1:
+                p = new Player("勇者(HERO)",60,20,20,"yuusya_game.png",0,1,0,10);
+                break;
+            case 2:
+                p = new Player("魔法使い(WIZARD)",45,5,50,"mahoutsukai_man.png",0,1,0,10);
+                break;
+            case 3:
+                p = new Player("騎士(KNIGHT)",65,30,5,"knight.png",0,1,0,10);
+                break;
+            case 4:
+                p = new Player("盗賊(THIEF)",70,10,20,"dorobou_hokkamuri.png",0,1,0,10);
+                break;
+            case 5:
+                p = new Player("召喚士(SUMMONER)",90,5,5,"mahoutsukai_necromancer.png",0,1,0,10);
+                break;
+            case 6:
+                p = new Player("祈祷師(SHAMAN)",50,5,45,"oharai_kannushi.png",0,1,0,10);
+                break;
+            case 7:
+                p = new Player("回復術師(HEALER)",45,5,50,"job_doctor_man.png",0,1,0,10);
+                break;
+            default:
+                return null;
+        }
+
+        //スキルメソッドを呼んでセット
+        setupSkillsForPlayer(p, p.getName());
+        return p;
     }
 
     //キャラクターごとのスキルを再設定するメソッド
