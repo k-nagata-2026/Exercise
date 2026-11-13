@@ -69,6 +69,7 @@ public class BattleGame extends JFrame implements KeyListener {
     private static int wizardLevel = 1;
     private static int humanLevel = 1;
     private String currentSelectedType = "hero";
+    private int currentSaveId = 0; // 0 = new game, 1以上 = ロードしたセーブID
 
     // --- SHOP LOGIC VARIABLES ---
     private int playerGold = 0;
@@ -283,6 +284,7 @@ public BattleGame() {
                 if (loadSelected instanceof Integer) {
                     // --- 続きから始める (Load Game) ---
                     int chosenId = (Integer) loadSelected;
+                    currentSaveId = chosenId;
                     int[] loadedData = GameSaveManager.loadGameDataById(chosenId);
 
                     if (loadedData != null && loadedData[0] > 0) {
@@ -297,21 +299,22 @@ public BattleGame() {
                             currentSelectedType = "hero";
                         } else if (plyrNo == 2) {
                             wizardLevel = savedLvl;
+                            isWizardUnlocked = true;
                             currentSelectedType = "wizard";
                         } else {
                             humanLevel = savedLvl;
+                            isWizardUnlocked = true;
+                            isHumanUnlocked = true;
                             currentSelectedType = "human";
                         }
 
-                        int maxHp = 100 + (savedLvl - 1) * 20;
-                        int atk = 20 + (savedLvl - 1) * 5;
-                        int def = 5 + (savedLvl - 1) * 2;
+                        // セーブされたキャラクター（hero / wizard / human）でプレイヤーを作る
+                        createLoadedPlayer();
 
-                        player = new Player("勇者", maxHp, atk, def, 10, "img/hero.png");
-                        player.setLevel(savedLvl);
-                        player.setHp(maxHp);
+                        initGameSession(false);
 
-                        initGameSession(true);
+                        // セーブされたアイテムを復元する
+                        restoreItemsFromSave(chosenId);
 
                         JOptionPane.showMessageDialog(BattleGame.this, 
                             "セーブID " + chosenId + " のデータをロードしました！\n" +
@@ -319,6 +322,7 @@ public BattleGame() {
                     }
                 } else {
                     // --- 新しく始める (New Game -> Character Select) ---
+                    currentSaveId = 0;
                     choicePlayer();
                     initGameSession(false);
                 }
@@ -1174,6 +1178,7 @@ public BattleGame() {
 
     private void resetToTitle() {
         enemyCount = 1;
+        currentSaveId = 0;
         isGameOverState = false;
         playerGold = 0;
         attackBuffCount = 0;
@@ -1200,11 +1205,10 @@ public BattleGame() {
         int playerNo;
         int level;
 
-        // 文字列の比較は .equals() を使用します
-        if ("ゆうしゃ（Hero）".equals(player.name)) {
+        if ("hero".equals(currentSelectedType)) {
             playerNo = 1;
             level = heroLevel;
-        } else if ("wizard".equals(player.name)) { // '=' を '.equals()' に修正
+        } else if ("wizard".equals(currentSelectedType)) {
             playerNo = 2;
             level = wizardLevel;
         } else {
@@ -1214,11 +1218,20 @@ public BattleGame() {
 
         java.sql.Timestamp currentDate = new java.sql.Timestamp(System.currentTimeMillis());
 
-        // 引数の変数名を「playerNo」に合わせ、3つの値（ID, レベル, 所持金）を渡します
-        GameSaveManager.saveGameData(playerNo, level,currentDate, playerGold);
-        
-        JOptionPane.showMessageDialog(this, "ほぞんしました");
+        int savedId = GameSaveManager.saveGameData(currentSaveId, playerNo, level, currentDate, playerGold);
 
+        if (savedId > 0) {
+            currentSaveId = savedId;
+            String itemError = GameSaveManager.saveItemBox(savedId, itemBoxToNumbers(), currentDate);
+            if (itemError == null) {
+                JOptionPane.showMessageDialog(this, "ほぞんしました (セーブID: " + savedId + ")\nアイテムも保存しました。");
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "ほぞんしました (セーブID: " + savedId + ")\nただし、アイテムの保存に失敗しました。\n" + itemError);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "セーブに失敗しました");
+        }
     } catch (Exception ex) {
         ex.printStackTrace();
         JOptionPane.showMessageDialog(this, "セーブエラー: " + ex.getMessage());
@@ -1343,7 +1356,15 @@ public BattleGame() {
 
 
     private void spawnEnemy() {
-        int currentMaxLevel = Math.max(heroLevel, Math.max(wizardLevel, humanLevel));
+        // 敵のレベルは「今使っているキャラ」のレベルだけで決める
+        int currentMaxLevel;
+        if (currentSelectedType.equals("wizard")) {
+            currentMaxLevel = wizardLevel;
+        } else if (currentSelectedType.equals("human")) {
+            currentMaxLevel = humanLevel;
+        } else {
+            currentMaxLevel = heroLevel;
+        }
         double levelMultiplier = 1.0 + (currentMaxLevel - 1) * 0.15;
 
         if (enemyCount == 1) {
@@ -1379,6 +1400,90 @@ public BattleGame() {
         } catch (Exception e) {
             System.out.println("Enemy image load failed!");
         }
+    }
+
+    // ロードしたセーブのキャラクター（currentSelectedType）でプレイヤーを作る
+    private void createLoadedPlayer() {
+        if (currentSelectedType.equals("wizard")) {
+            int calculatedHp = 80 + (wizardLevel - 1) * 15;
+            int calculatedAtk = 125 + (wizardLevel - 1) * 12;
+            player = new Player("wizard（wizard）", calculatedHp, calculatedAtk, 10, 10, "wizard player.png");
+            player.setLevel(wizardLevel);
+        } else if (currentSelectedType.equals("human")) {
+            int calculatedHp = 300 + (humanLevel - 1) * 35;
+            int calculatedAtk = 130 + (humanLevel - 1) * 15;
+            player = new Player("human (human)", calculatedHp, calculatedAtk, 10, 50, "human.png");
+            player.setLevel(humanLevel);
+        } else {
+            int calculatedHp = 100 + (heroLevel - 1) * 20;
+            int calculatedAtk = 120 + (heroLevel - 1) * 10;
+            player = new Player("ゆうしゃ（Hero）", calculatedHp, calculatedAtk, 10, 10, "hero.png");
+            player.setLevel(heroLevel);
+        }
+
+        try {
+            ImageIcon playerIcon = new ImageIcon(player.getImagePath());
+            playerImageLabel
+                    .setIcon(new ImageIcon(playerIcon.getImage().getScaledInstance(500, 500, Image.SCALE_SMOOTH)));
+        } catch (Exception e) {
+            System.out.println("Player image load failed!");
+        }
+    }
+
+    // アイテム → アイテム番号（DBの ITEM_NO）。1: Bomb, 2: Herb, 3: mp, 4: Shield, 0: なし
+    private int itemToNo(Item item) {
+        if (item == null) {
+            return 0;
+        }
+        switch (item.getClass().getSimpleName()) {
+            case "Bomb":
+                return 1;
+            case "Herb":
+                return 2;
+            case "mp":
+                return 3;
+            case "Shield":
+                return 4;
+            default:
+                return 0;
+        }
+    }
+
+    // アイテム番号 → アイテム
+    private Item noToItem(int itemNo) {
+        switch (itemNo) {
+            case 1:
+                return new Bomb();
+            case 2:
+                return new Herb();
+            case 3:
+                return new mp();
+            case 4:
+                return new Shield();
+            default:
+                return null;
+        }
+    }
+
+    // アイテムボックス（10スロット）を番号の配列にする
+    private int[] itemBoxToNumbers() {
+        int[] nos = new int[itemBox.length];
+        for (int i = 0; i < itemBox.length; i++) {
+            nos[i] = itemToNo(itemBox[i]);
+        }
+        return nos;
+    }
+
+    // ロードしたセーブのアイテムボックスを復元する
+    private void restoreItemsFromSave(int saveId) {
+        int[] nos = GameSaveManager.loadItemBox(saveId);
+        if (nos == null) {
+            return; // アイテム未保存の古いセーブ: 最初のアイテムをそのまま使う
+        }
+        for (int i = 0; i < itemBox.length; i++) {
+            itemBox[i] = (i < nos.length) ? noToItem(nos[i]) : null;
+        }
+        logTextArea.append("💾 アイテムを復元しました！\n");
     }
 
     private void addItemToBox(Item item) {
