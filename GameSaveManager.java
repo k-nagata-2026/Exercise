@@ -164,5 +164,36 @@ public class GameSaveManager {
         return 1;
     }
 
-    
+    //新しいセーブデータを作成し、そのSVNOを返すメソッド
+    public static int createNewSaveData(int initialGold) {
+        String maxSql = "SELECT NVL(MAX(SVNO),0) + 1 FROM SAVE_DATA";
+        String insertSql = "INSERT INTO SAVE_DATA (SVNO,SVCOIN,SVDATE) VALUES (?,?,?)";
+        int newSvNo = -1;
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            // 1. 次の SVNO を取得
+            try (PreparedStatement maxPstmt = conn.prepareStatement(maxSql);
+                 ResultSet rs = maxPstmt.executeQuery()) {
+                if (rs.next()) {
+                    newSvNo = rs.getInt(1);
+                }
+            }
+
+            // 2. 新しいスロットを DB に INSERT
+            if (newSvNo != -1) {
+                try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql)) {
+                    insertPstmt.setInt(1, newSvNo);
+                    insertPstmt.setInt(2, initialGold);
+                    insertPstmt.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
+                    insertPstmt.executeUpdate();
+                    System.out.println("新規セーブスロット（SVNO: " + newSvNo + "）を作成しました！");
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return -1;
+        }
+        return newSvNo;
+    }
+
 }

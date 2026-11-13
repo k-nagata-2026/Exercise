@@ -1396,7 +1396,7 @@ public class BattleGame extends JFrame {
                 slotButton.setForeground(Color.GRAY); // グレー文字
                 slotButton.addActionListener(e -> {
                     //新規ゲームを開始する処理
-                    startNewGame(slot.getSvNo());
+                    createAndStartNewGame();
                 });
             } else {
                 //データがあるスロット(ロード)
@@ -1415,14 +1415,42 @@ public class BattleGame extends JFrame {
             saveSelectContainer.add(slotButton);
         }
 
+        //新規作成ボタン
+        JButton newGameButton = new JButton("＋ 新しく冒険を始める（新規セーブ作成）");
+        newGameButton.setPreferredSize(new Dimension(600, 60));
+        newGameButton.setFont(new Font("MS ゴシック", Font.BOLD, 18));
+        newGameButton.setBackground(new Color(46, 204, 113)); // 緑色
+        newGameButton.setForeground(Color.WHITE);
+        newGameButton.setFocusPainted(false);
+
+        newGameButton.addActionListener(e -> {
+            createAndStartNewGame(); // 新規ゲーム開始処理を呼ぶ
+        });
+
+        saveSelectContainer.add(newGameButton);
+
         saveSelectContainer.revalidate(); // レイアウトを再計算
         saveSelectContainer.repaint();    // 再描画
     }
 
     //新規で始める処理
-    private void startNewGame(int svNo) {
+    private void createAndStartNewGame() {
         //新規ゲームの初期化処理
-        System.out.println("新規ゲームを開始します。スロット番号: " + svNo);
+        int initialGold = 0; // 初期所持金
+
+        // DBに新しいセーブスロットを作成し、番号を取得
+        int newSvNo = GameSaveManager.createNewSaveData(initialGold);
+
+        if (newSvNo != -1) {
+            currentSaveSlot = newSvNo;
+            gold = initialGold;
+            System.out.println("新規データ（スロット " + newSvNo + "）で開始します。");
+
+            // キャラクター選択画面を開く
+            choicePlayer();
+        } else {
+            JOptionPane.showMessageDialog(this, "新規データの作成に失敗しました。", "エラー", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     //ロードする処理
