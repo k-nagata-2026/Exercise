@@ -1416,7 +1416,10 @@ public class BattleGame extends JFrame {
         }
 
         //新規作成ボタン
-        JButton newGameButton = new JButton("＋ 新しく冒険を始める（新規セーブ作成）");
+        String newBtnText = (slots.size() >= 10)
+                            ? "＋新しく冒険を始める(既存データ上書き)"
+                            : "＋新しく冒険を始める(新規データ作成)";
+        JButton newGameButton = new JButton(newBtnText);
         newGameButton.setPreferredSize(new Dimension(600, 60));
         newGameButton.setFont(new Font("MS ゴシック", Font.BOLD, 18));
         newGameButton.setBackground(new Color(46, 204, 113)); // 緑色
@@ -1433,23 +1436,78 @@ public class BattleGame extends JFrame {
         saveSelectContainer.repaint();    // 再描画
     }
 
-    //新規で始める処理
+    // 新規セーブデータを作成してゲームを始めるメソッド（最大10個制限付き）
     private void createAndStartNewGame() {
-        //新規ゲームの初期化処理
         int initialGold = 0; // 初期所持金
+        List<SaveSlotInfo> slots = GameSaveManager.loadGameData();
 
-        // DBに新しいセーブスロットを作成し、番号を取得
-        int newSvNo = GameSaveManager.createNewSaveData(initialGold);
+        // 【パターンA】セーブデータが10個未満の場合：通常通り新規スロットを作成
+        if (slots.size() < 10) {
+            int newSvNo = GameSaveManager.createNewSaveData(initialGold);
+            if (newSvNo != -1) {
+                currentSaveSlot = newSvNo;
+                gold = initialGold;
+                System.out.println("新規データ（スロット " + newSvNo + "）で開始します。");
+                choicePlayer();
+            } else {
+                JOptionPane.showMessageDialog(this, "新規データの作成に失敗しました。", "エラー", JOptionPane.ERROR_MESSAGE);
+            }
+            return;
+        }
 
-        if (newSvNo != -1) {
-            currentSaveSlot = newSvNo;
-            gold = initialGold;
-            System.out.println("新規データ（スロット " + newSvNo + "）で開始します。");
+        // 【パターンB】セーブデータが10個以上ある場合：上書きするスロットを選択させる
+        String[] options = new String[slots.size()];
+        for (int i = 0; i < slots.size(); i++) {
+            SaveSlotInfo s = slots.get(i);
+            String dateStr = s.getSvDate().toString().substring(0, 19);
+            options[i] = String.format("ファイル%d （所持金: %d / %s）", s.getSvNo(), s.getSvCoin(), dateStr);
+        }
 
-            // キャラクター選択画面を開く
-            choicePlayer();
-        } else {
-            JOptionPane.showMessageDialog(this, "新規データの作成に失敗しました。", "エラー", JOptionPane.ERROR_MESSAGE);
+        String selected = (String) JOptionPane.showInputDialog(
+                this,
+                "セーブデータが上限（10個）に達しています。\n上書きして新しく始めるファイルを選んでください：",
+                "上書きするセーブデータの選択",
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                options,
+                options[0]
+        );
+
+        // キャンセル（×ボタン含む）された場合は何もしない
+        if (selected == null) {
+            return;
+        }
+
+        // 選ばれた項目に対応するスロット番号を特定
+        int targetSvNo = -1;
+        for (int i = 0; i < options.length; i++) {
+            if (options[i].equals(selected)) {
+                targetSvNo = slots.get(i).getSvNo();
+                break;
+            }
+        }
+
+        if (targetSvNo != -1) {
+            // 最終確認ダイアログ
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "「ファイル" + targetSvNo + "」のデータを消去して、新しく始めますか？",
+                    "上書き確認",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                boolean success = GameSaveManager.overwriteSaveDataForNewGame(targetSvNo, initialGold);
+                if (success) {
+                    currentSaveSlot = targetSvNo;
+                    gold = initialGold;
+                    System.out.println("スロット " + targetSvNo + " を上書きして新規開始します。");
+                    choicePlayer();
+                } else {
+                    JOptionPane.showMessageDialog(this, "データの上書き初期化に失敗しました。", "エラー", JOptionPane.ERROR_MESSAGE);
+                }
+            }
         }
     }
 

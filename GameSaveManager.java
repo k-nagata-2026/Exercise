@@ -245,4 +245,41 @@ public class GameSaveManager {
         }
     }
 
+    // 既存のセーブスロットを新規ゲーム用にリセット（上書き初期化）するメソッド
+    public static boolean overwriteSaveDataForNewGame(int svNo, int initialGold) {
+        //選んだセーブスロットのコインと日時をリセットする
+        String updateSql = "UPDATE save_data SET SVCOIN = ?, SVDATE = ? WHERE SVNO = ?";
+        //選んだセーブスロットのパーティを削除する
+        String deletePartySql = "DELETE FROM current_party WHERE SVNO = ?";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            conn.setAutoCommit(false); // トランザクション開始
+
+            // 1. save_data の所持金と日時を初期化
+            try (PreparedStatement updatePstmt = conn.prepareStatement(updateSql)) {
+                updatePstmt.setInt(1, initialGold);
+                updatePstmt.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+                updatePstmt.setInt(3, svNo);
+                int updated = updatePstmt.executeUpdate();
+                if (updated == 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            // 2. 古いパーティデータを削除（この後のキャラ選択の「出発!!」で新しい4人が INSERT される）
+            try (PreparedStatement deletePstmt = conn.prepareStatement(deletePartySql)) {
+                deletePstmt.setInt(1, svNo);
+                deletePstmt.executeUpdate();
+            }
+
+            conn.commit();
+            System.out.println("スロット " + svNo + " を新規データで上書き初期化しました！");
+            return true;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
