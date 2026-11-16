@@ -1149,7 +1149,7 @@ public class BattleGame extends JFrame {
                 if(aliveEnemies.isEmpty()){
                     //敵が全滅したので、ここでカレントパーティテーブルとセーブデータテーブルを更新
                     GameSaveManager.savePartyData(currentSaveSlot,party);
-                    GameSaveManager.saveGameData(gold, new java.sql.Timestamp(System.currentTimeMillis()));
+                    GameSaveManager.updateGameData(currentSaveSlot,gold, new java.sql.Timestamp(System.currentTimeMillis()));
 
                     //ボスエリアの判定
                     if (currentField.equals("BOSS")) {
@@ -2374,11 +2374,17 @@ public class BattleGame extends JFrame {
         //1.現在の「年、月、日、時、分、秒」のデータを作る
         java.sql.Timestamp currentDate = new java.sql.Timestamp(System.currentTimeMillis());
 
-        //2.GameSaveManagerを使ってデータベースへ保存する(goldとcurrentDateを渡す)
-        GameSaveManager.saveGameData(gold, currentDate);
+        //2.選択中のスロットの所持金、日時、パーティを上書き保存する
+        boolean partySaved = GameSaveManager.savePartyData(currentSaveSlot, party);
+        boolean gameSaved = GameSaveManager.updateGameData(currentSaveSlot, gold, currentDate);
 
         //3.保存完了のメッセージを表示する
-        JOptionPane.showMessageDialog(this, "ゲームを保存しました。");
+        if (partySaved && gameSaved) {
+            JOptionPane.showMessageDialog(this,"ファイル" + currentSaveSlot + "にゲームを上書き保存しました。");
+        } else {
+            JOptionPane.showMessageDialog(this,"保存に失敗しました","エラー",JOptionPane.ERROR_MESSAGE);
+        }
+        
     }
 
     //ショップ画面のメソッド

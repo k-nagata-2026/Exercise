@@ -8,25 +8,6 @@ public class GameSaveManager {
     private static final String DB_USER = "tomura_db";
     private static final String DB_PASSWORD = "tomura_db";
 
-    //セーブデータを保存するメソッド
-    public static void saveGameData(int gold, Timestamp date) {
-        String sql = "INSERT INTO save_data (SVNO, SVCOIN, SVDATE) VALUES ((SELECT NVL(MAX(SVNO), 0) + 1 FROM save_data), ?, ?)";
-        //game_data_seq.NEXTVALはせんせいがよういしたシーケンスというものをつかって、IDをれんばんでほぞんするきのうです
-
-        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, gold);
-            pstmt.setTimestamp(2, date);
-            int rowsInserted = pstmt.executeUpdate();
-            if (rowsInserted > 0) {
-                System.out.println("セーブせいこう：" + " (Gold: " + gold + ", Date: " + date + ") のデータをほぞんしました！");
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-    }
-
     //セーブデータを取得するメソッド
     public static List<SaveSlotInfo> loadGameData() {
         List<SaveSlotInfo> saveSlots = new ArrayList<>();
@@ -105,45 +86,89 @@ public class GameSaveManager {
 
     //カレントパーティテーブルにパーティを保存するメソッド(保存結果によって次の画面へ進むかどうかを切り替えたいからboolean)
     public static boolean savePartyData (int svNo, List<Player> partyList) {
-        //既存のセーブデータとの重複を防ぐため、一度該当スロットのデータを削除する
-        String deleteSql = "DELETE FROM current_party WHERE SVNO = ?";
+        // 既存のパーティレコードの PTNO 一覧を取得するSQL
+        String selectPtSql = "SELECT PTNO FROM current_party WHERE SVNO = ? ORDER BY PTNO ASC";
 
-        //PTNOもプレースホルダーという仮の値にする(?のこと)
+        // 既存レコードを上書き更新するSQL
+        String updateSql = "UPDATE current_party "
+                         + "SET PLNO = ?, PL_LEVEL = ?, PL_CURRENT_HP = ?, PL_MAX_HP = ?, PL_MAX_POW = ?, PL_MAX_MGC = ?, PL_EQ1 = 0, PL_EQ2 = 0 "
+                         + "WHERE PTNO = ? AND SVNO = ?";
+
+        // 新規作成直後など、まだレコードが存在しない場合のみ使うINSERT
+        String maxPtSql = "SELECT NVL(MAX(PTNO), 0) FROM current_party";
         String insertSql = "INSERT INTO current_party "
                          + "(PTNO, SVNO, PLNO, PL_LEVEL, PL_CURRENT_HP, PL_MAX_HP, PL_MAX_POW, PL_MAX_MGC, PL_EQ1, PL_EQ2) "
                          + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)";
-        
+
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-            conn.setAutoCommit(false); // トランザクションを開始(DBの自動コミットを無効化)
-            
-            //１．古いデータを削除
-            try (PreparedStatement deletePstmt = conn.prepareStatement(deleteSql)) {
-                deletePstmt.setInt(1, svNo);
-                deletePstmt.executeUpdate();
-            }
+            conn.setAutoCommit(false); // トランザクション開始
 
-            //２．今のパーティメンバーを一人ずつINSERT
-            try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql)) {
-                for (int i = 0; i < partyList.size(); i++) {
-                    Player p = partyList.get(i);
-                    int ptNo = i + 1;
-                    int plNo = getPlNoFromName(p.getName());
-
-                    insertPstmt.setInt(1, ptNo);
-                    insertPstmt.setInt(2,svNo);
-                    insertPstmt.setInt(3, plNo);
-                    insertPstmt.setInt(4, p.getLevel());
-                    insertPstmt.setInt(5, p.getHp());
-                    insertPstmt.setInt(6, p.getMaxHp());
-                    insertPstmt.setInt(7, p.getAtk());
-                    insertPstmt.setInt(8, p.getMgc());
-
-                    insertPstmt.addBatch();
+            // 1. すでにこのスロット(svNo)に登録されている PTNO を取得
+            List<Integer> existingPtNos = new ArrayList<>();
+            try (PreparedStatement selectPstmt = conn.prepareStatement(selectPtSql)) {
+                selectPstmt.setInt(1, svNo);
+                try (ResultSet rs = selectPstmt.executeQuery()) {
+                    while (rs.next()) {
+                        existingPtNos.add(rs.getInt("PTNO"));
+                    }
                 }
-                insertPstmt.executeBatch();
             }
-            conn.commit();//コミット
-            System.out.println("セーブしました。");
+
+            if (existingPtNos.size() == partyList.size()) {
+                // 2-A. すでに4人分のレコードがある場合は UPDATE で上書き！
+                try (PreparedStatement updatePstmt = conn.prepareStatement(updateSql)) {
+                    for (int i = 0; i < partyList.size(); i++) {
+                        Player p = partyList.get(i);
+                        int ptNo = existingPtNos.get(i); // 既存の PTNO をそのまま使う
+                        int plNo = getPlNoFromName(p.getName());
+
+                        updatePstmt.setInt(1, plNo);
+                        updatePstmt.setInt(2, p.getLevel());
+                        updatePstmt.setInt(3, p.getHp());
+                        updatePstmt.setInt(4, p.getMaxHp());
+                        updatePstmt.setInt(5, p.getAtk());
+                        updatePstmt.setInt(6, p.getMgc());
+                        updatePstmt.setInt(7, ptNo);
+                        updatePstmt.setInt(8, svNo);
+
+                        updatePstmt.addBatch();
+                    }
+                    updatePstmt.executeBatch();
+                }
+                System.out.println("スロット " + svNo + " のパーティを上書き保存(UPDATE)しました。");
+            } else {
+                // 2-B. 新規データでまだレコードがない場合は、現在の最大 PTNO の連番で INSERT
+                int currentMaxPtNo = 0;
+                try (PreparedStatement maxPstmt = conn.prepareStatement(maxPtSql);
+                     ResultSet rs = maxPstmt.executeQuery()) {
+                    if (rs.next()) {
+                        currentMaxPtNo = rs.getInt(1);
+                    }
+                }
+
+                try (PreparedStatement insertPstmt = conn.prepareStatement(insertSql)) {
+                    for (int i = 0; i < partyList.size(); i++) {
+                        Player p = partyList.get(i);
+                        int ptNo = currentMaxPtNo + i + 1;
+                        int plNo = getPlNoFromName(p.getName());
+
+                        insertPstmt.setInt(1, ptNo);
+                        insertPstmt.setInt(2, svNo);
+                        insertPstmt.setInt(3, plNo);
+                        insertPstmt.setInt(4, p.getLevel());
+                        insertPstmt.setInt(5, p.getHp());
+                        insertPstmt.setInt(6, p.getMaxHp());
+                        insertPstmt.setInt(7, p.getAtk());
+                        insertPstmt.setInt(8, p.getMgc());
+
+                        insertPstmt.addBatch();
+                    }
+                    insertPstmt.executeBatch();
+                }
+                System.out.println("スロット " + svNo + " のパーティを新規保存(INSERT)しました。");
+            }
+
+            conn.commit();
             return true;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -194,6 +219,30 @@ public class GameSaveManager {
             return -1;
         }
         return newSvNo;
+    }
+
+    // 指定したセーブスロット(svNo)の所持金と保存日時を上書き更新(UPDATE)するメソッド
+    public static boolean updateGameData(int svNo, int gold, Timestamp date) {
+        String sql = "UPDATE save_data SET SVCOIN = ?, SVDATE = ? WHERE SVNO = ?";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, gold);
+            pstmt.setTimestamp(2, date);
+            pstmt.setInt(3, svNo);
+
+            int rowsUpdated = pstmt.executeUpdate();
+            if (rowsUpdated > 0) {
+                System.out.println("セーブ上書き成功： (SVNO: " + svNo + ", Gold: " + gold + ", Date: " + date + ")");
+                return true;
+            } else {
+                System.out.println("更新対象のセーブデータ(SVNO: " + svNo + ")が見つかりませんでした。");
+                return false;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
 }
