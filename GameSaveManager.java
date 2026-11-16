@@ -282,4 +282,39 @@ public class GameSaveManager {
             return false;
         }
     }
+
+    // 指定されたセーブスロット(svNo)のデータを完全に削除するメソッド(自分を楽にするために作った)
+    public static boolean deleteSaveData(int svNo) {
+        String deletePartySql = "DELETE FROM current_party WHERE SVNO = ?";
+        String deleteSaveSql = "DELETE FROM save_data WHERE SVNO = ?";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            conn.setAutoCommit(false); // トランザクション開始
+
+            // 1. 先に子テーブル（パーティ情報）を削除
+            try (PreparedStatement partyPstmt = conn.prepareStatement(deletePartySql)) {
+                partyPstmt.setInt(1, svNo);
+                partyPstmt.executeUpdate();
+            }
+
+            // 2. 次に親テーブル（セーブデータ本体）を削除
+            try (PreparedStatement savePstmt = conn.prepareStatement(deleteSaveSql)) {
+                savePstmt.setInt(1, svNo);
+                int deleted = savePstmt.executeUpdate();
+                if (deleted == 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            conn.commit();
+            System.out.println("スロット " + svNo + " のセーブデータを削除しました。");
+            return true;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
 }
