@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.awt.event.ActionEvent;
 import java.io.File;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -14,13 +15,14 @@ public class BattleGame extends JFrame {
    final  private JButton potionButton;
    final private JButton itemButton;
    private JButton saveButton;
-          private int playerX = 150;
-          private int playerY = 250;
+          private int playerX = 40;
+          private int playerY = 50;
    final  private JLabel backgroundLabel;
    final  private JLabel playerImageLabel;
    final  private JLabel enemyImageLabel;
    final  private JProgressBar playerHpBar;
    final  private JProgressBar enemyHpBar;
+
 
     private Player player;
     private Enemy enemy;
@@ -35,8 +37,25 @@ private final int MAX_SKILL_USE = 2; // 0から開始するように修正
 
 private Clip bgmClip;
 private Item[] itemBox = new Item[10];
-    
+//MONSTAR AI SYSTEM
+private Timer enemyAiTimer;
+private long lastEnemyAttackTime = 0;
+private boolean battleEnded = false;
+// SAFE SHIELD SYSTEM
+private JButton safeZoneButton;
+private JLabel shieldLabel;
 
+private int safeZoneUseCount = 0;
+private final int MAX_SAFE_ZONE_USE = 3;
+
+private boolean safeZoneActive = false;
+private Timer safeZoneTimer;
+private int safeZoneSeconds = 3;
+private boolean isSaving = false;
+private int gold = 100; 
+private JButton shopButton;
+private JLabel goldLabel; // स्क्रिनमा गोल्ड देखाउन
+    
 
   private void playBGM(String fileName) {
 
@@ -306,13 +325,91 @@ private void showFireEffect() {
     timer.start();
 }
 
+// NORMAL ATTACK EFFECT
+private void showAttackEffect(int damage) {
+
+    int x = enemyImageLabel.getX() + 150;
+    int y = enemyImageLabel.getY() + 120;
+
+    JLabel slash = new JLabel("⚔");
+    slash.setFont(new Font("Serif", Font.BOLD, 110));
+    slash.setForeground(Color.CYAN);
+    slash.setBounds(x, y, 180, 150);
+
+    JLabel damageLabel = new JLabel("-" + damage + " HP");
+    damageLabel.setFont(new Font("Arial", Font.BOLD, 36));
+    damageLabel.setForeground(Color.RED);
+    damageLabel.setBounds(x + 30, y + 100, 200, 60);
+
+    backgroundLabel.add(slash, 0);
+    backgroundLabel.add(damageLabel, 0);
+    backgroundLabel.repaint();
+
+    final int[] count = {0};
+
+    Timer timer = new Timer(30, e -> {
+        count[0]++;
+
+        slash.setLocation(x + (count[0] % 2 == 0 ? 15 : -15),
+                          y - count[0] * 2);
+
+        damageLabel.setLocation(x + 30, y + 100 - count[0] * 3);
+
+        if (count[0] >= 12) {
+            backgroundLabel.remove(slash);
+            backgroundLabel.remove(damageLabel);
+            backgroundLabel.repaint();
+            ((Timer)e.getSource()).stop();
+        }
+    });
+
+    timer.start();
+}
+
+
+// ENEMY HIT EFFECT
+private void showPlayerHitEffect(int damage) {
+
+    JLabel hit = new JLabel("💥");
+    hit.setFont(new Font("Serif", Font.BOLD, 100));
+
+    int x = playerImageLabel.getX() + 150;
+    int y = playerImageLabel.getY() + 100;
+
+    hit.setBounds(x, y, 180, 150);
+
+    JLabel damageLabel = new JLabel("-" + damage + " HP");
+    damageLabel.setFont(new Font("Arial", Font.BOLD, 32));
+    damageLabel.setForeground(Color.RED);
+    damageLabel.setBounds(x + 20, y + 100, 200, 50);
+
+    backgroundLabel.add(hit, 0);
+    backgroundLabel.add(damageLabel, 0);
+    backgroundLabel.repaint();
+
+    //shakePlayer();
+
+    Timer timer = new Timer(450, e -> {
+        backgroundLabel.remove(hit);
+        backgroundLabel.remove(damageLabel);
+        backgroundLabel.repaint();
+        ((Timer)e.getSource()).stop();
+    });
+
+    timer.setRepeats(false);
+    timer.start();
+}
+
+
+
 private void handleEnemyDefeat() {
     playSound("sounds/enemy_dead.wav");
 
     logTextArea.append(
         "★ " + enemy.getName() + " をたおした！\n"
     );
-
+  potionUseCount = 0;
+  skillUseCount = 0;
     enemyCount++;
     player.gainExp(50);
 
@@ -332,7 +429,8 @@ logTextArea.append("EXP +50!\n");
         // Start next level
         currentLevel++;
         enemyCount = 0;
-
+     gold += 50; // दुश्मन हराएबापत ५० गोल्ड
+      goldLabel.setText("Gold: " + gold + " G");
         // Player bonus for next level
         player.setMaxHp(player.getMaxHp() + 50);
         player.setHp(player.getMaxHp());
@@ -341,6 +439,11 @@ logTextArea.append("EXP +50!\n");
         // Reset potion and skill limits for new level
         potionUseCount = 0;
         skillUseCount = 0;
+
+        safeZoneUseCount = 0;
+
+     safeZoneButton.setText("SAFE SHIELD (3)");
+       safeZoneButton.setEnabled(true);
 
         JOptionPane.showMessageDialog(
             this,
@@ -355,7 +458,75 @@ logTextArea.append("EXP +50!\n");
     updateDisplay();
 }
 
+// MONSTAR automatically follows the player
+private void startEnemyAI() {
 
+    if (enemyAiTimer != null) {
+        enemyAiTimer.stop();
+    }
+
+    enemyAiTimer = new Timer(40, e -> {
+
+        if (isSaving) {
+    return;
+}
+        int playerX = playerImageLabel.getX();
+        int enemyX = enemyImageLabel.getX();
+
+        int distance = Math.abs(playerX - enemyX);
+
+        // Enemy moves toward player
+        if (distance > 390) {
+
+            int speed = 5;
+
+            if (enemyX > playerX) {
+                enemyImageLabel.setLocation(
+                    enemyX - speed,
+                    enemyImageLabel.getY()
+                );
+            } else {
+                enemyImageLabel.setLocation(
+                    enemyX + speed,
+                    enemyImageLabel.getY()
+                );
+            }
+
+        } else {
+
+    // Safe Shield active हुँदा Enemy ले damage दिन पाउँदैन
+    if (safeZoneActive) {
+        return;
+    }
+
+    // Attack every 1.2 seconds
+    long now = System.currentTimeMillis();
+            if (now - lastEnemyAttackTime >= 1200) {
+
+                lastEnemyAttackTime = now;
+
+                String result = enemy.attack(player);
+
+                logTextArea.append(
+                    "MONSTAR ATTACK! " + result + "\n"
+                );
+
+                updateDisplay();
+
+                if (!player.isAlive()) {
+
+                    battleEnded = true;
+                    enemyAiTimer.stop();
+
+                    stopBGM();
+                    showGameOverScreen();
+                }
+            }
+        }
+    });
+
+    enemyAiTimer.start();
+}
 
 public BattleGame(Player player) {
     this(player, null);
@@ -386,12 +557,10 @@ private BattleGame(Player player, GameSaveManager.SaveData data) {
     // Battle BGM
     playBGM("sounds/bgm.wav");
 
-
-       
         // コンポーネントの初期化
         
         playBGM("sounds/bgm.wav");
-        backgroundLabel = new JLabel(new ImageIcon("battlebackround.png"));
+        backgroundLabel = new JLabel(new ImageIcon("sky.png"));
         backgroundLabel.setLayout(null);
 
         playerImageLabel = new JLabel("", JLabel.CENTER);
@@ -400,6 +569,7 @@ private BattleGame(Player player, GameSaveManager.SaveData data) {
         enemyImageLabel.setBounds(550, 50, 500, 500);
         backgroundLabel.add(playerImageLabel);
         backgroundLabel.add(enemyImageLabel);
+        setupKeyboardControls();
 
         statusLabel = new JLabel("ステータス表示", JLabel.CENTER);
         statusLabel.setFont(new Font("MS ゴシック", Font.BOLD, 14));
@@ -408,80 +578,151 @@ private BattleGame(Player player, GameSaveManager.SaveData data) {
         logTextArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(logTextArea);
 
-        attackButton = new JButton("こうげき");
-        speedButton = new JButton("speed");
-        skillButton = new JButton("skill");
-        potionButton = new JButton("potion");
-        itemButton = new JButton("item");
-        saveButton = new JButton("SAVE");
+        // Game Buttons
+attackButton = new JButton("こうげき");
+speedButton = new JButton("speed");
+skillButton = new JButton("skill");
+potionButton = new JButton("potion");
+itemButton = new JButton("item");
+saveButton = new JButton("SAVE");
+shopButton = new JButton("SHOP");
+safeZoneButton = new JButton("SAFE SHIELD (3)");
 
-        playerHpBar = new JProgressBar();
-        enemyHpBar = new JProgressBar();
-        playerHpBar.setStringPainted(true);
-        enemyHpBar.setStringPainted(true);
+safeZoneButton.setFocusable(false);
+attackButton.setFocusable(false);
+potionButton.setFocusable(false);
+skillButton.setFocusable(false);
+itemButton.setFocusable(false);
+saveButton.setFocusable(false);
+shopButton.setFocusable(false); // Space थिच्दा क्लिक नहोस् भन्नका लागि
+shopButton.addActionListener(e -> {
 
-        JPanel hpPanel = new JPanel(new GridLayout(2, 1));
-        hpPanel.add(playerHpBar);
-        hpPanel.add(enemyHpBar);
+    isSaving = true;
+openShop();
 
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(statusLabel, BorderLayout.NORTH);
-        bottomPanel.add(scrollPane, BorderLayout.CENTER);
-        
-        JPanel buttonPanel = new JPanel();
-        //JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15,5));
-        buttonPanel.add(attackButton);
-       // buttonPanel.add(speedButton);
-        buttonPanel.add(skillButton);
-        buttonPanel.add(potionButton);
-        buttonPanel.add(itemButton);
-        buttonPanel.add(saveButton);
-        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
-         add(backgroundLabel, BorderLayout.CENTER);
-        add(bottomPanel, BorderLayout.SOUTH);
-       
-      itemBox[0] = new Herb();
-      itemBox[1] = new Bomb();
-      itemBox[2] = new ThunderStick();
-      itemBox[3] = new FireOrb();
 
+
+isSaving = false;
+        this.requestFocusInWindow();
+});
+
+goldLabel = new JLabel("Gold: " + gold + " G");
+goldLabel.setForeground(new Color(255, 215, 0)); // पहेँलो रङ
+goldLabel.setFont(new Font("SansSerif", Font.BOLD, 14));
+safeZoneButton.addActionListener(e -> activateSafeZone());
+
+// HP Bars
+playerHpBar = new JProgressBar();
+enemyHpBar = new JProgressBar();
+
+playerHpBar.setStringPainted(true);
+enemyHpBar.setStringPainted(true);
+
+JPanel hpPanel = new JPanel(new GridLayout(2, 1));
+hpPanel.add(playerHpBar);
+hpPanel.add(enemyHpBar);
+
+// Bottom Panel
+JPanel bottomPanel = new JPanel(new BorderLayout());
+
+bottomPanel.add(statusLabel, BorderLayout.NORTH);
+bottomPanel.add(scrollPane, BorderLayout.CENTER);
+
+// Button Panel
+JPanel buttonPanel = new JPanel();
+
+buttonPanel.add(attackButton);
+// buttonPanel.add(speedButton);
+buttonPanel.add(skillButton);
+buttonPanel.add(potionButton);
+buttonPanel.add(itemButton);
+buttonPanel.add(saveButton);
+buttonPanel.add(safeZoneButton);
+buttonPanel.add(shopButton);
+buttonPanel.add(goldLabel);
+
+bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+// Add Panels to Game Window
+add(backgroundLabel, BorderLayout.CENTER);
+add(bottomPanel, BorderLayout.SOUTH);
+
+// Items
+itemBox[0] = new Herb();
+itemBox[1] = new Bomb();
+itemBox[2] = new ThunderStick();
+itemBox[3] = new FireOrb();
        
         // ボタンの処理
 
 
-       
 
-       attackButton.addActionListener(e -> {
+
+      attackButton.addActionListener(e -> {
 
     playSound("sounds/attack.wav");
 
+    int oldEnemyHp = enemy.getHp();
+
     String playerResult = player.attack(enemy);
     logTextArea.append(playerResult);
+
+    int damage = Math.max(0, oldEnemyHp - enemy.getHp());
+
+    if (damage > 0) {
+        showAttackEffect(damage);
+    }
+
     updateDisplay();
 
-    if (!enemy.isAlive()) {
-        handleEnemyDefeat();
-    } else {
+   if (!enemy.isAlive()) {
+
+    handleEnemyDefeat();
+
+} else if (safeZoneActive) {
+
+    logTextArea.append(
+        "🛡 Shield blocked enemy damage!\n"
+    );
+
+    updateDisplay();
+} 
+
+{
+   int oldPlayerHp = player.getHp();
+
         String enemyResult = enemy.attack(player);
         logTextArea.append(enemyResult);
+
+        int playerDamage = Math.max(
+            0, oldPlayerHp - player.getHp()
+        );
+
+        if (playerDamage > 0) {
+            showPlayerHitEffect(playerDamage);
+        }
+
         updateDisplay();
-    
-                if (!player.isAlive()) {
-                    logTextArea.append(player.getName() + " はたおれた…     ゲームオーバー(GAME OVER)\n");
-                    playerImageLabel.setEnabled(false);
 
-                    playSound("sounds/attack.wav");
-                    stopBGM();
+        if (!player.isAlive()) {
+            logTextArea.append(
+                player.getName() +
+                " はたおれた… GAME OVER\n"
+            );
 
-                    showGameOverScreen();
+            playerImageLabel.setEnabled(false);
 
-                    return;
-                    
-                }
-            }
-        });
+            stopBGM();
+            showGameOverScreen();
 
+            return;
+        }
+    }
+});
        skillButton.addActionListener(e -> {
+        if (safeZoneActive) {
+    return;
+}
 
     if (skillUseCount >= MAX_SKILL_USE) {
         JOptionPane.showMessageDialog(this,
@@ -503,73 +744,96 @@ private BattleGame(Player player, GameSaveManager.SaveData data) {
 
 });
 
-       potionButton.addActionListener(e -> {
+     potionButton.addActionListener(e -> {
+    isSaving = true;
+    try {
         playSound("sounds/potion.wav");
 
-    if (potionUseCount >= MAX_POTION_USE) {
-        JOptionPane.showMessageDialog(this,
-                "You can only use Potion 3 times in this battle!");
-        return;
+        if (potionUseCount >= MAX_POTION_USE) {
+            JOptionPane.showMessageDialog(this,
+                    "You can only use Potion 3 times in this battle!");
+            return;
+        }
+
+        potionUseCount++;
+
+        String result = player.usePotion();
+        logTextArea.append(result + "\n");
+
+        updateDisplay();
+    } finally {
+        isSaving = false; // return भए पनि यो अनिवार्य चल्छ
+        this.requestFocusInWindow();
     }
-
-    potionUseCount++;
-
-    String result = player.usePotion();
-    logTextArea.append(result + "\n");
-
-    updateDisplay();
-
 });
-
 
 
 saveButton.addActionListener(e -> {
 
-    String slotName = JOptionPane.showInputDialog(
-        this,
-        "Enter Save Slot Name:"
-    );
-
-    if (slotName == null || slotName.trim().isEmpty()) {
-        return;
-    }
-
-    String idText = JOptionPane.showInputDialog(
-        this,
-        "Enter Player ID:"
-    );
-
-    if (idText == null || idText.trim().isEmpty()) {
-        return;
-    }
+    isSaving = true;
 
     try {
-        int playerId = Integer.parseInt(idText.trim());
 
-        GameSaveManager.saveFullGameData(
-            playerId,
-            slotName.trim(),
-            player,
-            enemy,
-            currentLevel,
-            potionUseCount,
-            skillUseCount,
-            enemyCount
-        );
-
-    } catch (NumberFormatException ex) {
-
-        JOptionPane.showMessageDialog(
+        String slotName = JOptionPane.showInputDialog(
             this,
-            "Invalid Player ID!"
+            "Enter Save Slot Name:"
         );
+
+        if (slotName == null || slotName.trim().isEmpty()) {
+            return;
+        }
+
+        String idText = JOptionPane.showInputDialog(
+            this,
+            "Enter Player ID:"
+        );
+
+        if (idText == null || idText.trim().isEmpty()) {
+            return;
+        }
+
+        try {
+            int playerId = Integer.parseInt(idText.trim());
+
+            GameSaveManager.saveFullGameData(
+                playerId,
+                slotName.trim(),
+                player,
+                enemy,
+                currentLevel,
+                potionUseCount,
+                skillUseCount,
+                enemyCount,
+                safeZoneUseCount
+            );
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Game Saved Successfully!"
+            );
+
+        } catch (NumberFormatException ex) {
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Invalid Player ID!"
+            );
+        }
+
+    } finally {
+        isSaving = false;
     }
 });
 
 
 
-
 itemButton.addActionListener(e -> {
+
+    isSaving = true;
+
+    if (safeZoneActive) {
+    return;
+}
 
         // 1. ダイアログに表示（ひょうじ）するための「選択肢（せんたくし）リスト（文字列（もじれつ））」を作る（つくる）
         String[] choices = new String[10];
@@ -634,6 +898,9 @@ itemButton.addActionListener(e -> {
             spawnEnemy();
         }
         updateDisplay();
+
+        isSaving = false;
+        this.requestFocusInWindow();
     });
         
 
@@ -645,6 +912,8 @@ if (data != null && data.enemyHp > 0
         && data.enemyHp <= enemy.getMaxHp()) {
     enemy.setHp(data.enemyHp);
 }
+
+
 
 updateDisplay();
          playerHpBar.setBounds(40, 40, 250, 25);
@@ -676,9 +945,101 @@ backgroundLabel.add(enemyHpBar);
 enemyHpBar.setValue(enemy.getHp());
 enemyHpBar.setMaximum(enemy.getMaxHp());
 enemyHpBar.setValue(enemy.getHp());
+startEnemyAI();
 
 
  }
+private void activateSafeZone() {
+
+    if (safeZoneActive) {
+        return;
+    }
+
+    if (safeZoneUseCount >= MAX_SAFE_ZONE_USE) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Safe Shield used 3 times in this stage!"
+        );
+        return;
+    }
+
+    safeZoneUseCount++;
+    safeZoneActive = true;
+    safeZoneSeconds = 3;
+
+    safeZoneButton.setEnabled(false);
+
+    // Only Attack and Potion allowed
+    attackButton.setEnabled(true);
+    potionButton.setEnabled(true);
+    skillButton.setEnabled(true);
+    itemButton.setEnabled(true);
+    shopButton.setEnabled(true);
+
+    shieldLabel = new JLabel(
+        "🛡 SAFE SHIELD: 5 SEC",
+        SwingConstants.CENTER
+    );
+
+    shieldLabel.setFont(
+        new Font("Arial", Font.BOLD, 30)
+    );
+
+    shieldLabel.setForeground(Color.CYAN);
+    shieldLabel.setBounds(350, 5, 500, 50);
+
+    backgroundLabel.add(shieldLabel);
+    backgroundLabel.setComponentZOrder(shieldLabel, 0);
+    backgroundLabel.repaint();
+
+    logTextArea.append(
+        "🛡 SAFE SHIELD ACTIVATED!\n"
+    );
+
+    safeZoneTimer = new Timer(1000, e -> {
+
+        safeZoneSeconds--;
+
+        if (safeZoneSeconds > 0) {
+
+            shieldLabel.setText(
+                "🛡 SAFE SHIELD: "
+                + safeZoneSeconds + " SEC"
+            );
+
+        } else {
+
+            safeZoneTimer.stop();
+
+            safeZoneActive = false;
+
+            backgroundLabel.remove(shieldLabel);
+            backgroundLabel.repaint();
+
+            skillButton.setEnabled(true);
+            itemButton.setEnabled(true);
+
+            if (safeZoneUseCount < MAX_SAFE_ZONE_USE) {
+                safeZoneButton.setEnabled(true);
+            }
+
+            safeZoneButton.setText(
+                "SAFE SHIELD ("
+                + (MAX_SAFE_ZONE_USE - safeZoneUseCount)
+                + ")"
+            );
+
+            logTextArea.append(
+                "SAFE SHIELD FINISHED!\n"
+            );
+        }
+    });
+
+    safeZoneTimer.start();
+}
+
+
+
 private static Player createPlayerFromSave(
         GameSaveManager.SaveData data) {
 
@@ -752,6 +1113,7 @@ playerHpBar.setValue(player.getHp());
 enemyHpBar.setMaximum(enemy.getMaxHp());
 enemyHpBar.setValue(enemy.getHp());
 
+
 if (player.getHp() > player.getMaxHp() * 0.6) {
     playerHpBar.setForeground(Color.GREEN);
 } else if (player.getHp() > player.getMaxHp() * 0.3) {
@@ -797,13 +1159,13 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
                 null);
 
         if (choice == 0) {
-            player = new Player("BHOLA（Hero）", 200, 20, 20, 10, 30, "BHOLA.png");
+            player = new Player("BHOLA（Hero）", 200, 20, 30, 10, 30, "BHOLA.png");
         } else if (choice == 1) {
-            player = new Player("BIYON（Mage）", 200, 25, 10, 15, 30, "BIYON.png");
+            player = new Player("BIYON（Mage）", 200, 25, 30, 15, 30, "BIYON.png");
         } else if (choice == 2) {
-            player = new Player("LedyBoss", 200, 20, 20, 10, 30, "ladyboss.png");
+            player = new Player("LedyBoss", 200, 20, 30, 10, 30, "ladyboss.png");
         } else if (choice == 3) {
-            player = new Player("boss", 150, 40, 0, 15, 30, "bigboss.png");
+            player = new Player("boss", 150, 40, 30, 15, 30, "bigboss.png");
         }
     }
 
@@ -858,6 +1220,107 @@ private void spawnEnemy() {
     // ここまで来たら全スロットが埋まっている
     logTextArea.append("アイテムボックスがいっぱいです！ " + item.getName() + " は拾えませんでした。\n");
 }
+
+// Keyboard Controls
+private void setupKeyboardControls() {
+
+    
+
+    JRootPane root = getRootPane();
+
+    root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(KeyStroke.getKeyStroke("W"), "up");
+
+    root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(KeyStroke.getKeyStroke("S"), "down");
+
+    root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(KeyStroke.getKeyStroke("A"), "left");
+
+    root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(KeyStroke.getKeyStroke("D"), "right");
+
+    root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(KeyStroke.getKeyStroke("SPACE"), "attack");
+
+    root.getActionMap().put("up",
+        new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                movePlayer(0, -20);
+            }
+        });
+
+    root.getActionMap().put("down",
+        new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                movePlayer(0, 20);
+            }
+        });
+
+    root.getActionMap().put("left",
+        new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                movePlayer(-20, 0);
+            }
+        });
+
+    root.getActionMap().put("right",
+        new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                movePlayer(20, 0);
+            }
+        });
+
+    root.getActionMap().put("attack",
+        new AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                attackButton.doClick();
+            }
+        });
+
+        root.getActionMap().put("playerAttack",
+    new javax.swing.AbstractAction() {
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            attackButton.doClick();
+        }
+    });
+
+    getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(KeyStroke.getKeyStroke("ENTER"), "activateSafeZone");
+
+getRootPane().getActionMap().put("activateSafeZone",
+        new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (safeZoneButton.isEnabled()) {
+                    activateSafeZone();
+                }
+            }
+        });
+}
+
+// Player Movement
+private void movePlayer(int dx, int dy) {
+    if (safeZoneActive) {
+    return;
+}
+
+    int newX = playerImageLabel.getX() + dx;
+    int newY = playerImageLabel.getY() + dy;
+
+    int maxX = backgroundLabel.getWidth()
+            - playerImageLabel.getWidth();
+
+    int maxY = backgroundLabel.getHeight()
+            - playerImageLabel.getHeight();
+
+    newX = Math.max(0, Math.min(newX, maxX));
+    newY = Math.max(0, Math.min(newY, maxY));
+
+    playerImageLabel.setLocation(newX, newY);
+}
+
    public static void main(String[] args) {
 
     SwingUtilities.invokeLater(() -> {
@@ -874,6 +1337,88 @@ private void spawnEnemy() {
     });
 
 }
+private void openShop() {
+        String[] options = {
+            "1. Potion (+1) - 40 G",
+            "2. Safe Shield (+1) - 60 G",
+            "3. Upgrade Attack (+10 ATK) - 100 G",
+            "Close / बन्द गर्नुहोस्"
+        };
+
+        int choice = JOptionPane.showOptionDialog(
+            this,
+            "🛒 WELCOME TO THE SHOP! / ショップへようこそ\n"
+            + "Your Current Gold: " + gold + " G\n\n"
+            + "के किन्न चाहनुहुन्छ?",
+            "Item Shop",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.PLAIN_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+
+        if (choice == 0) { // Potion किन्ने भाग
+            if (gold >= 40) {
+                gold -= 40;
+                
+                if (potionUseCount > 0) {
+                    potionUseCount--; 
+                }
+                //player.addpotion(1); // वा player.setPotionCount(player.getPotionCount() + 1);
+                
+                int remainingPotions = MAX_POTION_USE - potionUseCount;
+                potionButton.setText("POTION (" + remainingPotions + ")");
+                potionButton.setEnabled(true); 
+                
+                JOptionPane.showMessageDialog(this, "Potion किनियो!");
+            } else {
+                JOptionPane.showMessageDialog(this, "गोल्ड पुगेन!");
+            }
+        }
+        // =========================================================================
+        else if (choice == 2) { // Attack Power
+            if (gold >= 100) {
+                gold -= 100;
+                player.setAtk(player.getAtk() + 10);
+                JOptionPane.showMessageDialog(this, "Attack Power +10 ले बढ्यो!");
+            } else {
+                JOptionPane.showMessageDialog(this, "गोल्ड पुगेन! (Not enough Gold)");
+            }
+        }
+        // === ठ्याक्कै यहाँ राख्नुहोस् (पुरानो else if (choice == 1) लाई हटाएर) ===
+        else if (choice == 1) { // Safe Shield किन्ने भाग
+            if (gold >= 60) {
+                gold -= 60;
+                
+                // १. प्रयोग भएको संख्या १ घटाउने
+                safeZoneUseCount--; 
+                
+                // २. बाँकी कतिवटा छ भनेर हिसाब निकाल्ने
+                int remaining = 3 - safeZoneUseCount;
+                
+                // ३. बटनको टेक्स्ट अपडेट गर्ने र बटनलाई फेरि अन (Enable) गर्ने
+                safeZoneButton.setText("SAFE SHIELD (" + remaining + ")");
+                safeZoneButton.setEnabled(true); 
+                
+                JOptionPane.showMessageDialog(this, "Safe Shield किनियो! अब " + remaining + " पटक बाँकी छ।");
+            } else {
+                JOptionPane.showMessageDialog(this, "गोल्ड पुगेन! (Not enough Gold)");
+            }
+        } 
+        // =========================================================================
+        else if (choice == 2) { // Attack Power
+            if (gold >= 100) {
+                gold -= 100;
+                player.setAtk(player.getAtk() + 10);
+                JOptionPane.showMessageDialog(this, "Attack Power +10 ले बढ्यो!");
+            } else {
+                JOptionPane.showMessageDialog(this, "गोल्ड पुगेन! (Not enough Gold)");
+            }
+        }
+            
+        goldLabel.setText("Gold: " + gold + " G");
+    }
 
    }
     

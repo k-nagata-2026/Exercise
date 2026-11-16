@@ -22,7 +22,8 @@ public class GameSaveManager {
         String slotName,
         int usedPotion,
         int usedSkill,
-        int enemyDefeated) {
+        int enemyDefeated,
+        int usedsafeZone) {
 
         System.out.println("SAVE METHOD CALLED!");
 
@@ -104,6 +105,7 @@ public class GameSaveManager {
     public int usedPotion;
     public int usedSkill;
     public int enemyDefeated;
+    public int usedsafeZone;
 
     public String playerName;
     public int playerHp;
@@ -123,7 +125,7 @@ public class GameSaveManager {
 
     String sql =
         "SELECT SAVEID, PLAYERID, PLAYERLEVEL, SLOTNAME, " +
-        "USEDPOTION, USEDSKILL, ENEMYDEFEATED, " +
+        "USEDPOTION, USEDSKILL, ENEMYDEFEATED, USEDSAFEZONE, " +
         "PLAYERNAME, PLAYERHP, PLAYERMAXHP, PLAYERATK, " +
         "PLAYERDEF, PLAYERSPEED, CURRENTSTAGE, " +
         "ENEMYNAME, ENEMYHP, ENEMYMAXHP " +
@@ -147,6 +149,7 @@ public class GameSaveManager {
 
                 data.usedPotion = rs.getInt("USEDPOTION");
                 data.usedSkill = rs.getInt("USEDSKILL");
+                data.usedsafeZone = rs.getInt("USEDSAFEZONE");
                 data.enemyDefeated = rs.getInt("ENEMYDEFEATED");
 
                 data.playerName = rs.getString("PLAYERNAME");
@@ -181,7 +184,9 @@ public static void saveFullGameData(
         int currentStage,
         int usedPotion,
         int usedSkill,
-        int enemyDefeated) {
+        int enemyDefeated,
+        int usedsafeZone)
+         {
 
     String sql =
         "INSERT INTO SAVESLOT (" +
@@ -189,9 +194,9 @@ public static void saveFullGameData(
         "USEDPOTION, USEDSKILL, ENEMYDEFEATED, " +
         "PLAYERNAME, PLAYERHP, PLAYERMAXHP, PLAYERATK, " +
         "PLAYERDEF, PLAYERSPEED, CURRENTSTAGE, " +
-        "ENEMYNAME, ENEMYHP, ENEMYMAXHP) " +
+        "ENEMYNAME, ENEMYHP, ENEMYMAXHP ,USEDSAFEZONE) " +
         "SELECT NVL(MAX(SAVEID), 0) + 1, ?, ?, ?, SYSDATE, " +
-        "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM SAVESLOT";
+        "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ? FROM SAVESLOT";
 
     try (
         Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -216,6 +221,7 @@ public static void saveFullGameData(
         pstmt.setString(14, enemy.getName());
         pstmt.setInt(15, enemy.getHp());
         pstmt.setInt(16, enemy.getMaxHp());
+        pstmt.setInt(17, usedsafeZone);
 
         int result = pstmt.executeUpdate();
 
