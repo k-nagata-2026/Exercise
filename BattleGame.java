@@ -1377,25 +1377,26 @@ public class BattleGame extends JFrame {
     private void updateSaveSelectPanel() {
         saveSelectContainer.removeAll(); // 既存のボタンを削除
 
+        // ★ 1. データ件数に関わらず、最初から2列（横の隙間20px、縦の隙間12px）で表示する
+        saveSelectContainer.setLayout(new GridLayout(6, 2, 20, 12));
+
         // データベースからデータをすべて取得
         List<SaveSlotInfo> slots = GameSaveManager.loadGameData();
 
         // データの数だけ行を作成する
         for (SaveSlotInfo slot : slots) {
-            // 1行分の入れ物パネル（幅600 x 高さ60）
-            JPanel rowPanel = new JPanel(new BorderLayout(10, 0));
+            // ★ 2. セーブデータと削除ボタンの隙間を「0」にしてピッタリくっつける
+            JPanel rowPanel = new JPanel(new BorderLayout(0, 0));
             rowPanel.setOpaque(false);
-            rowPanel.setMaximumSize(new Dimension(600, 60));
-            rowPanel.setPreferredSize(new Dimension(600, 60));
+            rowPanel.setPreferredSize(new Dimension(560, 60));
 
             JButton slotButton = new JButton();
-            slotButton.setFont(new Font("MS ゴシック", Font.PLAIN, 18));
+            slotButton.setFont(new Font("MS ゴシック", Font.PLAIN, 16));
             slotButton.setHorizontalAlignment(SwingConstants.LEFT);
             slotButton.setMargin(new Insets(10, 10, 10, 10));
 
             if (slot.isEmpty()) {
                 // 空スロット(新規ゲーム)
-                slotButton.setPreferredSize(new Dimension(600, 60));
                 slotButton.setText("ファイル" + slot.getSvNo() + "：ーーNO DATAーー");
                 slotButton.setForeground(Color.GRAY);
                 slotButton.addActionListener(e -> {
@@ -1405,16 +1406,16 @@ public class BattleGame extends JFrame {
             } else {
                 // データがあるスロット(ロードボタン ＋ 削除ボタン)
                 String dateStr = slot.getSvDate().toString().substring(0, 19);
-                String buttonText = String.format("ファイル%-2d 所持金 %-7dコイン %s", slot.getSvNo(), slot.getSvCoin(), dateStr);
+                String buttonText = String.format("ファイル%-2d 所持金 %-6dコイン %s", slot.getSvNo(), slot.getSvCoin(), dateStr);
                 slotButton.setText(buttonText);
                 slotButton.setForeground(Color.BLACK);
                 slotButton.addActionListener(e -> {
                     loadGame(slot.getSvNo());
                 });
 
-                // 右側に配置する赤い削除ボタン
+                // 右側にピッタリくっつけて配置する赤い削除ボタン
                 JButton deleteButton = new JButton("削除");
-                deleteButton.setPreferredSize(new Dimension(80, 60));
+                deleteButton.setPreferredSize(new Dimension(70, 60));
                 deleteButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
                 deleteButton.setBackground(new Color(231, 76, 60)); // 赤色
                 deleteButton.setForeground(Color.WHITE);
@@ -1452,8 +1453,7 @@ public class BattleGame extends JFrame {
                             ? "＋新しく冒険を始める(既存データ上書き)"
                             : "＋新しく冒険を始める(新規データ作成)";
         JButton newGameButton = new JButton(newBtnText);
-        newGameButton.setPreferredSize(new Dimension(600, 60));
-        newGameButton.setMaximumSize(new Dimension(600, 60));
+        newGameButton.setPreferredSize(new Dimension(560, 60));
         newGameButton.setFont(new Font("MS ゴシック", Font.BOLD, 18));
         newGameButton.setBackground(new Color(46, 204, 113)); // 緑色
         newGameButton.setForeground(Color.WHITE);
@@ -1464,6 +1464,14 @@ public class BattleGame extends JFrame {
         });
 
         saveSelectContainer.add(newGameButton);
+
+        //残りの枠(12枠-セーブデータ)を透明パネルで埋めて、大きさを均等にする
+        int totalItems = slots.size() + 1;//セーブデータ+新規ボタン
+        for (int i = totalItems; i < 12; i++) {
+            JPanel emptySpace = new JPanel();
+            emptySpace.setOpaque(false);//透明にする
+            saveSelectContainer.add(emptySpace);
+        }
 
         saveSelectContainer.revalidate();
         saveSelectContainer.repaint();
