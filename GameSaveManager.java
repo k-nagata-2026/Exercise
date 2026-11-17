@@ -204,6 +204,74 @@ public class GameSaveManager {
         return rowCount > 0 ? itemNos : null;
     }
 
+    /**
+     * セーブデータを1つ削除する（そのセーブのアイテムも一緒に消す）。
+     * アイテム(game_item_box)を先に消してから、セーブ本体(game_save_data)を消す。
+     * 戻り値: 成功したら null、失敗したらエラーメッセージ
+     */
+    public static String deleteSave(int saveId) {
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "DELETE FROM game_item_box WHERE SAVE_ID = ?")) {
+                    ps.setInt(1, saveId);
+                    ps.executeUpdate();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(
+                        "DELETE FROM game_save_data WHERE SAVE_ID = ?")) {
+                    ps.setInt(1, saveId);
+                    ps.executeUpdate();
+                }
+                conn.commit();
+                return null;
+            } catch (SQLException e) {
+                conn.rollback();
+                e.printStackTrace();
+                return "SQLエラー: " + e.getMessage();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "接続エラー: " + e.getMessage();
+        }
+    }
+
+    /**
+     * 保存されたアイテムだけを削除する（セーブ本体のレベル・ゴールドは残る）。
+     * 「アイテムなし」の印(ITEM_NO = NULL の行)を入れるので、ロードするとアイテムボックスは空になる。
+     * 戻り値: 成功したら null、失敗したらエラーメッセージ
+     */
+    public static String deleteSavedItems(int saveId) {
+        return saveItemBox(saveId, new int[ITEM_SLOTS], new Timestamp(System.currentTimeMillis()));
+    }
+
+    /**
+     * すべてのセーブデータとアイテムを削除する。
+     * 戻り値: 成功したら null、失敗したらエラーメッセージ
+     */
+    public static String deleteAllSaves() {
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM game_item_box")) {
+                    ps.executeUpdate();
+                }
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM game_save_data")) {
+                    ps.executeUpdate();
+                }
+                conn.commit();
+                return null;
+            } catch (SQLException e) {
+                conn.rollback();
+                e.printStackTrace();
+                return "SQLエラー: " + e.getMessage();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "接続エラー: " + e.getMessage();
+        }
+    }
+
     public static List<Integer> getSaveIdList() {
         List<Integer> idList = new ArrayList<>();
         String sql = "SELECT SAVE_ID FROM game_save_data ORDER BY SAVE_ID ASC";

@@ -360,6 +360,13 @@ public BattleGame() {
         startScreenLabel.add(invisibleStartBtn);
         startScreenLabel.add(invisibleExitBtn);
 
+        // ⚙ 設定ボタン（スタート画面の左上）
+        JButton titleSettingsBtn = new JButton("⚙ 設定");
+        titleSettingsBtn.setBounds(10, 10, 120, 36);
+        titleSettingsBtn.setFocusable(false);
+        titleSettingsBtn.addActionListener(e -> showSettingsDialog());
+        startScreenLabel.add(titleSettingsBtn);
+
         // 2. メインパネルにラベルを追加
         mainStartPanel.add(startScreenLabel);
 
@@ -667,6 +674,14 @@ public BattleGame() {
         buttonPanel.add(nextStageButton);
         buttonPanel.add(restartButton);
         buttonPanel.add(saveButton);
+
+        // ⚙ 設定ボタン（ゲーム中）
+        JButton settingsButton = new JButton(" 設定");
+        settingsButton.setFont(btnFont);
+        settingsButton.setFocusPainted(false);
+        settingsButton.setFocusable(false);
+        settingsButton.addActionListener(e -> showSettingsDialog());
+        buttonPanel.add(settingsButton);
 
         bottomPanel.add(statusLabel, BorderLayout.NORTH);
         bottomPanel.add(barsPanel, BorderLayout.CENTER);
@@ -1484,6 +1499,129 @@ public BattleGame() {
             itemBox[i] = (i < nos.length) ? noToItem(nos[i]) : null;
         }
         logTextArea.append("💾 アイテムを復元しました！\n");
+    }
+
+    // ==========================================
+    // ⚙ 設定 (Settings): セーブデータ・保存アイテムの削除
+    // ==========================================
+    private void showSettingsDialog() {
+        String[] options = { "セーブデータを削除", "保存アイテムを削除", "すべて削除", "閉じる" };
+
+        while (true) {
+            int choice = JOptionPane.showOptionDialog(this,
+                    "削除したいものを選んでください",
+                    "⚙ 設定 (Settings)",
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[3]);
+
+            if (choice == 0) {
+                deleteOneSaveFromSettings();
+            } else if (choice == 1) {
+                deleteSavedItemsFromSettings();
+            } else if (choice == 2) {
+                deleteAllSavesFromSettings();
+            } else {
+                break; // 閉じる / ×ボタン
+            }
+        }
+        this.requestFocusInWindow();
+    }
+
+    // セーブIDを選ぶダイアログ。キャンセルや、セーブが無いときは -1 を返す
+    private int pickSaveId(String message) {
+        List<Integer> idList = GameSaveManager.getSaveIdList();
+        if (idList == null || idList.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "セーブデータがありません。");
+            return -1;
+        }
+
+        String[] labels = new String[idList.size()];
+        for (int i = 0; i < idList.size(); i++) {
+            int id = idList.get(i);
+            int[] data = GameSaveManager.loadGameDataById(id); // [0]: PLAYER_NO, [1]: LVL, [2]: BALANCE
+            String name = data[0] == 2 ? "wizard" : (data[0] == 3 ? "human" : "ゆうしゃ");
+            labels[i] = "セーブID " + id + " : " + name + " Lv." + data[1] + " / " + data[2] + "G";
+        }
+
+        Object selected = JOptionPane.showInputDialog(this, message, "⚙ 設定 (Settings)",
+                JOptionPane.QUESTION_MESSAGE, null, labels, labels[0]);
+        if (selected == null) {
+            return -1;
+        }
+        for (int i = 0; i < labels.length; i++) {
+            if (labels[i].equals(selected)) {
+                return idList.get(i);
+            }
+        }
+        return -1;
+    }
+
+    private boolean confirmDelete(String message) {
+        int answer = JOptionPane.showConfirmDialog(this, message, "削除の確認",
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        return answer == JOptionPane.YES_OPTION;
+    }
+
+    private void clearItemBoxInMemory() {
+        for (int i = 0; i < itemBox.length; i++) {
+            itemBox[i] = null;
+        }
+    }
+
+    // セーブデータ（レベル・ゴールド・アイテムすべて）を1つ削除
+    private void deleteOneSaveFromSettings() {
+        int id = pickSaveId("削除するセーブデータを選んでください（アイテムも一緒に消えます）");
+        if (id < 0) {
+            return;
+        }
+        if (!confirmDelete("セーブID " + id + " を削除しますか？\nこの操作は元に戻せません。")) {
+            return;
+        }
+
+        String error = GameSaveManager.deleteSave(id);
+        if (error == null) {
+            if (id == currentSaveId) {
+                currentSaveId = 0; // 今遊んでいるセーブを消したので、次のセーブは新規扱い
+            }
+            JOptionPane.showMessageDialog(this, "セーブID " + id + " を削除しました。");
+        } else {
+            JOptionPane.showMessageDialog(this, "削除に失敗しました。\n" + error);
+        }
+    }
+
+    // 保存されたアイテムだけを削除（レベル・ゴールドは残る）
+    private void deleteSavedItemsFromSettings() {
+        int id = pickSaveId("アイテムを削除するセーブデータを選んでください（レベル・ゴールドは残ります）");
+        if (id < 0) {
+            return;
+        }
+        if (!confirmDelete("セーブID " + id + " の保存アイテムを削除しますか？\nこの操作は元に戻せません。")) {
+            return;
+        }
+
+        String error = GameSaveManager.deleteSavedItems(id);
+        if (error == null) {
+            if (id == currentSaveId) {
+                clearItemBoxInMemory(); // 今のゲームのアイテムボックスも空にする
+            }
+            JOptionPane.showMessageDialog(this, "セーブID " + id + " の保存アイテムを削除しました。");
+        } else {
+            JOptionPane.showMessageDialog(this, "削除に失敗しました。\n" + error);
+        }
+    }
+
+    // すべてのセーブデータとアイテムを削除
+    private void deleteAllSavesFromSettings() {
+        if (!confirmDelete("すべてのセーブデータとアイテムを削除しますか？\nこの操作は元に戻せません。")) {
+            return;
+        }
+
+        String error = GameSaveManager.deleteAllSaves();
+        if (error == null) {
+            currentSaveId = 0;
+            JOptionPane.showMessageDialog(this, "すべてのセーブデータを削除しました。");
+        } else {
+            JOptionPane.showMessageDialog(this, "削除に失敗しました。\n" + error);
+        }
     }
 
     private void addItemToBox(Item item) {
