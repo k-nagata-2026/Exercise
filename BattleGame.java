@@ -174,43 +174,8 @@ public class BattleGame extends JFrame {
     private void choicePlayer() {
         party.clear(); // 選択前にパーティーをクリアする
 
-        //選択候補を作成
-        java.util.List<Player> availableList = new java.util.ArrayList<>();
-
-        Player hero = new Player("勇者(HERO)", 60, 20, 20,"yuusya_game.png",0, 1, 0, 10);
-        hero.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
-        hero.learnSkill("かばう(COVER)", 0.25, "かばう");
-        availableList.add(hero);
-
-        Player wizard = new Player("魔法使い(WIZARD)", 45, 5, 50,"mahoutsukai_man.png", 0, 1, 0, 10);
-        wizard.learnSkill("炎魔法(FIRE)", 0.5, "全体攻撃");
-        availableList.add(wizard);
-
-        Player knight = new Player("騎士(KNIGHT)", 65, 30, 5,"knight.png",0, 1, 0, 10);
-        knight.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
-        knight.learnSkill("かばう(COVER)", 0.25, "かばう");
-        availableList.add(knight);
-
-        Player thief = new Player("盗賊(THIEF)", 70, 10, 20,"dorobou_hokkamuri.png",0, 1, 0, 10);
-        thief.learnSkill("斬る(SLASH)", 1.0, "単体攻撃");
-        availableList.add(thief);
-
-        Player summoner = new Player("召喚士(SUMMONER)", 90, 5, 5,"mahoutsukai_necromancer.png",0, 1, 0, 10);
-        Skill nurikabe = new Skill("弱い精霊", 1.0, "召喚", 15, 1, "youkai_nurikabe.png", 120, 5, 5);
-        nurikabe.addSpiritSkill(new Skill("かばう", 0.25, "かばう"));
-        nurikabe.addSpiritSkill(new Skill("斬る",1.0,"単体攻撃"));
-        summoner.learnSkill(nurikabe);
-        availableList.add(summoner);
-
-        Player shaman = new Player("祈祷師(SHAMAN)", 50, 5, 45,"oharai_kannushi.png",0, 1, 0, 10);
-        shaman.learnSkill("攻撃力UP(ATK BUFF)", 1.5, "単体バフ");
-        shaman.learnSkill("魔力UP(MGC BUFF)", 1.5, "単体バフ");
-        availableList.add(shaman);
-
-        Player healer = new Player("回復術師(HEALER)", 45, 5, 50,"job_doctor_man.png",0, 1, 0, 10);
-        healer.learnSkill("回復(HEAL)", 1.0, "単体回復");
-        healer.learnSkill("全体回復(MASS HEAL)", 0.5, "全体回復");
-        availableList.add(healer);
+        //DBから選択候補を取得
+        java.util.List<Player> availableList = GameMasterManager.loadAllPlayers();
 
         //ウィンドウを作成
         JDialog dialog = new JDialog(this, "キャラクター選択", true);

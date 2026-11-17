@@ -2,11 +2,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Player extends Character {
-    //プレイヤーが覚えている技のリスト
-    private List<Skill> skills;
+    private List<Skill> skills;//プレイヤーが覚えている技のリスト
     public boolean isCovered = false;//かばう
     private int exp;
     private int maxExp;
+    private int incHp = 0;
+    private int incPow = 0;
+    private int incMgc = 0;
     //精霊用のフィールド
     private boolean isSummoned = false;
     private String originalName;
@@ -84,31 +86,10 @@ public class Player extends Character {
             //次に必要な経験値量を1.5倍にする
             this.maxExp = (int)(this.maxExp * 1.5);
 
-            //キャラクターごとの上昇量を決める
-            int hpUp = 0;
-            int atkUp = 0;
-            int mgcUp = 0;
-
-            if(this.name.contains("勇者(HERO)")) {
-                hpUp = 5; atkUp = 5; mgcUp = 5;
-            } else if (this.name.contains("魔法使い(WIZARD)")) {
-                hpUp = 5; mgcUp = 10;
-            } else if (this.name.contains("騎士(KNIGHT)")) {
-                hpUp = 10; atkUp = 5;
-            } else if (this.name.contains("盗賊(THIEF)")) {
-                hpUp = 5;
-            } else if (this.name.contains("召喚士(SUMMONER)")) {
-                hpUp = 10;
-            } else if (this.name.contains("祈祷師(SHAMAN)")) {
-                hpUp = 5; mgcUp = 10;
-            } else if (this.name.contains("回復術師(HEALER)")) {
-                hpUp = 5; mgcUp = 10;
-            }
-
-            //ステータスにプラスする
-            this.maxHp += hpUp;
-            this.atk += atkUp;
-            this.mgc += mgcUp;
+            //DBから読み込んだ数値をステータスにプラスする
+            this.maxHp += this.incHp;
+            this.atk += this.incPow;
+            this.mgc += this.incMgc;
 
             //召喚士の場合精霊を開放する
             if (this.name.contains("召喚士(SUMMONER)")) {
@@ -188,6 +169,12 @@ public class Player extends Character {
 
     public void setLevel(int level) {
         this.level = level;
+    }
+
+    public void setGrowthRates(int incHp, int incPow, int incMgc) {
+        this.incHp = incHp;
+        this.incPow = incPow;
+        this.incMgc = incMgc;
     }
 
     public boolean isSummoned() {
