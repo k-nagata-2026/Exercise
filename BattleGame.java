@@ -808,30 +808,16 @@ public class BattleGame extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 player.guardFlg = 0; // ガードフラグをリセット
                
-                //プレイヤーが覚えている技を選択肢に出す
-                java.util.List<Skill> playerSkills = player.getSkills();
-                String[] moves = new String[playerSkills.size()];
-                for (int i = 0; i < playerSkills.size(); i++) {
-                    moves[i] = playerSkills.get(i).getName();
+                // ★ 3列グリッド（召喚士は「召喚」ボタンのみ）のダイアログで技を選ぶ
+                Skill selectedSkill = showSkillSelectDialog(player);
+
+                // ×ボタンを押したらウィンドウごと閉じる
+                if (selectedSkill == null) return;
+
+                // 召喚以外ならここで技名ログを出す（召喚の場合は精霊を選んだあとに出す）
+                if (!selectedSkill.getType().equals("召喚")) {
+                    logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
                 }
-
-                int moveChoice = JOptionPane.showOptionDialog(
-                    BattleGame.this,
-                    player.getName() + " はどうする？",
-                    "技の選択",
-                    JOptionPane.DEFAULT_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    moves,
-                    moves[0]
-                );
-
-                //×ボタンを押したらウィンドウごと閉じる
-                if (moveChoice == JOptionPane.CLOSED_OPTION) return;
-
-                //選んだ技を取得する
-                Skill selectedSkill = playerSkills.get(moveChoice);
-                logTextArea.append(player.getName() + " は " + selectedSkill.getName() + " を使った！\n");
 
                 //技の種類によって処理を分ける
                 if (selectedSkill.getType().equals("単体攻撃")) {
@@ -1012,91 +998,45 @@ public class BattleGame extends JFrame {
                     logTextArea.append(player.getName() + " は仲間をかばった！\n");
                     showPopupText("かばう", Color.BLUE, playerImageLabels[currentPlayerIndex]);
                 } else if (selectedSkill.getType().equals("召喚")){
-                    player.setSummoned(true);//召喚フラグ
-
-                    //1.召喚士が覚えている召喚タイプの技を取得する
-                    List<Skill> summonSkills = new ArrayList<>();//Skillオブジェクトを入れるリスト
-                    //全スキルの中から召喚タイプの技を追加する
+                    // 1. 召喚士が覚えている召喚タイプの技を取得する
+                    List<Skill> summonSkills = new ArrayList<>();
                     for (Skill s : player.getSkills()) {
                         if (s.getType().equals("召喚")) {
                             summonSkills.add(s);
                         }
                     }
 
-                    //2.選択肢用の配列
-                    String[] options = new String[summonSkills.size()];
-                    for (int i = 0; i < summonSkills.size(); i++) {
-                        Skill s = summonSkills.get(i);
-                        options[i] = s.getName() + "(消費HP:" + s.getHpCost() + " / 必要Lv." + s.getRequiredLevel() + ")";
-                    }
+                    // 2. 「誰を召喚する？」ダイアログ（出せる／出せない表示付き）を開く
+                    Skill chosenSummon = showSpiritSelectDialog(player, summonSkills);
 
-                    //3.どの精霊を選ぶかのポップアップダイアログ
-                    int choice = JOptionPane.showOptionDialog(
-                        BattleGame.this,
-                        "召喚する精霊を選んでください",
-                        "精霊召喚",
-                        JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.QUESTION_MESSAGE,
-                        null,
-                        options,
-                        options[0]
-                    );
+                    // 3. ×ボタンで閉じた場合はターンを進めずに中断
+                    if (chosenSummon == null) return;
 
-                    //4.キャンセルしたらターンは進まない
-                    if (choice >= 0 && choice < summonSkills.size()) {
-                        //選ばれた精霊の情報を取得する
-                        Skill chosenSummon = summonSkills.get(choice);
+                    // 4. HPを消費する（ダイアログ側でLv・HPチェック済み）
+                    player.setSummoned(true);
+                    player.hp -= chosenSummon.getHpCost();
+                    showPopupText("-" + chosenSummon.getHpCost(), Color.MAGENTA, playerImageLabels[currentPlayerIndex]);
+                    logTextArea.append(player.getName() + " は " + chosenSummon.getName() + " を召喚した！\n");
 
-                        //5.レベルチェック(レベル未満の場合)
-                        if (player.getLevel() < chosenSummon.getRequiredLevel()) {
-                            JOptionPane.showMessageDialog(BattleGame.this,"レベルが足りません");
-                            return;//ターンを消費せずに中断
-                        }
+                    // 5. 精霊の画像処理とステータス変身
+                    if (chosenSummon.getImagePath() != null) {
+                        java.io.File imgFile = new java.io.File(chosenSummon.getImagePath());
+                        if (imgFile.exists()) {
+                            ImageIcon spiritIcon = new ImageIcon(chosenSummon.getImagePath());
+                            Image img = spiritIcon.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
+                            playerImageLabels[currentPlayerIndex].setIcon(new ImageIcon(img));
 
-                        //6.HPチェック(消費HP以下の場合)
-                        if (player.getHp() < chosenSummon.getHpCost()) {
-                            JOptionPane.showMessageDialog(BattleGame.this,"HPが足りません(Not enough HP to summon)");
-                            return;
-                        }
+                            player.setName(chosenSummon.getName());
+                            player.setAtk(chosenSummon.getSpiritAtk());
+                            player.setMaxHp(chosenSummon.getSpiritHp());
+                            player.setHp(chosenSummon.getSpiritHp());
+                            player.setLevel(chosenSummon.getRequiredLevel());
 
-                        //7.HPを消費する
-                        player.hp -= chosenSummon.getHpCost();
-                        showPopupText("-" + chosenSummon.getHpCost(),Color.MAGENTA,playerImageLabels[currentPlayerIndex]);
-                        logTextArea.append(chosenSummon.getName() + "を召喚した！");
-
-                        //8.精霊の画像処理
-                        if (chosenSummon.getImagePath() != null) {
-                            //画僧ファイル情報を作成
-                            java.io.File imgFile = new java.io.File(chosenSummon.getImagePath());
-
-                            //画像ファイルが存在するかチェック
-                            if (imgFile.exists()) {
-                                //後で使えるようにspiritIconに画像をオブジェクト化して入れる
-                                ImageIcon spiritIcon = new ImageIcon(chosenSummon.getImagePath());
-                                Image img = spiritIcon.getImage().getScaledInstance(120,120,Image.SCALE_SMOOTH);
-                                playerImageLabels[currentPlayerIndex].setIcon(new ImageIcon(img));
-
-                                player.setName(chosenSummon.getName());//名前の変更
-                                player.setAtk(chosenSummon.getSpiritAtk());//攻撃力の変更
-                                player.setMaxHp(chosenSummon.getSpiritHp());//最大HPの変更
-                                player.setHp(chosenSummon.getSpiritHp());//最大HPをHPにする(回復するために必要)
-                                player.setLevel(chosenSummon.getRequiredLevel());
-
-                                //召喚士の技と精霊の技を入れ替える
-                                if (chosenSummon.getSpiritSkills() != null && !chosenSummon.getSpiritSkills().isEmpty()) {
-                                    player.setSkills(chosenSummon.getSpiritSkills());
-                                }
-                            } else {
-                                //画僧ファイルが見つからなかった場合
-                                System.out.println("画像ファイルが見つかりません");
+                            if (chosenSummon.getSpiritSkills() != null && !chosenSummon.getSpiritSkills().isEmpty()) {
+                                player.setSkills(chosenSummon.getSpiritSkills());
                             }
-                        }
-
-                        //精霊が攻撃後召喚士に戻す処理
-                        if(player.isSummoned() && !selectedSkill.getType().equals("召喚")) {
-                            revertToSummoner(player, currentPlayerIndex);
-                            player.setSummoned(false);
-                            logTextArea.append("精霊は元に戻った");
+                        } else {
+                            System.out.println("画像ファイルが見つかりません: " + chosenSummon.getImagePath());
                         }
                     }
                 }
@@ -1290,6 +1230,138 @@ public class BattleGame extends JFrame {
         gameScreen(1);
 
         return panel;
+    }
+
+    //技選択ダイアログ（3列グリッド表示 ＋ 召喚士は「召喚」ボタンのみ表示）全員に適用
+    private Skill showSkillSelectDialog(Player currentActor) {
+        final Skill[] selectedResult = {null};
+
+        // 召喚士（まだ変身していない状態）なら「召喚」ボタン1つだけ表示
+        if (currentActor.getName().contains("召喚士(SUMMONER)") && !currentActor.isSummoned()) {
+            JDialog dialog = new JDialog(this, "技の選択", true);
+            dialog.setSize(400, 170);
+            dialog.setLocationRelativeTo(this);
+            dialog.setLayout(new BorderLayout(10, 10));
+
+            JLabel msgLabel = new JLabel("  " + currentActor.getName() + " はどうする？", JLabel.LEFT);
+            msgLabel.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+            msgLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+            dialog.add(msgLabel, BorderLayout.NORTH);
+
+            JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+            JButton summonBtn = new JButton("召喚");
+            summonBtn.setPreferredSize(new Dimension(180, 50));
+            summonBtn.setFont(new Font("MS ゴシック", Font.BOLD, 18));
+            summonBtn.setBackground(new Color(142, 68, 173));
+            summonBtn.setForeground(Color.WHITE);
+            summonBtn.setFocusPainted(false);
+
+            summonBtn.addActionListener(e -> {
+                // ダミーの「召喚」トリガー用Skillを返して、次の精霊選択へ進む
+                selectedResult[0] = new Skill("召喚", 0.0, "召喚");
+                dialog.dispose();
+            });
+
+            btnPanel.add(summonBtn);
+            dialog.add(btnPanel, BorderLayout.CENTER);
+            dialog.setVisible(true);
+            return selectedResult[0];
+        }
+
+        // それ以外のキャラ（勇者・祈祷師・変身後の精霊など）：3列グリッドで並べる
+        List<Skill> skills = currentActor.getSkills();
+        JDialog dialog = new JDialog(this, "技の選択", true);
+        int rows = (int) Math.ceil(skills.size() / 3.0);
+        dialog.setSize(820, Math.max(200, 90 + rows * 65));
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+
+        JLabel msgLabel = new JLabel("  " + currentActor.getName() + " はどうする？", JLabel.LEFT);
+        msgLabel.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        msgLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+        dialog.add(msgLabel, BorderLayout.NORTH);
+
+        JPanel gridPanel = new JPanel(new GridLayout(0, 3, 10, 10));
+        gridPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 15, 15));
+
+        for (Skill sk : skills) {
+            JButton btn = new JButton(sk.getName());
+            btn.setFont(new Font("MS ゴシック", Font.BOLD, 14));
+            btn.setFocusPainted(false);
+            btn.addActionListener(e -> {
+                selectedResult[0] = sk;
+                dialog.dispose();
+            });
+            gridPanel.add(btn);
+        }
+
+        dialog.add(gridPanel, BorderLayout.CENTER);
+        dialog.setVisible(true);
+        return selectedResult[0];
+    }
+
+    //召喚士の「誰を召喚する？」ダイアログ（出せる／出せないを表示＆判定）
+    private Skill showSpiritSelectDialog(Player summoner, List<Skill> summonSkills) {
+        final Skill[] selectedSpirit = {null};
+
+        JDialog dialog = new JDialog(this, "精霊召喚", true);
+        dialog.setSize(700, 320);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+
+        JLabel msgLabel = new JLabel(
+            "  誰を召喚する？（現在 Lv." + summoner.getLevel() + " / HP: " + summoner.getHp() + "）",
+            JLabel.LEFT
+        );
+        msgLabel.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        msgLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+        dialog.add(msgLabel, BorderLayout.NORTH);
+
+        JPanel gridPanel = new JPanel(new GridLayout(2, 2, 12, 12));
+        gridPanel.setBorder(BorderFactory.createEmptyBorder(10, 15, 15, 15));
+
+        for (Skill s : summonSkills) {
+            int reqLv = s.getRequiredLevel();
+            int hpCost = s.getHpCost();
+
+            // 出せる条件：必要レベルに達していて、かつHPが消費量より多いこと
+            boolean isLevelOk = summoner.getLevel() >= reqLv;
+            boolean isHpOk = summoner.getHp() > hpCost;
+            boolean canSummon = isLevelOk && isHpOk;
+
+            String statusLabel;
+            if (!isLevelOk) {
+                statusLabel = "【出せない：Lv." + reqLv + "必要】";
+            } else if (!isHpOk) {
+                statusLabel = "【出せない：HP不足】";
+            } else {
+                statusLabel = "【出せる（召喚可能）】";
+            }
+
+            //ここの<html>はJava Swingの機能でレイアウトをきれいにしてくれる
+            JButton btn = new JButton("<html><center>" + s.getName() + "<br>" +
+                                      "消費HP:" + hpCost + " / 必要Lv." + reqLv + "<br>" +
+                                      statusLabel + "</center></html>");
+            btn.setFont(new Font("MS ゴシック", Font.BOLD, 13));
+            btn.setFocusPainted(false);
+
+            if (canSummon) {
+                btn.setBackground(new Color(46, 204, 113)); // 緑色
+                btn.setForeground(Color.WHITE);
+                btn.addActionListener(e -> {
+                    selectedSpirit[0] = s;
+                    dialog.dispose();
+                });
+            } else {
+                btn.setEnabled(false); // 出せない精霊はグレーアウトして押せないようにする
+            }
+
+            gridPanel.add(btn);
+        }
+
+        dialog.add(gridPanel, BorderLayout.CENTER);
+        dialog.setVisible(true);
+        return selectedSpirit[0];
     }
 
     //精霊が一回攻撃したら召喚士に戻るメソッド
@@ -1574,6 +1646,7 @@ public class BattleGame extends JFrame {
                 p.setMaxHp(m.getMaxHp());
                 p.setAtk(m.getAtk());
                 p.setMgc(m.getMgc());
+                GameMasterManager.applyMasterDataToPlayer(p);
                 party.add(p);
             }
         }

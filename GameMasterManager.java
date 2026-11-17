@@ -125,4 +125,24 @@ public class GameMasterManager {
         }
         return skName;
     }
+
+    // セーブデータロード時に、キャラ名からDBの成長率とスキルを再設定する
+    public static void applyMasterDataToPlayer(Player p) {
+        String sql = "SELECT PLNO, INC_HP, INC_POW, INC_MGC FROM PLAYER WHERE PLNAME = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, p.getName());
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    int plNo = rs.getInt("PLNO");
+                    p.setGrowthRates(rs.getInt("INC_HP"), rs.getInt("INC_POW"), rs.getInt("INC_MGC"));
+                    p.getSkills().clear();
+                    loadPlayerSkillsFromDB(conn, plNo, p);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
 }
