@@ -29,6 +29,8 @@ public class BattleGame extends JFrame {
     private JPanel saveSelectPanel; // セーブ選択画面のパネルを保持するフィールド
     private JPanel saveSelectContainer; // セーブ選択画面のコンテナパネルを保持するフィールド
     private static int currentSaveSlot = 1;//セーブスロット番号を保持する変数
+    private int battleExpPool = 0;//戦闘中に倒した敵の経験値をためておく変数
+    private Player lastAttacker = null;//とどめを刺したキャラクターを記録する変数
 
     // ★ がぞうをひょうじするためのラベル
     private JLabel backgroundLabel;   // 背景画像のラベル
@@ -851,12 +853,9 @@ public class BattleGame extends JFrame {
                             player.setExp(player.getExp() + aliveEnemy.getRewardExp());
 
                             //レベルアップ判定
-                            if (player.checkLevelUp()) {
-                                JOptionPane.showMessageDialog(
-                                    BattleGame.this,
-                                    player.getName() + "はLv" + player.getLevel() + "に上がった！\n"
-                                );
-                            }
+                            // 【全体攻撃】敵を倒したときの処理（コイン獲得の直後）
+                            battleExpPool += aliveEnemy.getRewardExp();
+                            lastAttacker = player;
                             updatePlayerVisuals();
                             updateDisplay();
                         }
@@ -883,14 +882,9 @@ public class BattleGame extends JFrame {
                                 gold += getCoin;
                                 logTextArea.append(getCoin + "コインを手に入れた！\n");
 
-                                //全体攻撃をしたプレイヤーに経験値をあげる
-                                player.setExp(player.getExp() + enemyInside.getRewardExp());
-                                if (player.checkLevelUp()) {
-                                    JOptionPane.showMessageDialog(
-                                        BattleGame.this,
-                                        player.getName() + "はLv" + player.getLevel() + "に上がった"
-                                    );
-                                }
+                                //経験値をプールにためて、最後に分ける
+                                battleExpPool += enemyInside.getRewardExp();
+                                lastAttacker = player;
                                 updateDisplay();
                             }
                         }
@@ -1052,10 +1046,6 @@ public class BattleGame extends JFrame {
 
                 //敵が全滅したときの処理
                 if(aliveEnemies.isEmpty()){
-                    //敵が全滅したので、ここでカレントパーティテーブルとセーブデータテーブルを更新
-                    GameSaveManager.savePartyData(currentSaveSlot,party);
-                    GameSaveManager.updateGameData(currentSaveSlot,gold, new java.sql.Timestamp(System.currentTimeMillis()));
-
                     //ボスエリアの判定
                     if (currentField.equals("BOSS")) {
                         if (bossStage == 1) {
@@ -1069,6 +1059,9 @@ public class BattleGame extends JFrame {
                         } else {
                             //魔王撃破からクリア画面に
                             logTextArea.append("魔王を倒した！\n");
+                            distributeBattleExpAndLevelUp();
+                            GameSaveManager.savePartyData(currentSaveSlot,party);
+                            GameSaveManager.updateGameData(currentSaveSlot,gold, new java.sql.Timestamp(System.currentTimeMillis()));
                             bossStage = 1;
                             gameScreen(2);
                             return;
@@ -1083,7 +1076,10 @@ public class BattleGame extends JFrame {
                             updateDisplay();
                             return;
                         } else {
-                            logTextArea.append("すべての魔物を倒した");
+                            logTextArea.append("すべての魔物を倒した\n");
+                            distributeBattleExpAndLevelUp();
+                            GameSaveManager.savePartyData(currentSaveSlot,party);
+                            GameSaveManager.updateGameData(currentSaveSlot,gold, new java.sql.Timestamp(System.currentTimeMillis()));
                             enemyCount = 1;
                             gameScreen(4);
                             return;
@@ -1381,6 +1377,63 @@ public class BattleGame extends JFrame {
         }
 
         //更新
+        updateDisplay();
+    }
+
+    //戦闘終了時に経験値を均等分配し、まとめてレベルアップ判定を行うメソッド
+    private void distributeBattleExpAndLevelUp() {
+        if (battleExpPool <= 0) return;
+
+        // 生きているパーティメンバーを集める
+        List<Player> aliveMembers = new ArrayList<>();
+        for (Player member : party) {
+            if (member.isAlive()) {
+                aliveMembers.add(member);
+            }
+        }
+
+        if (!aliveMembers.isEmpty()) {
+            int shareExp = battleExpPool / aliveMembers.size();     // 1人あたりの均等経験値
+            int remainderExp = battleExpPool % aliveMembers.size(); // 割り切れなかった余り
+
+            logTextArea.append("合計 " + battleExpPool + " EXPを獲得！（1人あたり " + shareExp + " EXP）\n");
+
+            StringBuilder levelUpMessages = new StringBuilder();
+
+            for (Player member : aliveMembers) {
+                int gain = shareExp;
+                // 余りがあり、かつトドメを刺した本人なら余りを加算
+                if (remainderExp > 0 && member == lastAttacker) {
+                    gain += remainderExp;
+                    logTextArea.append(member.getName() + " はトドメボーナスでさらに +" + remainderExp + " EXP獲得！\n");
+                }
+
+                member.setExp(member.getExp() + gain);
+
+                // レベルアップ判定（複数レベル一気に上がる場合も考慮して while にする）
+                while (member.checkLevelUp()) {
+                    levelUpMessages.append(member.getName())
+                                   .append(" は Lv.")
+                                   .append(member.getLevel())
+                                   .append(" に上がった！\n");
+                }
+            }
+
+            // レベルアップしたキャラがいればまとめて1回ダイアログで表示
+            if (levelUpMessages.length() > 0) {
+                JOptionPane.showMessageDialog(
+                    BattleGame.this,
+                    levelUpMessages.toString(),
+                    "レベルアップ！",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+            }
+        }
+
+        // 次の戦闘に向けてリセット
+        battleExpPool = 0;
+        lastAttacker = null;
+        updatePlayerVisuals();
         updateDisplay();
     }
 
