@@ -135,12 +135,12 @@ public class CharacterSelect extends JFrame {
             "BHOLA",
             150,
             20,
-            10,
+            20,
             10,
             30,
             "BHOLA.png");
 
-    selectHero(hero1,"BHOLA",150,20,10,10);
+    selectHero(hero1,"BHOLA",150,20,20,10);
 
     startButton.setEnabled(true);
 
@@ -152,12 +152,12 @@ public class CharacterSelect extends JFrame {
             "BIYON",
             200,
             25,
-            10,
+            20,
             15,
             30,
             "BIYON.png");
 
-    selectHero(hero2,"BIYON",200,25,10,15);
+    selectHero(hero2,"BIYON",200,25,20,15);
 
     startButton.setEnabled(true);
 
@@ -167,13 +167,13 @@ public class CharacterSelect extends JFrame {
 
            selectedPlayer = new Player(
                     "LadyBoss",
-                    100,
-                    15,
+                    150,
+                    20,
                     20,
                     10,
                     30,
                     "ladyboss.png");
- selectHero(hero3,"LADY BOSS",100,15,20,10);
+ selectHero(hero3,"LADY BOSS",150,20,20,10);
    startButton.setEnabled(true);
 
         });
@@ -182,13 +182,13 @@ public class CharacterSelect extends JFrame {
 
             selectedPlayer = new Player(
                     "BigBoss",
-                    150,
+                    200,
                     40,
-                    0,
+                    20,
                     15,
                     30,
                     "bigboss.png");
-selectHero(hero4,"BIG BOSS",150,40,0,15);
+selectHero(hero4,"BIG BOSS",200,40,20,15);
 
            startButton.setEnabled(true);
 

@@ -6,6 +6,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.swing.*;
 
+
 public class BattleGame extends JFrame {
     final private JLabel statusLabel;
     private JTextArea logTextArea;
@@ -416,7 +417,7 @@ private void handleEnemyDefeat() {
 logTextArea.append("EXP +50!\n");
 
     // 1 Level = 6 enemies
-    if (enemyCount >= 6) {
+    if (enemyCount >= 7) {
 
         if (currentLevel >= 5) {
             stopBGM();
@@ -526,6 +527,26 @@ private void startEnemyAI() {
     });
 
     enemyAiTimer.start();
+}
+  
+private void showGoldPopup(String text) {
+    JWindow popup = new JWindow(this);
+    JLabel label = new JLabel(text, SwingConstants.CENTER);
+    label.setFont(new Font("SansSerif", Font.BOLD, 20));
+    label.setForeground(new Color(255, 215, 0)); // सुनौलो (Gold) रङ
+    label.setOpaque(true);
+    label.setBackground(new Color(30, 30, 30, 220)); // कालो ब्याकग्राउन्ड
+    label.setBorder(BorderFactory.createLineBorder(new Color(255, 215, 0), 2));
+
+    popup.add(label);
+    popup.setSize(180, 45);
+    popup.setLocationRelativeTo(this); // गेम विन्डोको बीचमा देखाउँछ
+    popup.setVisible(true);
+
+    // १.५ सेकेन्डपछि आफैं हराउने बनाउने (गेम रोकिँदैन)
+    Timer t = new Timer(1500, e -> popup.dispose());
+    t.setRepeats(false);
+    t.start();
 }
 
 public BattleGame(Player player) {
@@ -804,7 +825,8 @@ saveButton.addActionListener(e -> {
                 potionUseCount,
                 skillUseCount,
                 enemyCount,
-                safeZoneUseCount
+                safeZoneUseCount,
+                gold
             );
 
             JOptionPane.showMessageDialog(
@@ -894,6 +916,12 @@ itemButton.addActionListener(e -> {
             if (Math.random() < 0.1) {
                 addItemToBox(new Herb());
                 logTextArea.append("★ " + enemy.getName() + " が薬草を落とした！\n");
+       if (enemy.getHp() <= 0) {
+    gold += 20;
+    goldLabel.setText("Gold: " + gold + " G");
+    logTextArea.append("Enemy defeated! +20 Gold!\n");
+    showGoldPopup("+20 Gold!");
+}
             }
             spawnEnemy();
         }
@@ -928,7 +956,15 @@ playerHpBar.setForeground(Color.GREEN);
 backgroundLabel.add(playerHpBar);
 
         playerImageLabel.setIcon(player.getIcon());
-        enemyImageLabel.setIcon(enemy.getIcon());
+       ImageIcon originalIcon = enemy.getIcon();
+
+     Image resizedImage = originalIcon.getImage().getScaledInstance(
+    220,
+    330,
+    Image.SCALE_SMOOTH
+);
+
+      enemyImageLabel.setIcon(new ImageIcon(resizedImage));
         updateDisplay();
         logTextArea.append("野生の" + enemy.getName() + " が現れた！\n");
     
@@ -1165,7 +1201,7 @@ if (player.getHp() > player.getMaxHp() * 0.6) {
         } else if (choice == 2) {
             player = new Player("LedyBoss", 200, 20, 30, 10, 30, "ladyboss.png");
         } else if (choice == 3) {
-            player = new Player("boss", 150, 40, 30, 15, 30, "bigboss.png");
+            player = new Player("boss", 200, 40, 20, 15, 30, "bigboss.png");
         }
     }
 
@@ -1196,7 +1232,12 @@ private void spawnEnemy() {
     } else if (enemyCount == 5) {
         enemy = new Enemy("MONSTAR", 200 + extraHp, 15 + extraAtk, 15, 8, 10, "MONSTAR.png");
         logTextArea.append("I'M THE MONSTAR!\n");
+    } else if (enemyCount == 6) {
+        enemy = new Enemy("BULBORIN", 200 + extraHp, 20 + extraAtk, 20, 8, 20, "bulborin.png");
+        logTextArea.append("BULBORINiscomming!\n");
     }
+    
+    
 
     playerImageLabel.setIcon(player.getIcon());
     enemyImageLabel.setIcon(enemy.getIcon());
@@ -1420,5 +1461,6 @@ private void openShop() {
         goldLabel.setText("Gold: " + gold + " G");
     }
 
-   }
+   } 
+   
     
