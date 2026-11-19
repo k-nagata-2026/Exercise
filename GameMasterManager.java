@@ -144,5 +144,93 @@ public class GameMasterManager {
             e.printStackTrace();
         }
     }
+   
+    // ★ DBのENEMYテーブルとENEMY_SKILLテーブルから敵を生成するメソッド
+    public static Enemy createEnemyFromDB(int enNo, String suffix) {
+        String enemySql = "SELECT ENNAME, ENHP, ENPOW, ENMGC, ENEXP, ENCOIN FROM ENEMY WHERE ENNO = ?";
+        String skillSql = "SELECT S.SKNO, S.SKNAME, S.SKCATEGORY, S.SKTARGET, S.SKMULTIPLIER " +
+                          "FROM ENEMY_SKILL ES " +
+                          "JOIN SKILL S ON ES.SKNO = S.SKNO " +
+                          "WHERE ES.ENNO = ? ORDER BY S.SKNO ASC";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(enemySql)) {
+
+            pstmt.setInt(1, enNo);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    String dbName = rs.getString("ENNAME");
+                    int hp = rs.getInt("ENHP");
+                    int pow = rs.getInt("ENPOW");
+                    int mgc = rs.getInt("ENMGC");
+                    int exp = rs.getInt("ENEXP");
+                    int coin = rs.getInt("ENCOIN");
+
+                    // DBの英語名から日本語表示名と画像パスをマッピング
+                    String displayName = mapEnemyJapaneseName(dbName) + suffix;
+                    String imagePath = mapEnemyImagePath(dbName);
+
+                    Enemy enemy = new Enemy(displayName, hp, pow, mgc, imagePath, exp, coin);
+
+                    // 敵のスキルをENEMY_SKILL ＋ SKILLテーブルから読み込む
+                    List<Skill> enemySkills = new ArrayList<>();
+                    try (PreparedStatement skillStmt = conn.prepareStatement(skillSql)) {
+                        skillStmt.setInt(1, enNo);
+                        try (ResultSet srs = skillStmt.executeQuery()) {
+                            while (srs.next()) {
+                                String skName = srs.getString("SKNAME");
+                                String skCategory = srs.getString("SKCATEGORY");
+                                String skTarget = srs.getString("SKTARGET");
+                                double skMult = srs.getDouble("SKMULTIPLIER");
+
+                                // プレイヤー側と共通の変換メソッドでバトル判定用文字列に変換
+                                String battleType = convertSkillType(skCategory, skTarget, skName);
+                                enemySkills.add(new Skill(skName, skMult, battleType));
+                            }
+                        }
+                    }
+                    enemy.setSkills(enemySkills);
+                    return enemy;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static String mapEnemyJapaneseName(String dbName) {
+        if (dbName == null) return "魔物";
+        // DBにすでに「スライム(SLIME)」のように日本語が含まれていればそのまま使う
+        if (dbName.contains("(")) {
+            return dbName;
+        }
+        String upper = dbName.toUpperCase();
+        if (upper.contains("SLIME"))       return "スライム";
+        if (upper.contains("GOBLIN"))      return "ゴブリン";
+        if (upper.contains("ORC"))         return "オーク";
+        if (upper.contains("ZOMBIE"))      return "ゾンビ";
+        if (upper.contains("GOLEM"))       return "ゴーレム";
+        if (upper.contains("DRAGON"))      return "ドラゴン";
+        if (upper.contains("DEMON"))       return "魔王";
+        if (upper.contains("PHOENIX"))     return "フェニックス";
+        if (upper.contains("SHOPMANAGER")) return "店主";
+        return dbName;
+    }
+
+    private static String mapEnemyImagePath(String dbName) {
+        if (dbName == null) return "fantasy_game_character_slime.png";
+        String upper = dbName.toUpperCase();
+        if (upper.contains("SLIME"))       return "fantasy_game_character_slime.png";
+        if (upper.contains("GOBLIN"))      return "fantasy_goblin.png";
+        if (upper.contains("ORC"))         return "fantasy_orc.png";
+        if (upper.contains("ZOMBIE"))      return "fantasy_zombie_man.png";
+        if (upper.contains("GOLEM"))       return "fantasy_golem.png";
+        if (upper.contains("DRAGON"))      return "fantasy_dragon.png";
+        if (upper.contains("DEMON"))       return "fantasy_maou_devil.png";
+        if (upper.contains("PHOENIX"))     return "youkai_suzaku.png";
+        if (upper.contains("SHOPMANAGER")) return "job_tenin_man.png";
+        return "fantasy_game_character_slime.png";
+    }
     
 }

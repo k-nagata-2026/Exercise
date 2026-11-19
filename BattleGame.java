@@ -480,59 +480,60 @@ public class BattleGame extends JFrame {
 
         //深い森の処理
         if (currentField.equals("FOREST")) {
-           if (backgroundLabel != null) {
-                //背景画像を変更する
+            if (backgroundLabel != null) {
                 backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルの森.jpg"));
             }
             numberOfEnemies = (int)(Math.random() * 5) + 1;
             logTextArea.append("スライムが" + numberOfEnemies + "体あらわれた！\n");
 
             for (int i = 0; i < numberOfEnemies; i++){
-                //スライムA、スライムB…と名付ける
-                char suffix = (char)('A' + i);
-                enemyParty.add(new Enemy("スライム" + suffix, 30, 10, 10,"fantasy_game_character_slime.png", 1, 1));
+                String suffix = String.valueOf((char)('A' + i));
+                Enemy e = GameMasterManager.createEnemyFromDB(1, suffix); // ENNO=1 (SLIME)
+                if (e != null) enemyParty.add(e);
             }
 
             //ダンジョンの処理 
         } else if (currentField.equals("DUNGEON")) {
             if (backgroundLabel != null) {
-                //背景画像を変更する
                 backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのダンジョン.jpg"));
             }
             numberOfEnemies = (int)(Math.random() * 5) + 1;
             logTextArea.append("ゴブリンが" + numberOfEnemies + "体あらわれた！\n");
 
             for (int i = 0; i < numberOfEnemies; i++){
-                char suffix = (char)('A' + i);
-                enemyParty.add(new Enemy("ゴブリン" + suffix, 45, 15, 15, "fantasy_goblin.png", 1,5));
+                String suffix = String.valueOf((char)('A' + i));
+                Enemy e = GameMasterManager.createEnemyFromDB(2, suffix); // ENNO=2 (GOBLIN)
+                if (e != null) enemyParty.add(e);
             }
 
             //ボスエリアの処理
         } else if (currentField.equals("BOSS")) {
             if (backgroundLabel != null) {
-                //背景画像を変更する
                 backgroundLabel.setIcon(new ImageIcon("ターン制コマンドバトルのボス.jpg"));
             }
             
             if (bossStage == 1) {
                 logTextArea.append("伝説の ドラゴン があらわれた！\n");
-                enemyParty.add(new Enemy("ドラゴン" ,1500, 50, 130, "fantasy_dragon.png", 1,0));
+                Enemy e = GameMasterManager.createEnemyFromDB(6, ""); // ENNO=6 (DRAGON)
+                if (e != null) enemyParty.add(e);
             } else if (bossStage == 2) {
                 logTextArea.append("伝説の 魔王 があらわれた！\n");
-                enemyParty.add(new Enemy("魔王" ,2800, 80, 200, "fantasy_maou_devil.png", 1,1000));
+                Enemy e = GameMasterManager.createEnemyFromDB(7, ""); // ENNO=7 (DEMON)
+                if (e != null) enemyParty.add(e);
             }
         }
-        
-        for (int i = 0; i < enemyParty.size(); i++){
+
+        //これがないと画像が出てこない
+        for (int i = 0; i < enemyParty.size(); i++) {
             enemyImageLabels[i].setIcon(enemyParty.get(i).getIcon());
             enemyImageLabels[i].setEnabled(true);
 
-            //敵が生まれたら対応するHPバーを表示する
-            if (enemyHpBars != null){
+            if (enemyHpBars != null) {
                 enemyHpBars[i].setVisible(true);
             }
-            
         }
+        enemyIcon();
+
         logTextArea.append("--------------------------------------------\n");
         updateDisplay();
         
@@ -2018,9 +2019,9 @@ public class BattleGame extends JFrame {
 
         //敵パーティをループで回す
         for (Enemy enemyInside : enemyParty) {
-            //生きている敵は攻撃する
-            if(enemyInside.isAlive()){
-                //生きている味方だけをリストに集める
+            // ↓↓↓ ここから置き換え ↓↓↓
+            if (enemyInside.isAlive()) {
+                // 生きている味方だけをリストに集める
                 java.util.List<Player> aliveMembers = new java.util.ArrayList<>();
                 for (Player member : party) {
                     if (member.isAlive() && member.getHp() > 0) {
@@ -2028,65 +2029,96 @@ public class BattleGame extends JFrame {
                     }
                 }
 
-                //プレイヤーが全滅していたら攻撃をやめる
+                // プレイヤーが全滅していたら攻撃をやめる
                 if (aliveMembers.isEmpty()) {
                     break;
                 }
 
-                //プレイヤーターゲット変数を先に用意
-                Player targetPlayer = null;
-                boolean isCovered = false;//かばうが発動したかどうかの目印
-
-                //もしかばっている人がいて、その人が生きている場合
-                if (coveringPlayer != null && aliveMembers.contains(coveringPlayer)) {
-                    targetPlayer = coveringPlayer;//強制的にターゲットをかばっている人にする
-                    isCovered = true;//かばうフラグON
-                    logTextArea.append(targetPlayer.getName() + "がかばった！\n");
-                } else {
-                    //ランダムに生きているプレイヤーを選ぶ
-                    int randomIndex = (int)(Math.random() * aliveMembers.size());
-                    targetPlayer = aliveMembers.get(randomIndex);
+                // ★ DBから読み込んだ敵スキルからランダムに1つ選択
+                Skill chosenSkill = null;
+                List<Skill> eSkills = enemyInside.getSkills();
+                if (eSkills != null && !eSkills.isEmpty()) {
+                    int skIdx = (int)(Math.random() * eSkills.size());
+                    chosenSkill = eSkills.get(skIdx);
                 }
 
-                int pIndex = party.indexOf(targetPlayer);
+                String skillName = (chosenSkill != null) ? chosenSkill.getName() : "通常攻撃";
+                String skillType = (chosenSkill != null) ? chosenSkill.getType() : "単体攻撃";
+                double multiplier = (chosenSkill != null) ? chosenSkill.getMultiplier() : 1.0;
 
-                //敵の攻撃のコード
-                if (isCovered) {
-                    //かばう専用の攻撃コード
-                    int damage = (int)(enemyInside.getAtk() * 0.25);
-                    if (damage < 1) damage = 1;
+                // ① 全体攻撃スキルの場合
+                if (skillType.equals("全体攻撃")) {
+                    logTextArea.append(enemyInside.getName() + " の " + skillName + "！\n");
+                    for (Player member : aliveMembers) {
+                        int pIndex = party.indexOf(member);
+                        int damage = (int)(enemyInside.getMgc() * multiplier);
+                        if (member.guardFlg == 1) damage /= 2;
+                        if (damage < 1) damage = 1;
 
-                    targetPlayer.hp -= damage;//直接かばったプレイヤーのHPを減らす
-                    if (targetPlayer.hp < 0)targetPlayer.hp = 0;//0より下にしない
+                        member.hp -= damage;
+                        if (member.hp < 0) member.hp = 0;
 
-                    logTextArea.append(targetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
-                   
-                    int offsetY = playerPopupCounts[pIndex] * 25;
-                    showPopupText("-" + damage, Color.RED, playerImageLabels[pIndex], offsetY);
+                        logTextArea.append(member.getName() + " に " + damage + " のダメージ！\n");
+                        int offsetY = playerPopupCounts[pIndex] * 25;
+                        showPopupText("-" + damage, Color.RED, playerImageLabels[pIndex], offsetY);
+                        playerPopupCounts[pIndex]++;
+                    }
 
-                    playerPopupCounts[pIndex]++;
+                // ② 回復スキルの場合
+                } else if (skillType.contains("回復")) {
+                    int healAmount = (int)(enemyInside.getMaxHp() * multiplier);
+                    if (healAmount < 10) healAmount = 10;
+                    enemyInside.hp += healAmount;
+                    if (enemyInside.hp > enemyInside.getMaxHp()) {
+                        enemyInside.hp = enemyInside.getMaxHp();
+                    }
+                    logTextArea.append(enemyInside.getName() + " の " + skillName + "！ HPが " + healAmount + " 回復した！\n");
+                    int eIndex = enemyParty.indexOf(enemyInside);
+                    showPopupText("+" + healAmount, Color.GREEN, enemyImageLabels[eIndex]);
+
+                // ③ 単体攻撃（またはその他）の場合
                 } else {
-                    //通常の攻撃コード
-                    String aliveEnemyResult = enemyInside.attack(targetPlayer);
-                    logTextArea.append(aliveEnemyResult);
+                    Player targetPlayer = null;
+                    boolean isCovered = false;
 
-                    int eDamage = (int)(enemyInside.getAtk());
+                    if (coveringPlayer != null && aliveMembers.contains(coveringPlayer)) {
+                        targetPlayer = coveringPlayer;
+                        isCovered = true;
+                        logTextArea.append(targetPlayer.getName() + "がかばった！\n");
+                    } else {
+                        int randomIndex = (int)(Math.random() * aliveMembers.size());
+                        targetPlayer = aliveMembers.get(randomIndex);
+                    }
 
-                    //ガード状態ならポップアップも半減
-                    if (targetPlayer.guardFlg == 1) {
-                        eDamage = eDamage /2;
+                    int pIndex = party.indexOf(targetPlayer);
+                    int damage = (int)(enemyInside.getAtk() * multiplier);
+
+                    if (isCovered) {
+                        damage = (int)(damage * 0.25);
+                        if (damage < 1) damage = 1;
+                        targetPlayer.hp -= damage;
+                        if (targetPlayer.hp < 0) targetPlayer.hp = 0;
+                        logTextArea.append(enemyInside.getName() + " の " + skillName + "！ " + targetPlayer.getName() + "がかばって" + damage + "ダメージを受けた！\n");
+                    } else {
+                        if (targetPlayer.guardFlg == 1) {
+                            damage = damage / 2;
+                        }
+                        if (damage < 1) damage = 1;
+                        targetPlayer.hp -= damage;
+                        if (targetPlayer.hp < 0) targetPlayer.hp = 0;
+                        logTextArea.append(enemyInside.getName() + " の " + skillName + "！ " + targetPlayer.getName() + " に " + damage + " のダメージ！\n");
                     }
 
                     int offsetY = playerPopupCounts[pIndex] * 25;
-                    showPopupText("-" + eDamage, Color.RED, playerImageLabels[pIndex], offsetY);
-
+                    showPopupText("-" + damage, Color.RED, playerImageLabels[pIndex], offsetY);
                     playerPopupCounts[pIndex]++;
                 }
 
-                //一体ごとに画面を更新
+                // 一体ごとに画面を更新
                 updateDisplay();
                 updatePlayerVisuals();
             }
+            // ↑↑↑ ここまで置き換え ↑↑↑
         }
         //敵のターン終了時にかばうを終了する
         coveringPlayer = null;
@@ -2115,7 +2147,7 @@ public class BattleGame extends JFrame {
 
             logTextArea.append("--------------------------------------------\n");
         }
-    }   
+    }
 
     //文字を数字に変換するメソッド
     private int convertStringToInteger(String str) {
