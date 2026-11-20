@@ -24,7 +24,7 @@ public class BattleGame extends JFrame {
     private int currentround = 1; // 現在のラウンドを保持するフィールド
     private int maxRounds = 5; // 最大ラウンド数を保持するフィールド
     public static int gold = 0;//所持コインのフィールド
-    private Item[] itembox = new Item[10]; // アイテムリストを保持するフィールド
+    private static Item[] itembox = new Item[50]; // アイテムリストを保持するフィールド
     private JLabel coinLabel; // 所持コインを表示するラベル
     private JPanel saveSelectPanel; // セーブ選択画面のパネルを保持するフィールド
     private JPanel saveSelectContainer; // セーブ選択画面のコンテナパネルを保持するフィールド
@@ -2869,19 +2869,6 @@ public class BattleGame extends JFrame {
 
     }
 
-    //アイテムボックスの空きスロットにアイテムを追加するメソッド
-    private boolean addItemToBox(Item item) {
-        for (int i = 0; i < itembox.length; i++) {
-            if (itembox[i] == null) {       // 空（あ）きスロットを発見（はっけん）！
-                itembox[i] = item;           // アイテムをセット
-                return true;                 // 1つ入れたら終了（しゅうりょう）
-            }
-        }
-        // ここまで来たら全スロットが埋まっている
-        logTextArea.append("アイテムボックスがいっぱいです！ " + item.getName() + " は拾えませんでした。\n");
-        return false;
-    }
-
     //アイテムボックスの中身を表示するメソッド
     private void showItemBox() {
         //1.ダイアログの設定
@@ -2903,8 +2890,12 @@ public class BattleGame extends JFrame {
         itemBoxPanel.setBounds(20, 65, 540, 200);
         itemBoxPanel.setBackground(Color.WHITE);
 
+        int maxSlots = getMaxBoxSize();
+        int rows = (maxSlots > 10) ? 3 : 2;
+        itemBoxPanel.setLayout(new GridLayout(rows, 5, 10, 10));
+
         //4.アイテムボックスの中身をループで表示
-        for (int i = 0; i < itembox.length; i++) {
+        for (int i = 0; i < maxSlots; i++) {
             Item item = itembox[i];
             JButton itemButton;
             if (item != null) {
@@ -3035,6 +3026,7 @@ public class BattleGame extends JFrame {
 
         // 使用したアイテムをアイテムボックスから削除
         itembox[itemIndex] = null; //アイテムボックスのスロットを空にする
+        GameSaveManager.updateInventorySlot(currentSaveSlot, itemIndex + 1, null);
         updateDisplay();
 
         //ターンの処理
@@ -3051,4 +3043,29 @@ public class BattleGame extends JFrame {
     public static void setGold(int gold) {
         BattleGame.gold = gold;
     }
+
+    //アイテムボックスのセッターメソッド
+    public static void setItemBox(Item[] loadedBox) {
+        itembox = loadedBox;
+    }
+
+    private int getMaxBoxSize() {
+        // 将来 WisdomPouch(EQNO=4) を装備しているキャラがいれば 50 を返す
+        return 10;
+    }
+
+    private boolean addItemToBox(Item item) {
+        int maxSlots = getMaxBoxSize();
+        for (int i = 0; i < maxSlots; i++) {
+            if (itembox[i] == null) {
+                itembox[i] = item;
+                // DBの INVENTORY テーブルの該当枠 (i + 1) を即座に UPDATE
+                GameSaveManager.updateInventorySlot(currentSaveSlot, i + 1, item);
+                return true;
+            }
+        }
+        logTextArea.append("アイテムボックスがいっぱいです！ " + item.getName() + " は拾えませんでした。\n");
+        return false;
+    }
+
 }

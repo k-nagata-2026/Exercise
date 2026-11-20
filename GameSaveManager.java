@@ -82,6 +82,43 @@ public class GameSaveManager {
             e.printStackTrace();
         }
         BattleGame.setPartyMembers(partyMembers);
+
+        //INVENTORYテーブルから所持アイテム・装備を読み込む
+        Item[] loadedBox = new Item[50];
+        String invSql = "SELECT inv.BXNO, inv.TYPE, inv.ITNO, inv.EQNO, "
+                      + "it.ITNAME, it.ITPRICE, eq.EQNAME, eq.EQPRICE "
+                      + "FROM INVENTORY inv "
+                      + "LEFT JOIN ITEM it ON inv.ITNO = it.ITNO "
+                      + "LEFT JOIN EQUIPMENT eq ON inv.EQNO = eq.EQNO "
+                      + "WHERE inv.SVNO = ? ORDER BY inv.BXNO ASC";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(invSql)) {
+
+            pstmt.setInt(1, svNo);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int bxNo = rs.getInt("BXNO");
+                    String type = rs.getString("TYPE");
+                    if (bxNo >= 1 && bxNo <= 50 && type != null) {
+                        if ("IT".equals(type)) {
+                            int itNo = rs.getInt("ITNO");
+                            String itName = rs.getString("ITNAME");
+                            int itPrice = rs.getInt("ITPRICE");
+                            loadedBox[bxNo - 1] = GameMasterManager.createItemInstance(itNo, itName, itPrice);
+                        } else if ("EQ".equals(type)) {
+                            int eqNo = rs.getInt("EQNO");
+                            String eqName = rs.getString("EQNAME");
+                            int eqPrice = rs.getInt("EQPRICE");
+                            loadedBox[bxNo - 1] = GameMasterManager.createEquipmentInstance(eqNo, eqName, eqPrice);
+                        }
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        BattleGame.setItemBox(loadedBox);
     }
 
     //カレントパーティテーブルにパーティを保存するメソッド(保存結果によって次の画面へ進むかどうかを切り替えたいからboolean)
@@ -210,7 +247,8 @@ public class GameSaveManager {
                     insertPstmt.setInt(1, newSvNo);
                     insertPstmt.setInt(2, initialGold);
                     insertPstmt.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
-                    insertPstmt.executeUpdate();
+                    insertPstmt.executeUpdate(); 
+                    initInventorySlots(conn, newSvNo);//INVENTORY テーブルに BXNO 1〜50 の空枠を作成
                     System.out.println("新規セーブスロット（SVNO: " + newSvNo + "）を作成しました！");
                 }
             }
@@ -272,6 +310,7 @@ public class GameSaveManager {
                 deletePstmt.setInt(1, svNo);
                 deletePstmt.executeUpdate();
             }
+            initInventorySlots(conn, svNo);//空のアイテムスロットを作る
 
             conn.commit();
             System.out.println("スロット " + svNo + " を新規データで上書き初期化しました！");
@@ -317,4 +356,78 @@ public class GameSaveManager {
         }
     }
     
+    // 指定スロットの INVENTORY テーブルに BXNO 1〜15 の空スロットを作成する補助メソッド
+    private static void initInventorySlots(Connection conn, int svNo) throws SQLException {
+        String invSql = "INSERT INTO INVENTORY (SVNO, BXNO, TYPE, ITNO, EQNO) VALUES (?, ?, NULL, NULL, NULL)";
+        try (PreparedStatement pstmt = conn.prepareStatement(invSql)) {
+            for (int bxNo = 1; bxNo <= 50; bxNo++) {
+                pstmt.setInt(1, svNo);
+                pstmt.setInt(2, bxNo);
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+        }
+    }
+
+    // ★ 1枠分（bxNo: 1〜15）のインベントリを即時 UPDATE するメソッド（購入・拾得・使用時に呼ぶ）
+    public static void updateInventorySlot(int svNo, int bxNo, Item item) {
+        String sql = "UPDATE INVENTORY SET TYPE = ?, ITNO = ?, EQNO = ? WHERE SVNO = ? AND BXNO = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            if (item == null) {
+                pstmt.setNull(1, Types.VARCHAR);
+                pstmt.setNull(2, Types.INTEGER);
+                pstmt.setNull(3, Types.INTEGER);
+            } else if (item instanceof EquipmentItem) {
+                pstmt.setString(1, "EQ");
+                pstmt.setNull(2, Types.INTEGER);
+                pstmt.setInt(3, item.getDbNo());
+            } else {
+                pstmt.setString(1, "IT");
+                pstmt.setInt(2, item.getDbNo());
+                pstmt.setNull(3, Types.INTEGER);
+            }
+            pstmt.setInt(4, svNo);
+            pstmt.setInt(5, bxNo);
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ★ アイテムボックス全体（15枠）を一括で INVENTORY に保存するメソッド（セーブボタン用）
+    public static boolean saveAllInventory(int svNo, Item[] itembox) {
+        String sql = "UPDATE INVENTORY SET TYPE = ?, ITNO = ?, EQNO = ? WHERE SVNO = ? AND BXNO = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            for (int i = 0; i < itembox.length; i++) {
+                Item item = itembox[i];
+                if (item == null) {
+                    pstmt.setNull(1, Types.VARCHAR);
+                    pstmt.setNull(2, Types.INTEGER);
+                    pstmt.setNull(3, Types.INTEGER);
+                } else if (item instanceof EquipmentItem) {
+                    pstmt.setString(1, "EQ");
+                    pstmt.setNull(2, Types.INTEGER);
+                    pstmt.setInt(3, item.getDbNo());
+                } else {
+                    pstmt.setString(1, "IT");
+                    pstmt.setInt(2, item.getDbNo());
+                    pstmt.setNull(3, Types.INTEGER);
+                }
+                pstmt.setInt(4, svNo);
+                pstmt.setInt(5, i + 1); // BXNO は 1〜50
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 }
