@@ -2658,138 +2658,39 @@ public class BattleGame extends JFrame {
         });
         shopPanel.add(backButton);
 
-        //商品棚の棚板
-        JPanel shelf1 = new JPanel();
-        shelf1.setBackground(new Color(120, 60, 20));
-        shelf1.setBounds(50,350,880,12);
-        shopPanel.add(shelf1);
-
-        JPanel shelf2 = new JPanel();
-        shelf2.setBackground(new Color(120, 60, 20));
-        shelf2.setBounds(50,650,880,12);
-        shopPanel.add(shelf2);
+        // 商品棚の棚板（3段分）
+        int[] shelfY = {260, 450, 640};
+        for (int y : shelfY) {
+            JPanel shelf = new JPanel();
+            shelf.setBackground(new Color(120, 60, 20));
+            shelf.setBounds(50, y, 880, 12);
+            shopPanel.add(shelf);
+        }
 
         //アイテムの生成
-        Item item1 = new HealItem("Herb", 50,"回復", 15, "kanpou.png");
-        Item item2 = new EscapeItem("Smokebomb", 30, "離脱", 50, "ninja_dougu_kemuridama.png");
-        Item item3 = new HealItem("Panacea", 80, "回復", 0, "medical_medicine.png");
-        Item item4 = new EscapeItem("CamouflageCloth", 10, "隠れる", 250, "ninja_kakuremi.png");
-        Item item5 = new EquipmentItem("StrongSword", 300, "装備", 30, "game_ken_seiken.png");
-        Item item6 = new EquipmentItem("StrongCane", 300, "装備", 30, "tsue_sennin.png");
-        Item item7 = new EquipmentItem("StrongArmor", 300, "装備", 60, "gogatsu_ningyou.png");
-        Item item8 = new EquipmentItem("Bag", 300, "装備", 0, "toy_waraibukuro.png");
-        Item item9 = new EquipmentItem("Book", 300, "装備", 0, "book_yoko.png");
-        Item item10 = new EquipmentItem("Ohnusa", 300, "装備", 0, "oharai_bou.png");
+        // ★ DBからショップの商品一覧を読み込む
+        List<Item> shopItems = GameMasterManager.loadShopItems();
 
-        //アイテム１
-        JButton item1Btn = createItemButton(item1.getImagePath(), String.valueOf(item1.getPrice()));
-        item1Btn.setBounds(60,200,140,120);
-        item1Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item1);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item1Btn);
+        // 3段×5列（最大15個）で商品ボタンを自動配置する
+        int[] itemY = {150, 340, 530}; // 各棚板の少し上に配置
+        for (int i = 0; i < shopItems.size() && i < 15; i++) {
+            Item currentItem = shopItems.get(i);
+            int col = i % 5; // 0〜4列目
+            int row = i / 5; // 0〜2段目
 
-        //アイテム２
-        JButton item2Btn = createItemButton(item2.getImagePath(), String.valueOf(item2.getPrice()));
-        item2Btn.setBounds(230,200,140,120);
-        item2Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item2);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item2Btn);
+            int x = 60 + (col * 170);
+            int y = itemY[row];
 
-        //アイテム３
-        JButton item3Btn = createItemButton(item3.getImagePath(), String.valueOf(item3.getPrice()));
-        item3Btn.setBounds(400,200,140,120);
-        item3Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item3);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item3Btn);
-
-        //アイテム４
-        JButton item4Btn = createItemButton(item4.getImagePath(), String.valueOf(item4.getPrice()));
-        item4Btn.setBounds(570,200,140,120);
-        item4Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item4);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item4Btn);
-
-        //アイテム５
-        JButton item5Btn = createItemButton(item5.getImagePath(), String.valueOf(item5.getPrice()));
-        item5Btn.setBounds(740,200,140,120);
-        item5Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item5);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item5Btn);
-
-        //アイテム６
-        JButton item6Btn = createItemButton(item6.getImagePath(), String.valueOf(item6.getPrice()));
-        item6Btn.setBounds(60,500,140,120);
-        item6Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item6);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item6Btn);
-
-        //アイテム７
-        JButton item7Btn = createItemButton(item7.getImagePath(), String.valueOf(item7.getPrice()));
-        item7Btn.setBounds(230,500,140,120);
-        item7Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item7);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item7Btn);
-
-        //アイテム８
-        JButton item8Btn = createItemButton(item8.getImagePath(), String.valueOf(item8.getPrice()));
-        item8Btn.setBounds(400,500,140,120);
-        item8Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item8);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item8Btn);
-
-        //アイテム９
-        JButton item9Btn = createItemButton(item9.getImagePath(), String.valueOf(item9.getPrice()));
-        item9Btn.setBounds(570,500,140,120);
-        item9Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item9);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item9Btn);
-
-        //アイテム１０
-        JButton item10Btn = createItemButton(item10.getImagePath(), String.valueOf(item10.getPrice()));
-        item10Btn.setBounds(740,500,140,120);
-        item10Btn.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                showItemDetailDialog(item10);//オブジェクトごと渡す
-            }
-        });
-        shopPanel.add(item10Btn);
+            JButton itemBtn = createItemButton(currentItem.getImagePath(), String.valueOf(currentItem.getPrice()));
+            itemBtn.setBounds(x, y, 140, 100);
+            itemBtn.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    showItemDetailDialog(currentItem);
+                }
+            });
+            shopPanel.add(itemBtn);
+        }
 
         //店員
         JLabel teninLabel = new JLabel(new ImageIcon("job_tenin_man.png"));
@@ -2951,7 +2852,7 @@ public class BattleGame extends JFrame {
     //ショップでアイテムを買うメソッド
     private void buyItem(Item item) {
         //所持金が足りるかチェック
-        if (gold <= item.getPrice()) {
+        if (gold < item.getPrice()) {
             logTextArea.append("所持金が足りません！\n");
             return;
         }

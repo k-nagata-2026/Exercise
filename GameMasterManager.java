@@ -145,7 +145,7 @@ public class GameMasterManager {
         }
     }
    
-    // ★ DBのENEMYテーブルとENEMY_SKILLテーブルから敵を生成するメソッド
+    //DBのENEMYテーブルとENEMY_SKILLテーブルから敵を生成するメソッド
     public static Enemy createEnemyFromDB(int enNo, String suffix) {
         String enemySql = "SELECT ENNAME, ENHP, ENPOW, ENMGC, ENEXP, ENCOIN FROM ENEMY WHERE ENNO = ?";
         String skillSql = "SELECT S.SKNO, S.SKNAME, S.SKCATEGORY, S.SKTARGET, S.SKMULTIPLIER " +
@@ -199,6 +199,7 @@ public class GameMasterManager {
         return null;
     }
 
+    //英語と日本語を対応させるメソッド
     private static String mapEnemyJapaneseName(String dbName) {
         if (dbName == null) return "魔物";
         // DBにすでに「スライム(SLIME)」のように日本語が含まれていればそのまま使う
@@ -218,6 +219,7 @@ public class GameMasterManager {
         return dbName;
     }
 
+    //名前に対応した敵の画像を返すメソッド
     private static String mapEnemyImagePath(String dbName) {
         if (dbName == null) return "fantasy_game_character_slime.png";
         String upper = dbName.toUpperCase();
@@ -233,4 +235,75 @@ public class GameMasterManager {
         return "fantasy_game_character_slime.png";
     }
     
+    //DBのITEMテーブルとEQUIPMENTテーブルからショップの商品一覧を取得するメソッド
+    public static List<Item> loadShopItems() {
+        List<Item> shopItems = new ArrayList<>();
+
+        // 1. ITEMテーブルから非売品(ITPRICE=0)以外を取得
+        String itemSql = "SELECT ITNO, ITNAME, ITPRICE FROM ITEM WHERE ITPRICE > 0 ORDER BY ITNO ASC";
+        // 2. EQUIPMENTテーブルから非売品(EQPRICE=0)以外を取得
+        String eqSql = "SELECT EQNO, EQNAME, EQPRICE FROM EQUIPMENT WHERE EQPRICE > 0 ORDER BY EQNO ASC";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
+            // アイテムの読み込み
+            try (PreparedStatement pstmt = conn.prepareStatement(itemSql);
+                 ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int itNo = rs.getInt("ITNO");
+                    String itName = rs.getString("ITNAME");
+                    int itPrice = rs.getInt("ITPRICE");
+                    Item item = createItemInstance(itNo, itName, itPrice);
+                    if (item != null) {
+                        shopItems.add(item);
+                    }
+                }
+            }
+
+            // 装備の読み込み
+            try (PreparedStatement pstmt = conn.prepareStatement(eqSql);
+                 ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int eqNo = rs.getInt("EQNO");
+                    String eqName = rs.getString("EQNAME");
+                    int eqPrice = rs.getInt("EQPRICE");
+                    Item eqItem = createEquipmentInstance(eqNo, eqName, eqPrice);
+                    if (eqItem != null) {
+                        shopItems.add(eqItem);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return shopItems;
+    }
+
+    // ITNO から対応する Item オブジェクトを生成する（インベントリロード時にも再利用可能）
+    public static Item createItemInstance(int itNo, String itName, int itPrice) {
+        switch (itNo) {
+            case 1: return new HealItem(1, "Herb", itPrice, "回復", 15, "kanpou.png");
+            case 2: return new EscapeItem(2, "Smokebomb", itPrice, "離脱", 50, "ninja_dougu_kemuridama.png");
+            case 3: return new HealItem(3, "Panacea", itPrice, "回復", 0, "medical_medicine.png");
+            case 4: return new EscapeItem(4, "CamouflageCloth", itPrice, "隠れる", 250, "ninja_kakuremi.png");
+            case 5: return new HealItem(5, "PhoenixFeather", itPrice, "蘇生", 999, "hane.png");
+            default: return new HealItem(itNo, itName, itPrice, "回復", 15, "kanpou.png");
+        }
+    }
+
+    // EQNO から対応する EquipmentItem オブジェクトを生成する（インベントリロード時にも再利用可能）
+    public static EquipmentItem createEquipmentInstance(int eqNo, String eqName, int eqPrice) {
+        switch (eqNo) {
+            case 1: return new EquipmentItem(1, "StrongSword", eqPrice, "装備", 30, "game_ken_seiken.png");
+            case 2: return new EquipmentItem(2, "StrongCane", eqPrice, "装備", 30, "tsue_sennin.png");
+            case 3: return new EquipmentItem(3, "StrongArmor", eqPrice, "装備", 60, "gogatsu_ningyou.png");
+            case 4: return new EquipmentItem(4, "WisdomPouch", eqPrice, "装備", 0, "toy_waraibukuro.png");
+            case 5: return new EquipmentItem(5, "StrongBoots", eqPrice, "装備", 0, "shoes.png");
+            case 6: return new EquipmentItem(6, "GreedPouch", eqPrice, "装備", 0, "money_bag_yen.png");
+            case 7: return new EquipmentItem(7, "Book", eqPrice, "装備", 0, "book_yoko.png");
+            case 8: return new EquipmentItem(8, "Ohnusa", eqPrice, "装備", 0, "oharai_bou.png");
+            case 9: return new EquipmentItem(9, "Apron", eqPrice, "装備", 0, "apron.png");
+            default: return new EquipmentItem(eqNo, eqName, eqPrice, "装備", 0, "game_ken_seiken.png");
+        }
+    }
+
 }

@@ -1,6 +1,6 @@
 public class EquipmentItem extends Item {
-    public EquipmentItem(String name, int price, String type, int value, String imagePath) {
-        super(name, price, type, value, imagePath);
+    public EquipmentItem(int dbNo,String name, int price, String type, int value, String imagePath) {
+        super(dbNo, name, price, type, value, imagePath);
     }
 
     @Override

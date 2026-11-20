@@ -1,6 +1,6 @@
 public class HealItem extends Item {
-    public HealItem(String name, int price, String type, int value, String imagePath) {
-        super(name, price, type, value, imagePath);
+    public HealItem(int dbNo,String name, int price, String type, int value, String imagePath) {
+        super(dbNo,name, price, type, value, imagePath);
     }
 
     @Override
