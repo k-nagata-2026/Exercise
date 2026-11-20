@@ -89,6 +89,13 @@ public class BattleGame extends JFrame implements KeyListener {
     private int shakeFrame = 0;
     private boolean isGameOverState = false;
 
+    // --- 最終ボスの設定 ---
+    // 最終ボスは、ほとんどの戦いで「あと一撃…！」で踏みとどまって倒れない。
+    // 倒せるのは、戦いごとに BOSS_CLEAR_CHANCE の確率だけ（0.02 = 2% = 100回に2回）。
+    // 倒しやすくしたいときは数字を大きく（例: 0.05 = 5%）、難しくしたいときは小さく（例: 0.01 = 1%）する。
+    private static final double BOSS_CLEAR_CHANCE = 0.02;
+    private boolean bossCanBeDefeated = false;
+
     private final int WINDOW_WIDTH = 1220;
     private final int WINDOW_HEIGHT = 1050;
 
@@ -598,7 +605,7 @@ public BattleGame() {
         saveButton.addActionListener(e -> saveButton());
 
         bigGameClearButton.addActionListener(e -> {
-            if (enemyCount >= 4)
+            if (enemyCount >= 6)
                 resetToTitle();
             else
                 goToNextStage();
@@ -653,6 +660,8 @@ public BattleGame() {
             itemBox[selectedIndex] = null; // ★ 使（つか）ったら消（け）える！
             logTextArea.append(resultLog + "\n");
 
+            applyBossLastStand(); // 最終ボスは、ほとんどの場合ここで踏みとどまる
+
             // 6. 敵（てき）が倒（たお）れたかチェック
             if (enemy.getHp() <= 0) {
                 logTextArea.append(enemy.getName() + " を倒した！\n");
@@ -676,7 +685,7 @@ public BattleGame() {
         buttonPanel.add(saveButton);
 
         // ⚙ 設定ボタン（ゲーム中）
-        JButton settingsButton = new JButton(" 設定");
+        JButton settingsButton = new JButton("⚙ 設定");
         settingsButton.setFont(btnFont);
         settingsButton.setFocusPainted(false);
         settingsButton.setFocusable(false);
@@ -956,7 +965,7 @@ public BattleGame() {
 
         double critChance = 0.15;
         if (player.getName().contains("human")) {
-            critChance = player.getLevel() >= 5 ? 0.40 : 0.30;
+            critChance = player.getLevel() >= 5 ? 0.45 : 0.35;
         }
 
         boolean isCritical = Math.random() < critChance && !isSkill;
@@ -989,6 +998,7 @@ public BattleGame() {
                     "⚔️ " + player.getName() + " の攻撃！ " + enemy.getName() + " に " + finalDamage + " のダメージを与えた！\n");
             comboCount++;
         }
+        applyBossLastStand(); // 最終ボスは、ほとんどの場合ここで踏みとどまる
         updateDisplay();
 
         if (!enemy.isAlive()) {
@@ -1121,26 +1131,8 @@ public BattleGame() {
         updateDisplay();
 
         if (!player.isAlive()) {
-            retryCount++;
-            if (retryCount == 1) {
-                logTextArea.append("💀 覚醒：最後の希望として human が参戦する！\n");
-                int calculatedHp = 300 + (humanLevel - 1) * 35;
-                int calculatedAtk = 130 + (humanLevel - 1) * 15;
-                player = new Player("human (human)", calculatedHp, calculatedAtk, 10, 50, "human.png");
-                player.setLevel(humanLevel);
-
-                enemy = new Enemy("裏ボス (BOSS - TRUE FORM)", 2500, 60, 10, 50, "dragon.png");
-                playerX = 80;
-                updateDisplay();
-            } else {
-                showGameClearOrEndScreen(false, "💀 GAME OVER... 敗北しました。タイトルに戻ってレベルを確認しましょう。");
-            }
-             try {
-            ImageIcon playerIcon = new ImageIcon(player.getImagePath());
-            playerImageLabel.setIcon(new ImageIcon(playerIcon.getImage().getScaledInstance(500, 500, Image.SCALE_SMOOTH)));
-        } catch (Exception e) {
-            System.out.println("Player image load failed!");
-        }
+            // 負けたら、そのままゲームオーバー（human が自動で参戦する仕組みは削除）
+            showGameClearOrEndScreen(false, "💀 GAME OVER... 敗北しました。タイトルに戻ってレベルを確認しましょう。");
         }
     }
      
@@ -1161,7 +1153,7 @@ public BattleGame() {
         if (isWin) {
             triggerFlashEffect(Color.YELLOW);
             bigGameClearButton.setVisible(true);
-            if (enemyCount < 4) {
+            if (enemyCount < 6) {
                 nextStageButton.setVisible(true);
             } else {
                 restartButton.setVisible(true);
@@ -1186,6 +1178,14 @@ public BattleGame() {
         runButton.setVisible(true);
 
         playerX = 80;
+
+        // 最終ボスの前に、HPとMPを全回復する（ボス戦をフェアにするため）
+        if (enemyCount >= 6) {
+            player.setHp(player.getMaxHp());
+            player.setMp(100);
+            logTextArea.append("🔥 最終ボス戦！ HP と MP が全回復した！\n");
+        }
+
         spawnEnemy();
         updateDisplay();
         requestFocusInWindow();
@@ -1340,8 +1340,8 @@ public BattleGame() {
                 }
             } else if (choice == 2) {
                 if (isHumanUnlocked) {
-                    int calculatedHp = 300 + (humanLevel - 1) * 35;
-                    int calculatedAtk = 130 + (humanLevel - 1) * 15;
+                    int calculatedHp = 350 + (humanLevel - 1) * 40;
+                    int calculatedAtk = 145 + (humanLevel - 1) * 18;
                     player = new Player("human (human)", calculatedHp, calculatedAtk, 10, 50, "human.png");
                     player.setLevel(humanLevel);
                     currentSelectedType = "human";
@@ -1400,10 +1400,26 @@ public BattleGame() {
             int atk = (int) (42 * levelMultiplier);
             enemy = new Enemy("オークキング (Lv." + currentMaxLevel + ")", hp, atk, 25, 20, "Demon enamy.png");
             setBackgroundImage("backgroundthree.png");
+        } else if (enemyCount == 4) {
+            // ★ 追加の敵その1: Lion（オークキングの次）
+            int hp = (int) (700 * levelMultiplier);
+            int atk = (int) (50 * levelMultiplier);
+            enemy = new Enemy("Lion (Lv." + currentMaxLevel + ")", hp, atk, 25, 20, "lion.png");
+            setBackgroundImage("backgroundthree.png");
+        } else if (enemyCount == 5) {
+            // ★ 追加の敵その2: Goblin（ドラゴンの1つ前）
+            int hp = (int) (850 * levelMultiplier);
+            int atk = (int) (58 * levelMultiplier);
+            enemy = new Enemy("Goblin (Lv." + currentMaxLevel + ")", hp, atk, 25, 20, "gobling.png");
+            setBackgroundImage("second backgroud.png");
         } else {
-            int hp = (int) (1000 * levelMultiplier);
-            int atk = (int) (65 * levelMultiplier);
+            // 最終ボス: プレイヤーの強さに合わせて決める（レベルが高くても低くても「強いけど倒せる」）
+            //   HP  = プレイヤーの攻撃力 × 9.45 （最低 1200）  ← 9.45 を変えると強さが変わる（大きいほど強い）
+            //   ATK = プレイヤーの最大HP × 0.0945 （最低 54） ← 0.0945 を変えると強さが変わる（大きいほど強い）
+            int hp = Math.max(1200, (int) (player.getAtk() * 9.45));
+            int atk = Math.max(54, (int) (player.getMaxHp() * 0.0945));
             enemy = new Enemy("魔王 (BOSS - FINAL FORM)", hp, atk, 25, 20, "dargon.png");
+            bossCanBeDefeated = Math.random() < BOSS_CLEAR_CHANCE; // この戦いで倒せるかどうか（2%）
             setBackgroundImage("final backgroud.png");
             switchBGM("backgroud music 3.wav");
         }
@@ -1425,8 +1441,8 @@ public BattleGame() {
             player = new Player("wizard（wizard）", calculatedHp, calculatedAtk, 10, 10, "wizard player.png");
             player.setLevel(wizardLevel);
         } else if (currentSelectedType.equals("human")) {
-            int calculatedHp = 300 + (humanLevel - 1) * 35;
-            int calculatedAtk = 130 + (humanLevel - 1) * 15;
+            int calculatedHp = 350 + (humanLevel - 1) * 40;
+            int calculatedAtk = 145 + (humanLevel - 1) * 18;
             player = new Player("human (human)", calculatedHp, calculatedAtk, 10, 50, "human.png");
             player.setLevel(humanLevel);
         } else {
@@ -1622,6 +1638,16 @@ public BattleGame() {
         } else {
             JOptionPane.showMessageDialog(this, "削除に失敗しました。\n" + error);
         }
+    }
+
+    // 最終ボスが倒れそうなとき、「倒せる戦い」でなければ、ギリギリで踏みとどまる
+    private void applyBossLastStand() {
+        if (enemy == null || enemyCount < 6 || bossCanBeDefeated || enemy.getHp() > 0) {
+            return;
+        }
+        int remain = Math.max(1, enemy.getMaxHp() / 50); // 最大HPの約2%だけ残る
+        enemy.setHp(remain);
+        logTextArea.append("💢 魔王は倒れない…！ HP " + remain + " で踏みとどまった！\n");
     }
 
     private void addItemToBox(Item item) {
