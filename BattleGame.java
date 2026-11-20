@@ -56,11 +56,24 @@ public class BattleGame extends JFrame {
     }
 
     private void selectAndLoadSlot() {
-        Integer[] slots = {1, 2, 3, 4, 5};
+        List<Integer> existingSlots = GameSaveManager.getExistingSaveSlots();
+
+        if (existingSlots.isEmpty()) {
+            existingSlots.add(1);
+        } else {
+            int maxSlot = java.util.Collections.max(existingSlots);
+            int nextSlot = maxSlot + 1;
+            if (!existingSlots.contains(nextSlot)) {
+                existingSlots.add(nextSlot);
+            }
+        }
+
+        Integer[] slots = existingSlots.toArray(new Integer[0]);
+
         Integer selectedSlot = (Integer) JOptionPane.showInputDialog(
             null,
-            "使用するセーブスロット番号（1〜5）を選んでください：",
-            "スロット選択 (1〜5)",
+            "使用するセーブスロット番号を選んでください：",
+            "スロット選択（自動拡張）",
             JOptionPane.QUESTION_MESSAGE,
             null,
             slots,
@@ -70,7 +83,7 @@ public class BattleGame extends JFrame {
         if (selectedSlot != null) {
             currentSaveSlot = selectedSlot;
         } else {
-            currentSaveSlot = 1; 
+            currentSaveSlot = 1;
         }
 
         String[] modeOptions = {"ニューゲーム（最初から始める）", "このスロットのデータをロード（続きから）"};
