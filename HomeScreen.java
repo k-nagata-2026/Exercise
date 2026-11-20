@@ -102,18 +102,21 @@ public class HomeScreen extends JFrame {
         exitButton.addActionListener(e -> System.exit(0));
     }
 
-    // नियम देखाउने मेथड
+  // नियम देखाउने मेथड
     private void showGameRules() {
-        String rulesHtml = "<html><body style='font-family: Meiryo, SansSerif; width: 320px; font-size: 13px;'>"
+        String rulesHtml = "<html><body style='font-family: Meiryo, SansSerif; width: 340px; font-size: 13px;'>"
                 + "<h3 style='color: #2980b9;'>🎮 Controls & Rules / 操作説明</h3>"
                 + "<hr>"
-                + "<b>[ W ]</b> : Move Up / 上<br>"
-                + "<b>[ S ]</b> : Move Down / 下<br>"
-                + "<b>[ A ]</b> : Move Left / 左<br>"
-                + "<b>[ D ]</b> : Move Right / 右<br><br>"
+                + "<b>[ ↑ ]</b> : Move Up / 上へ移動<br>"
+                + "<b>[ ↓ ]</b> : Move Down / 下へ移動<br>"
+                + "<b>[ ← ]</b> : Move Left / 左へ移動<br>"
+                + "<b>[ →]</b> : Move Right / 右へ移動<br><br>"
                 + "<b>[ Space ]</b> : Attack / 攻撃<br>"
-                + "<b>[ Enter ]</b> : Safe Zone / セーフゾーン<br><br>"
-                + "<span style='color: #27ae60;'><b>Note:</b> Save before closing! / 保存をお忘れなく！</span>"
+                + "<b>[ Enter ]</b> : Safe Shield / セーフシールド<br>"
+                + "<b>[ P ]</b> : Use Potion / ポーション使用<br>"
+                + "<b>[ I ]</b> : Open Item Box / アイテム使用<br><br>"
+                + "<b>[ F ]</b> : Use Skill / スキル使用<br><br>"
+                + "<span style='color: #27ae60;'><b>Note:</b> Save before closing! / 終了前に保存をお忘れなく！</span>"
                 + "</body></html>";
 
         JOptionPane.showMessageDialog(
@@ -123,6 +126,7 @@ public class HomeScreen extends JFrame {
             JOptionPane.INFORMATION_MESSAGE
         );
     }
+
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

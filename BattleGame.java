@@ -56,6 +56,16 @@ private boolean isSaving = false;
 private int gold = 100; 
 private JButton shopButton;
 private JLabel goldLabel; // स्क्रिनमा गोल्ड देखाउन
+// एनिमेसन र ड्यामेज पप-अपका लागि भेरिएबलहरू
+private String floatingText = "";
+private int floatingTextX = 0;
+private int floatingTextY = 0;
+private int floatingTextAlpha = 0; // पारदर्शिता (0 देखि 255 सम्म)
+private Color floatingTextColor = Color.YELLOW;
+
+private int shakeOffsetX = 0;
+private int shakeFrames = 0;
+private Timer effectTimer;
     
 
   private void playBGM(String fileName) {
@@ -430,6 +440,7 @@ logTextArea.append("EXP +50!\n");
         // Start next level
         currentLevel++;
         enemyCount = 0;
+        updateBackground();
      gold += 50; // दुश्मन हराएबापत ५० गोल्ड
       goldLabel.setText("Gold: " + gold + " G");
         // Player bonus for next level
@@ -525,8 +536,47 @@ private void startEnemyAI() {
             }
         }
     });
-
+handleEnemyDefeat();
     enemyAiTimer.start();
+}
+
+
+private void updateBackground() {
+    String bgFile = "sky.png"; // Default Level 1
+
+    if (currentLevel == 1) {
+        bgFile = "sky.png";
+    } else if (currentLevel == 2) {
+        bgFile = "marubhumi.jpg";
+    } else if (currentLevel == 3) {
+        bgFile = "fire.jpg";
+    } else if (currentLevel == 4) {
+        bgFile = "dark.jpg";
+    } else if (currentLevel >= 5) {
+        bgFile = "finalbattle.jpg";
+    }
+
+    File file = new File(bgFile);
+    if (file.exists()) {
+        ImageIcon icon = new ImageIcon(bgFile);
+        Image scaled = icon.getImage().getScaledInstance(1200, 600, Image.SCALE_SMOOTH);
+        backgroundLabel.setIcon(new ImageIcon(scaled));
+    } else {
+        // यदि नयाँ इमेज फाइल भेटिएन भने पुरानै sky.png देखाउने
+        backgroundLabel.setIcon(new ImageIcon("sky.png"));
+    }
+    backgroundLabel.repaint();
+}
+
+private void showDamageEffect(String text, int x, int y, Color color, boolean shakeScreen) {
+    this.floatingText = text;
+    this.floatingTextX = x;
+    this.floatingTextY = y;
+    this.floatingTextAlpha = 255;
+    this.floatingTextColor = color;
+    if (shakeScreen) {
+        this.shakeFrames = 8; // ८ फ्रेमसम्म स्क्रिन हल्लिन्छ
+    }
 }
   
 private void showGoldPopup(String text) {
@@ -547,7 +597,11 @@ private void showGoldPopup(String text) {
     Timer t = new Timer(1500, e -> popup.dispose());
     t.setRepeats(false);
     t.start();
+
+    
 }
+
+
 
 public BattleGame(Player player) {
     this(player, null);
@@ -581,7 +635,29 @@ private BattleGame(Player player, GameSaveManager.SaveData data) {
         // コンポーネントの初期化
         
         playBGM("sounds/bgm.wav");
-        backgroundLabel = new JLabel(new ImageIcon("sky.png"));
+       backgroundLabel = new JLabel(new ImageIcon("sky.png")) {
+    @Override
+    protected void paintComponent(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g;
+        g2d.translate(shakeOffsetX, 0); // स्क्रिन हल्लाउन
+        super.paintComponent(g);
+
+        // पप-अप ड्यामेज नम्बर कोर्ने
+        if (floatingTextAlpha > 0 && !floatingText.isEmpty()) {
+            g2d.setFont(new Font("Arial", Font.BOLD, 34));
+            g2d.setColor(new Color(0, 0, 0, floatingTextAlpha));
+            g2d.drawString(floatingText, floatingTextX + 2, floatingTextY + 2);
+
+            g2d.setColor(new Color(
+                floatingTextColor.getRed(),
+                floatingTextColor.getGreen(),
+                floatingTextColor.getBlue(),
+                floatingTextAlpha
+            ));
+            g2d.drawString(floatingText, floatingTextX, floatingTextY);
+        }
+    }
+};
         backgroundLabel.setLayout(null);
 
         playerImageLabel = new JLabel("", JLabel.CENTER);
@@ -721,6 +797,10 @@ itemBox[3] = new FireOrb();
 
         if (playerDamage > 0) {
             showPlayerHitEffect(playerDamage);
+            if (damage > 0) {
+    showAttackEffect(damage);
+    showDamageEffect("-" + damage + "!", enemyImageLabel.getX() + 180, enemyImageLabel.getY() + 80, Color.YELLOW, false);
+}
         }
 
         updateDisplay();
@@ -934,13 +1014,13 @@ itemButton.addActionListener(e -> {
 
         // 初期化
 spawnEnemy();
+updateBackground(); // <--- ठ्याक्कै यहाँ राख्नुहोस्!
 
 // Restore saved enemy HP
 if (data != null && data.enemyHp > 0
         && data.enemyHp <= enemy.getMaxHp()) {
     enemy.setHp(data.enemyHp);
-}
-
+        }
 
 
 updateDisplay();
@@ -983,6 +1063,24 @@ enemyHpBar.setMaximum(enemy.getMaxHp());
 enemyHpBar.setValue(enemy.getHp());
 startEnemyAI();
 
+effectTimer = new Timer(30, e -> {
+    boolean needRepaint = false;
+    if (floatingTextAlpha > 0) {
+        floatingTextY -= 2;
+        floatingTextAlpha = Math.max(0, floatingTextAlpha - 10);
+        needRepaint = true;
+    }
+    if (shakeFrames > 0) {
+        shakeOffsetX = (shakeFrames % 2 == 0) ? 10 : -10;
+        shakeFrames--;
+        if (shakeFrames == 0) shakeOffsetX = 0;
+        needRepaint = true;
+    }
+    if (needRepaint) {
+        backgroundLabel.repaint();
+    }
+});
+effectTimer.start();
 
  }
 private void activateSafeZone() {
@@ -1269,17 +1367,18 @@ private void setupKeyboardControls() {
 
     JRootPane root = getRootPane();
 
+    // Arrow Keys (↑ ↓ ← →) बाट दायाँ, बायाँ, तल, माथि सार्ने
     root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-        .put(KeyStroke.getKeyStroke("W"), "up");
+        .put(KeyStroke.getKeyStroke("UP"), "up");
 
     root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-        .put(KeyStroke.getKeyStroke("S"), "down");
+        .put(KeyStroke.getKeyStroke("DOWN"), "down");
 
     root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-        .put(KeyStroke.getKeyStroke("A"), "left");
+        .put(KeyStroke.getKeyStroke("LEFT"), "left");
 
     root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-        .put(KeyStroke.getKeyStroke("D"), "right");
+        .put(KeyStroke.getKeyStroke("RIGHT"), "right");
 
     root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
         .put(KeyStroke.getKeyStroke("SPACE"), "attack");
@@ -1336,6 +1435,43 @@ getRootPane().getActionMap().put("activateSafeZone",
             public void actionPerformed(ActionEvent e) {
                 if (safeZoneButton.isEnabled()) {
                     activateSafeZone();
+                }
+            }
+        });
+    root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(KeyStroke.getKeyStroke("P"), "usePotion");
+
+    root.getActionMap().put("usePotion",
+        new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (potionButton.isEnabled()) {
+                    potionButton.doClick();
+                }
+            }
+        });
+    root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(KeyStroke.getKeyStroke("I"), "useItem");
+
+    root.getActionMap().put("useItem",
+        new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (itemButton.isEnabled()) {
+                    itemButton.doClick();
+                }
+            }
+        });
+
+    root.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+         .put(KeyStroke.getKeyStroke("F"), "useSkill");
+
+    root.getActionMap().put("useSkill",
+        new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (skillButton.isEnabled()) {
+                    skillButton.doClick();
                 }
             }
         });
@@ -1456,11 +1592,9 @@ private void openShop() {
             } else {
                 JOptionPane.showMessageDialog(this, "गोल्ड पुगेन! (Not enough Gold)");
             }
-        }
-            
+        }  
         goldLabel.setText("Gold: " + gold + " G");
     }
-
    } 
    
     
