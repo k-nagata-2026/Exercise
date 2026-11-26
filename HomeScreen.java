@@ -56,50 +56,10 @@ public class HomeScreen extends JFrame {
         });
 
         // LOAD GAME
-        loadGameButton.addActionListener(e -> {
-            java.util.List<Integer> idList =
-                GameSaveManager.getSaveIdList();
+        
+      loadGameButton.addActionListener(e -> openLoadGameDialog());
 
-            if (idList == null || idList.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                    this, "No Save Data Found!"
-                );
-                return;
-            }
-
-            Object selected = JOptionPane.showInputDialog(
-                this,
-                "Select Your Save Data:",
-                "LOAD GAME",
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                idList.toArray(),
-                idList.get(idList.size() - 1)
-            );
-
-            if (selected == null) return;
-
-            int chosenId = (Integer) selected;
-
-            GameSaveManager.SaveData data =
-                GameSaveManager.loadGameDataById(chosenId);
-
-            if (data == null) {
-                JOptionPane.showMessageDialog(
-                    this, "Failed to Load Save Data!"
-                );
-                return;
-            }
-
-            showGameRules(); // पहिले नियम देखाउने
-
-            BattleGame game = new BattleGame(data);
-            game.setVisible(true);
-            dispose();
-        });
-
-        // EXIT
-        exitButton.addActionListener(e -> System.exit(0));
+      exitButton.addActionListener(e -> System.exit(0));
     }
 
   // नियम देखाउने मेथड
@@ -132,5 +92,76 @@ public class HomeScreen extends JFrame {
         SwingUtilities.invokeLater(() -> {
             new HomeScreen().setVisible(true);
         });
+    }
+
+    // LOAD र DELETE गर्ने डायलग खोल्ने मेथड
+    private void openLoadGameDialog() {
+        java.util.List<Integer> idList = GameSaveManager.getSaveIdList();
+
+        if (idList == null || idList.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No Save Data Found! / セーブデータがありません。");
+            return;
+        }
+
+        JComboBox<Integer> saveComboBox = new JComboBox<>(idList.toArray(new Integer[0]));
+        saveComboBox.setSelectedItem(idList.get(idList.size() - 1));
+        saveComboBox.setFont(new Font("Arial", Font.BOLD, 16));
+
+        JPanel panel = new JPanel(new java.awt.GridLayout(2, 1, 5, 10));
+        panel.add(new JLabel("Select Your Save ID / セーブIDを選択:"));
+        panel.add(saveComboBox);
+
+        Object[] options = {"▶ LOAD / ロード", "🗑 DELETE / 削除", "Cancel"};
+
+        int choice = JOptionPane.showOptionDialog(
+            this,
+            panel,
+            "LOAD OR DELETE SAVE DATA",
+            JOptionPane.YES_NO_CANCEL_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+
+        if (saveComboBox.getSelectedItem() == null) return;
+        int chosenId = (Integer) saveComboBox.getSelectedItem();
+
+        // १. यदि LOAD थिचियो भने
+        if (choice == 0) {
+            GameSaveManager.SaveData data = GameSaveManager.loadGameDataById(chosenId);
+
+            if (data == null) {
+                JOptionPane.showMessageDialog(this, "Failed to Load Save Data!");
+                return;
+            }
+
+            showGameRules();
+
+            BattleGame game = new BattleGame(data);
+            game.setVisible(true);
+            dispose();
+        } 
+        // २. यदि DELETE थिचियो भने Database बाटै डिलिट गर्ने
+        else if (choice == 1) {
+            int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to permanently delete Save ID: " + chosenId + " from the database?\n" +
+                "データベースから「Save ID: " + chosenId + "」を完全に削除しますか？",
+                "Confirm Delete / 削除確認",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                boolean deleted = GameSaveManager.deleteSaveById(chosenId);
+                if (deleted) {
+                    JOptionPane.showMessageDialog(this, "✅ Save ID " + chosenId + " deleted from database!");
+                    openLoadGameDialog();
+                } else {
+                    JOptionPane.showMessageDialog(this, "❌ Failed to delete Save ID " + chosenId + "!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
     }
 }

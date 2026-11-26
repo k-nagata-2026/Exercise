@@ -29,12 +29,25 @@ public class BattleGame extends JFrame {
     private Enemy enemy;
     private int currentLevel = 1;
     private int enemyCount = 0;
-
 private int potionUseCount = 0;
 private final int MAX_POTION_USE = 3;
 
 private int skillUseCount = 0;
-private final int MAX_SKILL_USE = 2; // 0から開始するように修正
+private int getMaxPotionUse() {
+    return Math.min(7, Math.max(3, currentLevel + 2));
+}
+
+
+private int getMaxSkillUse() {
+    if (currentLevel <= 2) {
+        return 0;
+    } else if (currentLevel == 3 || currentLevel == 4) {
+        return 2;
+    } else {
+        return 4;
+    }
+}
+
 
 private Clip bgmClip;
 private Item[] itemBox = new Item[10];
@@ -42,6 +55,8 @@ private Item[] itemBox = new Item[10];
 private Timer enemyAiTimer;
 private long lastEnemyAttackTime = 0;
 private boolean battleEnded = false;
+private boolean enemyAggro = false;     // Player ले पहिलो आक्रमण गरेपछि मात्र true हुन्छ
+private boolean isBreakTime = false;    // दुश्मन मरेपछिको ब्रेक टाइमको लागि
 // SAFE SHIELD SYSTEM
 private JButton safeZoneButton;
 private JLabel shieldLabel;
@@ -414,60 +429,96 @@ private void showPlayerHitEffect(int damage) {
 
 
 private void handleEnemyDefeat() {
-    playSound("sounds/enemy_dead.wav");
+    if (isBreakTime) return; // दोहोरिएर नचलोस् भन्नका लागि
+    isBreakTime = true;
+    enemyAggro = false; // अर्को दुश्मन आउँदा फेरि Player कै पहिलो आक्रमण कुर्छ
 
-    logTextArea.append(
-        "★ " + enemy.getName() + " をたおした！\n"
-    );
-  potionUseCount = 0;
-  skillUseCount = 0;
+    playSound("sounds/enemy_dead.wav");
+    logTextArea.append("★ " + enemy.getName() + " をたおした！\n");
+
+    // दुश्मनको इमेज अस्थायी रूपमा लुकाउने र Death Box देखाउने
+    enemyImageLabel.setVisible(false);
+    showEnemyDeathBox(enemy.getName());
+
     enemyCount++;
     player.gainExp(50);
+    logTextArea.append("EXP +50!\n");
 
-logTextArea.append("EXP +50!\n");
+    // २.५ सेकेन्डको ब्रेक (यो समयमा Player ले Potion/Shop चलाएर Recover गर्न सक्छ)
+    Timer breakTimer = new Timer(2500, e -> {
+        isBreakTime = false;
 
-    // 1 Level = 6 enemies
-    if (enemyCount >= 7) {
+        // 1 Level = 7 enemies
+        if (enemyCount >= 7) {
+            if (currentLevel >= 5) {
+                stopBGM();
+                playSound("sounds/victory.wav");
+                endGame();
+                showVictoryScreen();
+                return;
+            }
 
-        if (currentLevel >= 5) {
-            stopBGM();
-            playSound("sounds/victory.wav");
-            endGame();
-            showVictoryScreen();
-            return;
+            // Start next level
+            currentLevel++;
+            enemyCount = 0;
+            updateBackground();
+            potionUseCount = 0;
+         skillUseCount = 0;
+           safeZoneUseCount = 0;
+            gold += 50;
+            goldLabel.setText("Gold: " + gold + " G");
+
+            player.setMaxHp(player.getMaxHp() + 50);
+            player.setHp(player.getMaxHp());
+            player.setAtk(player.getAtk() + 10);
+
+            potionUseCount = 0;
+            skillUseCount = 0;
+            safeZoneUseCount = 0;
+            safeZoneButton.setText("SAFE SHIELD (3)");
+            safeZoneButton.setEnabled(true);
+
+            JOptionPane.showMessageDialog(
+                this,
+                "LEVEL " + currentLevel + " START!\n"
+                + "Max HP +50\n"
+                + "Attack +10\n"
+                + "HP fully recovered!"
+            );
         }
 
-        // Start next level
-        currentLevel++;
-        enemyCount = 0;
-        updateBackground();
-     gold += 50; // दुश्मन हराएबापत ५० गोल्ड
-      goldLabel.setText("Gold: " + gold + " G");
-        // Player bonus for next level
-        player.setMaxHp(player.getMaxHp() + 50);
-        player.setHp(player.getMaxHp());
-        player.setAtk(player.getAtk() + 10);
+        enemyImageLabel.setLocation(750, 50); // नयाँ दुश्मनलाई दायाँ छेउबाट पठाउने
+        enemyImageLabel.setVisible(true);
+        spawnEnemy();
+        updateDisplay();
+    });
+    breakTimer.setRepeats(false);
+    breakTimer.start();
+}
 
-        // Reset potion and skill limits for new level
-        potionUseCount = 0;
-        skillUseCount = 0;
+// दुश्मन मर्दा स्क्रिनको बीचमा देखिने Death Box
+private void showEnemyDeathBox(String enemyName) {
+    JLabel deathBox = new JLabel(
+        "<html><center>💀 <b>" + enemyName + " DEFEATED!</b> 💀<br>"
+        + "<span style='font-size:14px; color:#f1c40f;'>Recover HP now! Next enemy in 2.5s...</span></center></html>",
+        SwingConstants.CENTER
+    );
+    deathBox.setFont(new Font("Arial", Font.BOLD, 22));
+    deathBox.setForeground(Color.WHITE);
+    deathBox.setOpaque(true);
+    deathBox.setBackground(new Color(20, 20, 20, 210));
+    deathBox.setBorder(BorderFactory.createLineBorder(Color.RED, 3));
+    deathBox.setBounds(370, 200, 460, 100);
 
-        safeZoneUseCount = 0;
+    backgroundLabel.add(deathBox, 0);
+    backgroundLabel.repaint();
 
-     safeZoneButton.setText("SAFE SHIELD (3)");
-       safeZoneButton.setEnabled(true);
-
-        JOptionPane.showMessageDialog(
-            this,
-            "LEVEL " + currentLevel + " START!\n"
-            + "Max HP +50\n"
-            + "Attack +10\n"
-            + "HP fully recovered!"
-        );
-    }
-
-    spawnEnemy();
-    updateDisplay();
+    Timer removeTimer = new Timer(2400, e -> {
+        backgroundLabel.remove(deathBox);
+        backgroundLabel.repaint();
+    });
+    removeTimer.setRepeats(false);
+    removeTimer.start();
 }
 
 // MONSTAR automatically follows the player
@@ -479,64 +530,55 @@ private void startEnemyAI() {
 
     enemyAiTimer = new Timer(40, e -> {
 
-        if (isSaving) {
-    return;
-}
-        int playerX = playerImageLabel.getX();
-        int enemyX = enemyImageLabel.getX();
+        // Save/Shop खोलेको बेला, ब्रेक टाइममा, वा Player ले पहिलो आक्रमण नगर्दासम्म Enemy चल्दैन
+        if (isSaving || isBreakTime || !enemyAggro || battleEnded) {
+            return;
+        }
 
-        int distance = Math.abs(playerX - enemyX);
+        int pX = playerImageLabel.getX();
+        int eX = enemyImageLabel.getX();
+        int distance = Math.abs(pX - eX);
 
         // Enemy moves toward player
         if (distance > 390) {
-
             int speed = 5;
-
-            if (enemyX > playerX) {
-                enemyImageLabel.setLocation(
-                    enemyX - speed,
-                    enemyImageLabel.getY()
-                );
+            if (eX > pX) {
+                enemyImageLabel.setLocation(eX - speed, enemyImageLabel.getY());
             } else {
-                enemyImageLabel.setLocation(
-                    enemyX + speed,
-                    enemyImageLabel.getY()
-                );
+                enemyImageLabel.setLocation(eX + speed, enemyImageLabel.getY());
+            }
+        } else {
+            if (safeZoneActive) {
+                return;
             }
 
-        } else {
-
-    // Safe Shield active हुँदा Enemy ले damage दिन पाउँदैन
-    if (safeZoneActive) {
-        return;
-    }
-
-    // Attack every 1.2 seconds
-    long now = System.currentTimeMillis();
+            // Attack every 1.2 seconds
+            long now = System.currentTimeMillis();
             if (now - lastEnemyAttackTime >= 1200) {
-
                 lastEnemyAttackTime = now;
 
+                int oldPlayerHp = player.getHp();
                 String result = enemy.attack(player);
+                int playerDamage = Math.max(0, oldPlayerHp - player.getHp());
 
-                logTextArea.append(
-                    "MONSTAR ATTACK! " + result + "\n"
-                );
+                if (playerDamage > 0) {
+                    showPlayerHitEffect(playerDamage);
+                    showDamageEffect("-" + playerDamage + "!", playerImageLabel.getX() + 180, playerImageLabel.getY() + 80, Color.RED, true);
+                }
 
+                logTextArea.append("MONSTAR ATTACK! " + result + "\n");
                 updateDisplay();
 
                 if (!player.isAlive()) {
-
                     battleEnded = true;
                     enemyAiTimer.stop();
-
                     stopBGM();
                     showGameOverScreen();
                 }
             }
         }
     });
-handleEnemyDefeat();
+
     enemyAiTimer.start();
 }
 
@@ -549,7 +591,7 @@ private void updateBackground() {
     } else if (currentLevel == 2) {
         bgFile = "marubhumi.jpg";
     } else if (currentLevel == 3) {
-        bgFile = "fire.jpg";
+        bgFile = "fier.jpg";
     } else if (currentLevel == 4) {
         bgFile = "dark.jpg";
     } else if (currentLevel >= 5) {
@@ -679,6 +721,7 @@ private BattleGame(Player player, GameSaveManager.SaveData data) {
 attackButton = new JButton("こうげき");
 speedButton = new JButton("speed");
 skillButton = new JButton("skill");
+skillButton.setEnabled(getMaxSkillUse() > 0);
 potionButton = new JButton("potion");
 itemButton = new JButton("item");
 saveButton = new JButton("SAVE");
@@ -757,113 +800,145 @@ itemBox[3] = new FireOrb();
 
       attackButton.addActionListener(e -> {
 
+    if (isBreakTime || battleEnded) {
+        return; // ब्रेक टाइम वा गेम सकिएको बेला आक्रमण नचलोस्
+    }
+
+    // १. Player ले पहिलो आक्रमण गरेपछि Enemy सक्रिय (Aggro) हुन्छ
+    if (!enemyAggro) {
+        enemyAggro = true;
+    }
+    lastEnemyAttackTime = System.currentTimeMillis(); // AI टाइमर रिसेट (ताकि तुरुन्तै डबल नहानोस्)
+
+    // २. पहिले Player ले Enemy लाई आक्रमण गर्छ (Shield अन भए पनि Player को आक्रमण चल्छ!)
     playSound("sounds/attack.wav");
 
     int oldEnemyHp = enemy.getHp();
-
     String playerResult = player.attack(enemy);
     logTextArea.append(playerResult);
 
     int damage = Math.max(0, oldEnemyHp - enemy.getHp());
-
     if (damage > 0) {
         showAttackEffect(damage);
+        showDamageEffect("-" + damage + "!", enemyImageLabel.getX() + 180, enemyImageLabel.getY() + 80, Color.YELLOW, false);
     }
 
     updateDisplay();
 
-   if (!enemy.isAlive()) {
+    // ३. यदि Enemy मर्यो भने यहीँ रोकिन्छ
+    if (!enemy.isAlive()) {
+        handleEnemyDefeat();
+        return;
+    }
 
-    handleEnemyDefeat();
-
-} else if (safeZoneActive) {
-
-    logTextArea.append(
-        "🛡 Shield blocked enemy damage!\n"
-    );
-
-    updateDisplay();
-} 
-
-{
-   int oldPlayerHp = player.getHp();
-
+    // ४. Enemy जिउँदै छ भने तुरुन्तै फर्काएर आक्रमण गर्छ — तर Safe Shield अन छ भने ड्यामेज लाग्दैन!
+    if (safeZoneActive) {
+        logTextArea.append("🛡 Safe Shield active! Enemy attack blocked (0 damage)!\n");
+        showDamageEffect("BLOCKED!", playerImageLabel.getX() + 160, playerImageLabel.getY() + 80, Color.CYAN, false);
+        updateDisplay();
+    } else {
+        int oldPlayerHp = player.getHp();
         String enemyResult = enemy.attack(player);
         logTextArea.append(enemyResult);
 
-        int playerDamage = Math.max(
-            0, oldPlayerHp - player.getHp()
-        );
-
+        int playerDamage = Math.max(0, oldPlayerHp - player.getHp());
         if (playerDamage > 0) {
             showPlayerHitEffect(playerDamage);
-            if (damage > 0) {
-    showAttackEffect(damage);
-    showDamageEffect("-" + damage + "!", enemyImageLabel.getX() + 180, enemyImageLabel.getY() + 80, Color.YELLOW, false);
-}
+            showDamageEffect("-" + playerDamage + "!", playerImageLabel.getX() + 180, playerImageLabel.getY() + 80, Color.RED, true);
         }
 
         updateDisplay();
 
         if (!player.isAlive()) {
-            logTextArea.append(
-                player.getName() +
-                " はたおれた… GAME OVER\n"
-            );
-
+            battleEnded = true;
+            if (enemyAiTimer != null) enemyAiTimer.stop();
+            logTextArea.append(player.getName() + " はたおれた… GAME OVER\n");
             playerImageLabel.setEnabled(false);
-
             stopBGM();
             showGameOverScreen();
-
-            return;
         }
     }
 });
-       skillButton.addActionListener(e -> {
-        if (safeZoneActive) {
-    return;
-}
+    
+skillButton.addActionListener(e -> {
 
-    if (skillUseCount >= MAX_SKILL_USE) {
-        JOptionPane.showMessageDialog(this,
-                "Skill can only be used 2 times in this battle!");
+    if (safeZoneActive) return;
+    if (isBreakTime) return;
+
+    int maxSkill = getMaxSkillUse();
+
+    if (maxSkill == 0) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Stage " + currentLevel
+            + " मा Skill प्रयोग गर्न मिल्दैन!"
+        );
         return;
     }
 
+    if (skillUseCount >= maxSkill) {
+        JOptionPane.showMessageDialog(
+            this,
+            "Stage " + currentLevel
+            + " मा जम्मा " + maxSkill
+            + " पटक मात्र Skill प्रयोग गर्न मिल्छ!"
+        );
+        return;
+    }
+
+    enemyAggro = true;
+    lastEnemyAttackTime = System.currentTimeMillis();
+
     skillUseCount++;
+
     playSound("sounds/skill.wav");
 
-    String result = player.skillAttack(enemy);   // timro skill method ko naam
+    String result = player.skillAttack(enemy);
+
     logTextArea.append(result + "\n");
+    logTextArea.append(
+        "Skill Used: " + skillUseCount
+        + " / " + maxSkill + "\n"
+    );
 
     updateDisplay();
 
     if (!enemy.isAlive()) {
         handleEnemyDefeat();
     }
-
 });
 
-     potionButton.addActionListener(e -> {
+    
+potionButton.addActionListener(e -> {
     isSaving = true;
-    try {
-        playSound("sounds/potion.wav");
 
-        if (potionUseCount >= MAX_POTION_USE) {
-            JOptionPane.showMessageDialog(this,
-                    "You can only use Potion 3 times in this battle!");
+    try {
+        int maxPotion = getMaxPotionUse();
+
+        if (potionUseCount >= maxPotion) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Stage " + currentLevel
+                + " मा जम्मा " + maxPotion
+                + " वटा Potion मात्र प्रयोग गर्न मिल्छ!"
+            );
             return;
         }
 
+        String result = player.usePotion();
+
         potionUseCount++;
 
-        String result = player.usePotion();
         logTextArea.append(result + "\n");
+        logTextArea.append(
+            "Potion Used: " + potionUseCount
+            + " / " + maxPotion + "\n"
+        );
 
         updateDisplay();
+
     } finally {
-        isSaving = false; // return भए पनि यो अनिवार्य चल्छ
+        isSaving = false;
         this.requestFocusInWindow();
     }
 });
@@ -936,6 +1011,7 @@ itemButton.addActionListener(e -> {
     if (safeZoneActive) {
     return;
 }
+enemyAggro = true;
 
         // 1. ダイアログに表示（ひょうじ）するための「選択肢（せんたくし）リスト（文字列（もじれつ））」を作る（つくる）
         String[] choices = new String[10];

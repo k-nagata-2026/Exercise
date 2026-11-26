@@ -239,6 +239,43 @@ public static void saveFullGameData(
         JOptionPane.showMessageDialog(null,
             "Save Failed: " + e.getMessage());
     }
-}
-}
+         }
+// Database बाट ID अनुसार सेभ डेटा डिलिट गर्ने मेथड
+   
+public static boolean deleteSaveById(int id) {
 
+    String sql = "DELETE FROM SAVESLOT WHERE SAVEID = ?";
+
+    try (
+        Connection conn = DriverManager.getConnection(
+            DB_URL, DB_USER, DB_PASSWORD
+        );
+
+        PreparedStatement pstmt = conn.prepareStatement(sql)
+    ) {
+
+        pstmt.setInt(1, id);
+
+        int rows = pstmt.executeUpdate();
+
+        if (rows > 0) {
+            System.out.println("Save Deleted Successfully!");
+            return true;
+        } else {
+            System.out.println("Save ID Not Found!");
+            return false;
+        }
+
+    } catch (SQLException e) {
+
+        e.printStackTrace();
+
+        JOptionPane.showMessageDialog(
+            null,
+            "Delete Failed: " + e.getMessage()
+        );
+
+        return false;
+    }
+}
+}
