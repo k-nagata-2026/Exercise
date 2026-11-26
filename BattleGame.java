@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
 public class BattleGame extends JFrame {
     private JTextArea logTextArea;    // バトルのりれきをひょうじするテキストエリア（Text Area）
@@ -2548,36 +2549,60 @@ public class BattleGame extends JFrame {
         partyDialog.setSize(1220, 750);
         partyDialog.setLocationRelativeTo(this);
         partyDialog.setLayout(new BorderLayout(10, 10));
-        partyDialog.getContentPane().setBackground(new Color(230,230,230));//背景色を薄いグレーに設定
+        partyDialog.getContentPane().setBackground(new Color(230, 230, 230));
 
         final int[] currentIndex = {0}; // 現在表示しているメンバーのインデックス
 
         //キャラクターの画像のラベル
-        JLabel imageLabel = new JLabel("",JLabel.CENTER);
-        imageLabel.setPreferredSize(new Dimension(250,250));
+        JLabel imageLabel = new JLabel("", JLabel.CENTER);
+        imageLabel.setPreferredSize(new Dimension(250, 250));
 
         //ステータス表示エリア
         JTextArea infoArea = new JTextArea();
         infoArea.setEditable(false);
         infoArea.setFont(new Font("MS ゴシック", Font.PLAIN, 18));
-        infoArea.setBackground(new Color(255,255,255));
+        infoArea.setBackground(Color.WHITE);
         infoArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
+        //右側の白い枠の下部に置く装備枠パネル
+        JPanel equipPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 10));
+        equipPanel.setBackground(Color.WHITE);
+        equipPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 15, 10));
+
+        JLabel equipTitleLabel = new JLabel("装備：");
+        equipTitleLabel.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        equipPanel.add(equipTitleLabel);
+
+        JLabel[] equipSlots = new JLabel[2];
+        for (int s = 0; s < 2; s++) {
+            equipSlots[s] = new JLabel("", JLabel.CENTER);
+            equipSlots[s].setPreferredSize(new Dimension(60, 60));
+            equipSlots[s].setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+            equipPanel.add(equipSlots[s]);
+        }
+
+        // 右側の白い枠全体（上にステータス、下に装備枠2つ）
+        JPanel rightWhitePanel = new JPanel(new BorderLayout());
+        rightWhitePanel.setBackground(Color.WHITE);
+        rightWhitePanel.add(infoArea, BorderLayout.CENTER);
+        rightWhitePanel.add(equipPanel, BorderLayout.SOUTH);
+
         //情報を更新するメソッド
-        Runnable updateInfo = () -> {
+        final Runnable[] updateInfo = new Runnable[1];
+        updateInfo[0] = () -> {
             Player currentMember = party.get(currentIndex[0]);
 
-            //画面の更新
+            // キャラ画像の更新
             ImageIcon rawIcon = currentMember.getIcon();
             if (rawIcon != null) {
                 Image img = rawIcon.getImage();
                 Image scaledImg = img.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
-                imageLabel.setIcon(new ImageIcon(scaledImg));        
+                imageLabel.setIcon(new ImageIcon(scaledImg));
             } else {
                 imageLabel.setIcon(null);
             }
 
-            //ステータス更新
+            // ステータス更新
             StringBuilder infoText = new StringBuilder();
             infoText.append("名前(Name): ").append(currentMember.getName()).append("\n");
             infoText.append("HP: ").append(currentMember.getHp()).append("/").append(currentMember.getMaxHp()).append("\n");
@@ -2585,6 +2610,34 @@ public class BattleGame extends JFrame {
             infoText.append("魔力(MGC): ").append(currentMember.getMgc()).append("\n");
             infoText.append("特徴(TRAITS): ").append(getCharacterFeatures(currentMember.getName()));
             infoArea.setText(infoText.toString());
+
+            //装備枠1・装備枠2のアイコン更新
+            EquipmentItem[] eqs = { currentMember.getEquip1(), currentMember.getEquip2() };
+            for (int s = 0; s < 2; s++) {
+                // 古いクリックイベントを削除
+                for (MouseListener ml : equipSlots[s].getMouseListeners()) {
+                    equipSlots[s].removeMouseListener(ml);
+                }
+
+                EquipmentItem eq = eqs[s];
+                if (eq != null && eq.getImagePath() != null && !eq.getImagePath().isEmpty()) {
+                    ImageIcon eqIcon = new ImageIcon(eq.getImagePath());
+                    Image scaledEq = eqIcon.getImage().getScaledInstance(54, 54, Image.SCALE_SMOOTH);
+                    equipSlots[s].setIcon(new ImageIcon(scaledEq));
+                    equipSlots[s].setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+                    final int slotNo = s + 1; // 1 または 2
+                    equipSlots[s].addMouseListener(new MouseAdapter() {
+                        @Override
+                        public void mouseClicked(MouseEvent e) {
+                            showUnequipDialog(currentMember, slotNo, eq, updateInfo[0]);
+                        }
+                    });
+                } else {
+                    equipSlots[s].setIcon(null);
+                    equipSlots[s].setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                }
+            }
         };
 
         //アイコンをクリックできるようにする処理
@@ -2594,22 +2647,20 @@ public class BattleGame extends JFrame {
         teamPanel.add(new JLabel("チーム："));
 
         for (int i = 0; i < 4; i++) {
-            final int memberIndex = i;//内部イベント処理から外側の変数を参照する場合、定数でないといけない
+            final int memberIndex = i;
             teamSlots[i] = new JLabel("", JLabel.CENTER);
-            teamSlots[i].setPreferredSize(new Dimension(60,60));//アイコンが入る枠のサイズを決める
-            teamSlots[i].setBorder(BorderFactory.createLineBorder(Color.GRAY,2));//枠の周りにグレーの太さ2ピクセルの線を作る
+            teamSlots[i].setPreferredSize(new Dimension(60, 60));
+            teamSlots[i].setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
 
-            //パーティメンバーが存在するスロットの処理
             if (i < party.size()) {
                 teamSlots[i].setIcon(party.get(i).getIcon());
-                teamSlots[i].setCursor(new Cursor(Cursor.HAND_CURSOR));//カーソルを指マークにする
+                teamSlots[i].setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-                //アイコンクリック時にそのキャラに切り替える
-                teamSlots[i].addMouseListener(new MouseAdapter(){
-                    @Override 
-                    public void mouseClicked(MouseEvent e){
+                teamSlots[i].addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
                         currentIndex[0] = memberIndex;
-                        updateInfo.run();
+                        updateInfo[0].run();
                     }
                 });
             }
@@ -2617,46 +2668,158 @@ public class BattleGame extends JFrame {
             teamPanel.add(teamSlots[i]);
         }
 
-        updateInfo.run();//初期表示
+        updateInfo[0].run(); // 初期表示
 
         //閉じるボタン
         JButton closeButton = new JButton("閉じる");
-        closeButton.setFont(new Font("MSゴシック", Font.BOLD,14));
-        closeButton.setBackground(new Color(60,130,220));
+        closeButton.setFont(new Font("MSゴシック", Font.BOLD, 14));
+        closeButton.setBackground(new Color(60, 130, 220));
         closeButton.setForeground(Color.WHITE);
         closeButton.setFocusPainted(false);
-        closeButton.addActionListener(new ActionListener() {
-            @Override 
-            public void actionPerformed(ActionEvent e) {
-                partyDialog.dispose();
-            }
-        });
+        closeButton.addActionListener(e -> partyDialog.dispose());
 
         //中央レイアウト
-        JPanel charInfoPanel = new JPanel(new GridLayout(1,2,10,0));
-        charInfoPanel.setOpaque(false);//後ろの背景の色を透過する
-        charInfoPanel.setBorder(BorderFactory.createEmptyBorder(20,20,10,20));
+        JPanel charInfoPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        charInfoPanel.setOpaque(false);
+        charInfoPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
         charInfoPanel.add(imageLabel);
-        charInfoPanel.add(infoArea);
+        charInfoPanel.add(rightWhitePanel); // ★ infoArea の代わりに rightWhitePanel を配置
 
         //下部のレイアウト
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setOpaque(false);
-        //10ピクセルの枠を作る
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
-        bottomPanel.add(teamPanel,BorderLayout.WEST);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        bottomPanel.add(teamPanel, BorderLayout.WEST);
 
-        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT,10,0));
+        JPanel actionButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         actionButtonPanel.setOpaque(false);
         actionButtonPanel.add(closeButton);
-        bottomPanel.add(actionButtonPanel,BorderLayout.EAST);
+        bottomPanel.add(actionButtonPanel, BorderLayout.EAST);
 
         //ダイアログへ配置
-        partyDialog.add(charInfoPanel,BorderLayout.CENTER);
-        partyDialog.add(bottomPanel,BorderLayout.SOUTH);
+        partyDialog.add(charInfoPanel, BorderLayout.CENTER);
+        partyDialog.add(bottomPanel, BorderLayout.SOUTH);
 
         partyDialog.setVisible(true);
+    }
 
+    // 装備アイコンをクリックしたときの「説明表示 ＋ 外す ＋ 閉じる」ダイアログ
+    private void showUnequipDialog(Player member, int slotNo, EquipmentItem eq, Runnable onUpdated) {
+        JDialog dialog = new JDialog((Frame) null, "装備確認", true);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(null);
+        dialog.getContentPane().setBackground(Color.WHITE);
+
+        // 1. 装備画像
+        JLabel imageLabel = new JLabel();
+        if (eq.getImagePath() != null && !eq.getImagePath().isEmpty()) {
+            ImageIcon originalIcon = new ImageIcon(eq.getImagePath());
+            Image scaledImage = originalIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(scaledImage));
+        }
+        imageLabel.setBounds(20, 20, 100, 100);
+        dialog.add(imageLabel);
+
+        // 2. 装備名
+        JLabel nameLabel = new JLabel(eq.getName());
+        nameLabel.setFont(new Font("MS ゴシック", Font.BOLD, 20));
+        nameLabel.setBounds(140, 20, 230, 30);
+        dialog.add(nameLabel);
+
+        // 3. 「効果」見出し
+        JLabel effectLabel = new JLabel("効果");
+        effectLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 16));
+        effectLabel.setBounds(140, 60, 200, 30);
+        dialog.add(effectLabel);
+
+        // 4. 効果の説明文（マップのアイテムボックスと同じ説明メソッドを再利用）
+        JLabel descriptionLabel = new JLabel("<html>" + getItemDescriptionText(eq) + "</html>");
+        descriptionLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 14));
+        descriptionLabel.setBounds(140, 90, 230, 95);
+        dialog.add(descriptionLabel);
+
+        // 5. 「外す」ボタン
+        JButton unequipButton = new JButton("外す");
+        unequipButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        unequipButton.setBackground(Color.RED);
+        unequipButton.setForeground(Color.WHITE);
+        unequipButton.setBounds(140, 200, 105, 30);
+        unequipButton.addActionListener(e -> {
+            executeUnequip(member, slotNo, dialog, onUpdated);
+        });
+        dialog.add(unequipButton);
+
+        // 6. 「閉じる」ボタン
+        JButton closeButton = new JButton("閉じる");
+        closeButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        closeButton.setBackground(Color.BLUE);
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setBounds(255, 200, 105, 30);
+        closeButton.addActionListener(e -> dialog.dispose());
+        dialog.add(closeButton);
+
+        dialog.setVisible(true);
+    }
+
+    // 実際に装備を外してアイテムボックスに戻す処理
+    private void executeUnequip(Player member, int slotNo, JDialog dialog, Runnable onUpdated) {
+        int oldMax = getMaxBoxSize();
+        EquipmentItem targetEq = (slotNo == 1) ? member.getEquip1() : member.getEquip2();
+        if (targetEq == null) return;
+
+        // ウィズダムポーチを外す場合は枠が5つ減るため、縮小後の枠サイズを計算
+        int newMax = targetEq.isWisdomPouch() ? Math.max(10, oldMax - 5) : oldMax;
+
+        // 1. 縮小後に消えてしまう枠（newMax 〜 oldMax-1）にアイテムが残っていないかチェック
+        if (newMax < oldMax) {
+            for (int i = newMax; i < oldMax; i++) {
+                if (itembox[i] != null) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "アイテムボックスの拡張枠（" + (newMax + 1) + "枠目以降）にアイテムが入っているため外せません！",
+                            "装備解除不可", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+        }
+
+        // 2. 縮小後の有効枠内（0 〜 newMax-1）に、外した装備を入れる空きがあるかチェック
+        int emptyIndex = -1;
+        for (int i = 0; i < newMax; i++) {
+            if (itembox[i] == null) {
+                emptyIndex = i;
+                break;
+            }
+        }
+        if (emptyIndex == -1) {
+            JOptionPane.showMessageDialog(dialog,
+                    "アイテムボックスがいっぱいのため外せません！",
+                    "装備解除不可", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 3. 装備を外す(クリックされたのが一枠目か二枠目か)
+        EquipmentItem removed = (slotNo == 1)
+                ? member.equipSlot1(null)
+                : member.equipSlot2(null);
+
+        // 4. アイテムボックスの空き枠に入れる
+        itembox[emptyIndex] = removed;
+
+        // 5. DBにも即時反映
+        if (currentSaveSlot > 0) {
+            if (newMax < oldMax) {
+                GameSaveManager.shrinkInventorySlots(currentSaveSlot, newMax, oldMax);
+            }
+            GameSaveManager.updateInventorySlot(currentSaveSlot, emptyIndex + 1, removed);
+            GameSaveManager.savePartyData(currentSaveSlot, party);
+        }
+
+        JOptionPane.showMessageDialog(dialog,
+                member.getName() + " の " + removed.getName() + " を外しました！");
+
+        dialog.dispose();
+        onUpdated.run(); // パーティー情報画面のステータスと装備アイコンを即座に更新
     }
 
     //マップ用のセーブボタン
