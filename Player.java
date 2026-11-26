@@ -17,6 +17,8 @@ public class Player extends Character {
     private int originalHp;
     private int originalAtk;
     private int originalMgc;
+    private EquipmentItem equip1 = null;
+    private EquipmentItem equip2 = null;
     private List<Skill> originalSkills;
     private String originalImagePath;
 
@@ -232,4 +234,97 @@ public class Player extends Character {
     public void setOriginalImagePatn(String originalImagePath) {
         this.originalImagePath = originalImagePath;
     }
+
+    // --- 装備関連のメソッド ---
+    public EquipmentItem getEquip1() {
+        return equip1;
+    }
+
+    public EquipmentItem getEquip2() {
+        return equip2;
+    }
+
+    // ロード時など、ステータス再計算なしで装備だけをセットするメソッド
+    public void setEquip1WithoutEffect(EquipmentItem equip1) {
+        this.equip1 = equip1;
+    }
+
+    public void setEquip2WithoutEffect(EquipmentItem equip2) {
+        this.equip2 = equip2;
+    }
+
+    // 装備1に装着、もしくは解除する
+    public EquipmentItem equipSlot1(EquipmentItem newEquip) {
+        EquipmentItem oldEquip = this.equip1;
+        removeEquipStats(oldEquip);
+        this.equip1 = newEquip;
+        applyEquipStats(newEquip);
+        return oldEquip;
+    }
+
+    // 装備2に装着、もしくは解除する
+    public EquipmentItem equipSlot2(EquipmentItem newEquip) {
+        EquipmentItem oldEquip = this.equip2;
+        removeEquipStats(oldEquip);
+        this.equip2 = newEquip;
+        applyEquipStats(newEquip);
+        return oldEquip;
+    }
+
+    //装備したときステータスを上げる
+    private void applyEquipStats(EquipmentItem eq) {
+        if (eq == null) return;
+        this.atk += eq.getBonusAtk();
+        this.mgc += eq.getBonusMgc();
+        this.maxHp += eq.getBonusHp();
+        this.hp += eq.getBonusHp();
+    }
+
+    //装備を外したときステータスを下げる
+    private void removeEquipStats(EquipmentItem eq) {
+        if (eq == null) return;
+        this.atk -= eq.getBonusAtk();
+        this.mgc -= eq.getBonusMgc();
+        this.maxHp -= eq.getBonusHp();
+        if (this.hp > this.maxHp) {
+            this.hp = this.maxHp; // 最大HPが減った分、現在HPがはみ出さないように調整
+        }
+    }
+
+    //ーーー特殊能力付きの装備たちの処理ーーー
+
+    // 強い靴（回避率+20%）を装備しているか（2つ装備なら+40%）戦闘の処理で回避できるようにする
+    public double getEvasionBonus() {
+        double bonus = 0.0;
+        if (equip1 != null && equip1.isStrongBoots()) bonus += 0.20;
+        if (equip2 != null && equip2.isStrongBoots()) bonus += 0.20;
+        return bonus;
+    }
+
+    // 大幣（バフ・デバフを1ターンで2回できる）を装備しているかの判定
+    public boolean hasOhnusa() {
+        return (equip1 != null && equip1.isOhnusa()) || (equip2 != null && equip2.isOhnusa());
+    }
+
+    // 店長のエプロン（敵の落とすお金2倍）を装備しているかの判定
+    public boolean hasApron() {
+        return (equip1 != null && equip1.isApron()) || (equip2 != null && equip2.isApron());
+    }
+
+    // 強欲の袋の装備数（1つにつきお金+5）
+    public int getGreedPouchCount() {
+        int count = 0;
+        if (equip1 != null && equip1.isGreedPouch()) count++;
+        if (equip2 != null && equip2.isGreedPouch()) count++;
+        return count;
+    }
+
+    // 知恵の袋の装備数（1つにつきアイテム枠+5）
+    public int getWisdomPouchCount() {
+        int count = 0;
+        if (equip1 != null && equip1.getDbNo() == 4) count++;
+        if (equip2 != null && equip2.getDbNo() == 4) count++;
+        return count;
+    }
+
 }

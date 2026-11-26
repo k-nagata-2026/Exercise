@@ -128,14 +128,14 @@ public class GameSaveManager {
 
         // 既存レコードを上書き更新するSQL
         String updateSql = "UPDATE current_party "
-                         + "SET PLNO = ?, PL_LEVEL = ?, PL_CURRENT_HP = ?, PL_MAX_HP = ?, PL_MAX_POW = ?, PL_MAX_MGC = ?, PL_EQ1 = 0, PL_EQ2 = 0 "
+                         + "SET PLNO = ?, PL_LEVEL = ?, PL_CURRENT_HP = ?, PL_MAX_HP = ?, PL_MAX_POW = ?, PL_MAX_MGC = ?, PL_EQ1 = ?, PL_EQ2 = ? "
                          + "WHERE PTNO = ? AND SVNO = ?";
 
         // 新規作成直後など、まだレコードが存在しない場合のみ使うINSERT
         String maxPtSql = "SELECT NVL(MAX(PTNO), 0) FROM current_party";
         String insertSql = "INSERT INTO current_party "
                          + "(PTNO, SVNO, PLNO, PL_LEVEL, PL_CURRENT_HP, PL_MAX_HP, PL_MAX_POW, PL_MAX_MGC, PL_EQ1, PL_EQ2) "
-                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)";
+                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
             conn.setAutoCommit(false); // トランザクション開始
@@ -158,6 +158,8 @@ public class GameSaveManager {
                         Player p = partyList.get(i);
                         int ptNo = existingPtNos.get(i); // 既存の PTNO をそのまま使う
                         int plNo = getPlNoFromName(p.getName());
+                        int eq1No = (p.getEquip1() != null) ? p.getEquip1().getDbNo() : 0;
+                        int eq2No = (p.getEquip2() != null) ? p.getEquip2().getDbNo() : 0;
 
                         updatePstmt.setInt(1, plNo);
                         updatePstmt.setInt(2, p.getLevel());
@@ -165,8 +167,10 @@ public class GameSaveManager {
                         updatePstmt.setInt(4, p.getMaxHp());
                         updatePstmt.setInt(5, p.getAtk());
                         updatePstmt.setInt(6, p.getMgc());
-                        updatePstmt.setInt(7, ptNo);
-                        updatePstmt.setInt(8, svNo);
+                        updatePstmt.setInt(7, eq1No);
+                        updatePstmt.setInt(8, eq2No);
+                        updatePstmt.setInt(9, ptNo);
+                        updatePstmt.setInt(10, svNo);
 
                         updatePstmt.addBatch();
                     }
@@ -188,6 +192,8 @@ public class GameSaveManager {
                         Player p = partyList.get(i);
                         int ptNo = currentMaxPtNo + i + 1;
                         int plNo = getPlNoFromName(p.getName());
+                        int eq1No = (p.getEquip1() != null) ? p.getEquip1().getDbNo() : 0;
+                        int eq2No = (p.getEquip2() != null) ? p.getEquip2().getDbNo() : 0;
 
                         insertPstmt.setInt(1, ptNo);
                         insertPstmt.setInt(2, svNo);
@@ -197,6 +203,8 @@ public class GameSaveManager {
                         insertPstmt.setInt(6, p.getMaxHp());
                         insertPstmt.setInt(7, p.getAtk());
                         insertPstmt.setInt(8, p.getMgc());
+                        insertPstmt.setInt(9, eq1No);
+                        insertPstmt.setInt(10, eq2No);
 
                         insertPstmt.addBatch();
                     }
@@ -310,6 +318,10 @@ public class GameSaveManager {
                 deletePstmt.setInt(1, svNo);
                 deletePstmt.executeUpdate();
             }
+            try (PreparedStatement delInvPstmt = conn.prepareStatement("DELETE FROM INVENTORY WHERE SVNO = ?")) {
+                delInvPstmt.setInt(1, svNo);
+                delInvPstmt.executeUpdate();
+            }
             initInventorySlots(conn, svNo);//空のアイテムスロットを作る
 
             conn.commit();
@@ -324,19 +336,26 @@ public class GameSaveManager {
 
     // 指定されたセーブスロット(svNo)のデータを完全に削除するメソッド(自分を楽にするために作った)
     public static boolean deleteSaveData(int svNo) {
+        String deleteInvSql = "DELETE FROM INVENTORY WHERE SVNO = ?";
         String deletePartySql = "DELETE FROM current_party WHERE SVNO = ?";
         String deleteSaveSql = "DELETE FROM save_data WHERE SVNO = ?";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
             conn.setAutoCommit(false); // トランザクション開始
 
-            // 1. 先に子テーブル（パーティ情報）を削除
+            // 1. 先に子テーブル（INVENTORY）を削除 
+            try (PreparedStatement invPstmt = conn.prepareStatement(deleteInvSql)) {
+                invPstmt.setInt(1, svNo);
+                invPstmt.executeUpdate();
+            }
+
+            // 2. 次に子テーブル（パーティ情報）を削除
             try (PreparedStatement partyPstmt = conn.prepareStatement(deletePartySql)) {
                 partyPstmt.setInt(1, svNo);
                 partyPstmt.executeUpdate();
             }
 
-            // 2. 次に親テーブル（セーブデータ本体）を削除
+            // 3. 最後に親テーブル（セーブデータ本体）を削除
             try (PreparedStatement savePstmt = conn.prepareStatement(deleteSaveSql)) {
                 savePstmt.setInt(1, svNo);
                 int deleted = savePstmt.executeUpdate();
@@ -360,7 +379,7 @@ public class GameSaveManager {
     private static void initInventorySlots(Connection conn, int svNo) throws SQLException {
         String invSql = "INSERT INTO INVENTORY (SVNO, BXNO, TYPE, ITNO, EQNO) VALUES (?, ?, NULL, NULL, NULL)";
         try (PreparedStatement pstmt = conn.prepareStatement(invSql)) {
-            for (int bxNo = 1; bxNo <= 50; bxNo++) {
+            for (int bxNo = 1; bxNo <= 10; bxNo++) {//最初は10枠
                 pstmt.setInt(1, svNo);
                 pstmt.setInt(2, bxNo);
                 pstmt.addBatch();
@@ -369,7 +388,7 @@ public class GameSaveManager {
         }
     }
 
-    // ★ 1枠分（bxNo: 1〜15）のインベントリを即時 UPDATE するメソッド（購入・拾得・使用時に呼ぶ）
+    //1枠分のインベントリを即時 UPDATE するメソッド（購入・拾得・使用時に呼ぶ）
     public static void updateInventorySlot(int svNo, int bxNo, Item item) {
         String sql = "UPDATE INVENTORY SET TYPE = ?, ITNO = ?, EQNO = ? WHERE SVNO = ? AND BXNO = ?";
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -397,7 +416,7 @@ public class GameSaveManager {
         }
     }
 
-    // ★ アイテムボックス全体（15枠）を一括で INVENTORY に保存するメソッド（セーブボタン用）
+    //アイテムボックス全体を一括で INVENTORY に保存するメソッド（セーブボタン用）
     public static boolean saveAllInventory(int svNo, Item[] itembox) {
         String sql = "UPDATE INVENTORY SET TYPE = ?, ITNO = ?, EQNO = ? WHERE SVNO = ? AND BXNO = ?";
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -430,4 +449,33 @@ public class GameSaveManager {
         }
     }
 
+    //ウィズダムポーチ装備時にDBの INVENTORY に指定範囲の枠（例: 11〜15）を追加する
+    public static void expandInventorySlots(int svNo, int oldMax, int newMax) {
+        String invSql = "INSERT INTO INVENTORY (SVNO, BXNO, TYPE, ITNO, EQNO) VALUES (?, ?, NULL, NULL, NULL)";
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(invSql)) {
+            for (int bxNo = oldMax + 1; bxNo <= newMax; bxNo++) {
+                pstmt.setInt(1, svNo);
+                pstmt.setInt(2, bxNo);
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //ウィズダムポーチ解除時にDBの INVENTORY から減った分の枠（例: 11〜15）を削除する
+    public static void shrinkInventorySlots(int svNo, int newMax, int oldMax) {
+        String delSql = "DELETE FROM INVENTORY WHERE SVNO = ? AND BXNO > ? AND BXNO <= ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(delSql)) {
+            pstmt.setInt(1, svNo);
+            pstmt.setInt(2, newMax);
+            pstmt.setInt(3, oldMax);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -30,5 +30,7 @@ public class SavePartyMember {
     public int getMaxHp() {return MaxHp;}
     public int getAtk() {return MaxPow;}
     public int getMgc() {return MaxMgc;}
+    public int getPlEq1() {return Eq1;}
+    public int getPlEq2() {return Eq2;}
     
 }

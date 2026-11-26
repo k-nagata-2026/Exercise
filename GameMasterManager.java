@@ -306,4 +306,23 @@ public class GameMasterManager {
         }
     }
 
+    // EQNO だけを指定して、DBの EQUIPMENT テーブルから本物の名前と値段を取得して生成する
+    public static EquipmentItem createEquipmentByNo(int eqNo) {
+        String sql = "SELECT EQNAME, EQPRICE FROM EQUIPMENT WHERE EQNO = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, eqNo);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    String eqName = rs.getString("EQNAME");
+                    int eqPrice = rs.getInt("EQPRICE");
+                    return createEquipmentInstance(eqNo, eqName, eqPrice);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
 }

@@ -23,7 +23,7 @@ public class BattleGame extends JFrame {
     private int bossStage = 1; // ボスステージを保持するフィールド（1: ドラゴン, 2: 魔王）
     private int currentround = 1; // 現在のラウンドを保持するフィールド
     private int maxRounds = 5; // 最大ラウンド数を保持するフィールド
-    public static int gold = 0;//所持コインのフィールド
+    public static int gold = 1000;//所持コインのフィールド
     private static Item[] itembox = new Item[50]; // アイテムリストを保持するフィールド
     private JLabel coinLabel; // 所持コインを表示するラベル
     private JPanel saveSelectPanel; // セーブ選択画面のパネルを保持するフィールド
@@ -1701,6 +1701,18 @@ public class BattleGame extends JFrame {
                 p.setAtk(m.getAtk());
                 p.setMgc(m.getMgc());
                 GameMasterManager.applyMasterDataToPlayer(p);
+
+                //装備1・装備2の復元（DBには上昇後のステータスが保存されているためWithoutEffectを使用）
+                if (m.getPlEq1() > 0) {
+                    Item eq1 = GameMasterManager.createEquipmentByNo(m.getPlEq1());
+                    p.setEquip1WithoutEffect((EquipmentItem) eq1);
+                }
+
+                if (m.getPlEq2() > 0) {
+                    Item eq2 = GameMasterManager.createEquipmentByNo(m.getPlEq2());
+                    p.setEquip2WithoutEffect((EquipmentItem) eq2);
+                }
+
                 party.add(p);
             }
         }
@@ -2186,7 +2198,7 @@ public class BattleGame extends JFrame {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     //アイテムボックスを開く処理
-                    game.showMapItemBox();
+                    game.showItemBox();
                 }
             });
 
@@ -2328,78 +2340,15 @@ public class BattleGame extends JFrame {
         }
     }
 
-    //マップ用のアイテム確認画面
-    public void showMapItemBox() {
-        //アイテムボックスの作成
-        JDialog itemDialog = new JDialog(this, "アイテムボックス(ITEM BOX)", true);
-        itemDialog.setSize(600, 400);
-        itemDialog.setLocationRelativeTo(this);//ウィンドウの中央に表示する仕様
-        itemDialog.setLayout(null);
-        itemDialog.getContentPane().setBackground(Color.WHITE);//背景を白に設定する
-
-        //ラベル
-        JLabel label = new JLabel("アイテムボックス(ITEM BOX)", JLabel.CENTER);
-        label.setFont(new Font("MS ゴシック", Font.BOLD, 24));
-        label.setBounds(0,10,600,30);
-        itemDialog.add(label);
-
-        //マス目を作るパネル
-        JPanel itemBoxPanel = new JPanel();
-        itemBoxPanel.setLayout(new GridLayout(2,5,10,10));//２行５列
-        itemBoxPanel.setBounds(20, 65, 540, 200);
-        itemBoxPanel.setBackground(Color.WHITE);
-
-        //アイテムボックスの中身をループで表示
-        for (int i = 0; i < itembox.length; i++) {
-            if (i < itembox.length && itembox[i] != null) {
-                Item item = itembox[i];
-                itemButton = createItemButton(item.getImagePath(),String.valueOf(item.getPrice()));
-                //クリック時は閉じるボタンだけ出す
-                itemButton.addActionListener(new ActionListener() {
-                    @Override 
-                    public void actionPerformed(ActionEvent e) {
-                        showMapItemDetailDialog(item);
-                    }
-                });
-                
-            } else {
-                // 空のスロットを作成
-                itemButton = new JButton("");
-                itemButton.setBackground(Color.LIGHT_GRAY);
-                itemButton.setEnabled(false);
-            }
-            itemBoxPanel.add(itemButton);
-        }
-        itemDialog.add(itemBoxPanel);
-
-        //閉じるボタンの作成
-        JButton closeButton = new JButton("閉じる(CLOSE)");
-        closeButton.setFont(new Font("MSゴシック",Font.BOLD,16));
-        closeButton.setBackground(Color.BLUE);//ボタン全体の色
-        closeButton.setForeground(Color.WHITE);//ボタンの文字の色
-        closeButton.setBounds(460,15,100,30);
-        closeButton.addActionListener(e -> itemDialog.dispose());
-        itemDialog.add(closeButton);
-
-        //所持コイン表示
-        JLabel coinLabel = new JLabel("所持コイン：" + gold + "コイン");
-        coinLabel.setFont(new Font("MSゴシック",Font.BOLD,16));
-        coinLabel.setBounds(300,325,260,30);
-        itemDialog.add(coinLabel);
-
-        itemDialog.setVisible(true);
-    }
-
-    //マップ画面でクリックしたときにアイテムの説明を表示するメソッド
-    private void showMapItemDetailDialog(Item item) {
-        //1.ダイアログの設定
+    // マップ画面でアイテムボックスのアイテムをクリックしたときの詳細ダイアログ
+    private void showMapItemDetailDialog(Item item, int itemIndex, JDialog parentDialog) {
         JDialog dialog = new JDialog((Frame) null, "アイテム確認", true);
         dialog.setSize(400, 300);
-        dialog.setLocationRelativeTo(this); // 画面中央に表示
+        dialog.setLocationRelativeTo(this);
         dialog.setLayout(null);
-        dialog.getContentPane().setBackground(Color.WHITE);//背景色を白にする
-        
-        //2.アイテムの画像
+        dialog.getContentPane().setBackground(Color.WHITE);
+
+        // 1. アイテム画像
         JLabel imageLabel = new JLabel();
         if (item.getImagePath() != null && !item.getImagePath().isEmpty()) {
             ImageIcon originalIcon = new ImageIcon(item.getImagePath());
@@ -2409,63 +2358,182 @@ public class BattleGame extends JFrame {
         imageLabel.setBounds(20, 20, 100, 100);
         dialog.add(imageLabel);
 
-        //3.アイテムの名前
+        // 2. アイテム名
         JLabel nameLabel = new JLabel(item.getName());
         nameLabel.setFont(new Font("MS ゴシック", Font.BOLD, 20));
-        nameLabel.setBounds(140, 20, 200, 30);
+        nameLabel.setBounds(140, 20, 230, 30);
         dialog.add(nameLabel);
 
-        //4.「効果」見出し
+        // 3. 「効果」見出し
         JLabel effectLabel = new JLabel("効果");
         effectLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 16));
         effectLabel.setBounds(140, 60, 200, 30);
         dialog.add(effectLabel);
 
-        //5.アイテムの効果の説明
-        String effectText = "";
-        if (item instanceof HealItem) {
-            effectText = "HPを" + ((HealItem) item).getValue() + "回復する";
-        } else if (item instanceof EscapeItem) {
-            effectText = "戦闘から逃げる";
-        } else if (item instanceof EquipmentItem) {
-            effectText = "効果を発動する";
-        }
+        // 4. 効果の説明文
+        String effectText = getItemDescriptionText(item);
         JLabel descriptionLabel = new JLabel("<html>" + effectText + "</html>");
         descriptionLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 14));
-        descriptionLabel.setBounds(140, 90, 220, 100);
+        descriptionLabel.setBounds(140, 90, 230, 95);
         dialog.add(descriptionLabel);
-        
-        //6.緑色の装備するボタン
-        JButton buyButton = new JButton("装備する");
-        buyButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
-        buyButton.setBackground(Color.GREEN);
-        buyButton.setForeground(Color.WHITE);
-        buyButton.setBounds(140, 200, 100, 30);
-        buyButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                buyItem(item);
-                dialog.dispose(); // ダイアログを閉じる
-            }
-        });
-        dialog.add(buyButton);
 
-        //7.青色の閉じるボタン
-        JButton closeButton = new JButton("閉じる");
-        closeButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
-        closeButton.setBackground(Color.BLUE);
-        closeButton.setForeground(Color.WHITE);
-        closeButton.setBounds(250, 200, 100, 30);
-        closeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                dialog.dispose(); // ダイアログを閉じる
-            }
-        });
-        dialog.add(closeButton);
+        // 5. ボタン配置（装備品なら「装備する」＋「閉じる」、通常アイテムなら「閉じる」のみ）
+        if (item instanceof EquipmentItem) {
+            JButton equipButton = new JButton("装備する");
+            equipButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+            equipButton.setBackground(Color.GREEN);
+            equipButton.setForeground(Color.WHITE);
+            equipButton.setBounds(140, 200, 105, 30);
+            equipButton.addActionListener(e -> {
+                showSelectEquipTargetDialog((EquipmentItem) item, itemIndex, dialog, parentDialog);
+            });
+            dialog.add(equipButton);
 
-        //8.ダイアログを表示
+            JButton closeButton = new JButton("閉じる");
+            closeButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+            closeButton.setBackground(Color.BLUE);
+            closeButton.setForeground(Color.WHITE);
+            closeButton.setBounds(255, 200, 105, 30);
+            closeButton.addActionListener(e -> dialog.dispose());
+            dialog.add(closeButton);
+        } else {
+            // 通常アイテムは「使う」ボタンを出さず「閉じる」のみ表示
+            JButton closeButton = new JButton("閉じる");
+            closeButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+            closeButton.setBackground(Color.BLUE);
+            closeButton.setForeground(Color.WHITE);
+            closeButton.setBounds(250, 200, 110, 30);
+            closeButton.addActionListener(e -> dialog.dispose());
+            dialog.add(closeButton);
+        }
+
         dialog.setVisible(true);
+    }
+
+    // アイテム・装備の説明文を作る補助メソッド
+    private String getItemDescriptionText(Item item) {
+        if (item instanceof HealItem) {
+            return "HPを" + ((HealItem) item).getValue() + "回復する";
+        } else if (item instanceof EscapeItem) {
+            return "戦闘から逃げる";
+        } else if (item instanceof EquipmentItem) {
+            EquipmentItem eq = (EquipmentItem) item;
+            if (eq.isStrongBoots()) return "攻撃を20%の確率で回避できるようになる";
+            if (eq.isGreedPouch())  return "1つ装備するごとに敵が落とすコイン+5";
+            if (eq.isWisdomPouch()) return "1つ装備するごとにアイテム枠+5";
+            if (eq.isOhnusa())      return "バフ・デバフを1ターンに2回まで使える";
+            if (eq.isApron())       return "Atk+15 / Mgc+15 / HP+20<br>敵が落とすコインが2倍になる";
+
+            StringBuilder sb = new StringBuilder();
+            if (eq.getBonusAtk() > 0) sb.append("攻撃力 +").append(eq.getBonusAtk()).append(" ");
+            if (eq.getBonusMgc() > 0) sb.append("魔力 +").append(eq.getBonusMgc()).append(" ");
+            if (eq.getBonusHp() > 0)  sb.append("最大HP +").append(eq.getBonusHp());
+            return sb.length() > 0 ? sb.toString() : "装備すると効果を発揮する";
+        }
+        return "";
+    }
+
+    // 誰の・どちらの装備枠に装着するかを選ぶダイアログ
+    private void showSelectEquipTargetDialog(EquipmentItem newEquip, int itemIndex, JDialog detailDialog, JDialog boxDialog) {
+        JDialog selectDialog = new JDialog((Frame) null, "誰に装備しますか？", true);
+        selectDialog.setSize(480, 340);
+        selectDialog.setLocationRelativeTo(this);
+        selectDialog.setLayout(null);
+        selectDialog.getContentPane().setBackground(Color.WHITE);
+
+        JLabel title = new JLabel(newEquip.getName() + " を装備するキャラと枠を選択", JLabel.CENTER);
+        title.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        title.setBounds(10, 15, 445, 25);
+        selectDialog.add(title);
+
+        int y = 55;
+        for (Player p : party) {
+            JLabel nameLabel = new JLabel(p.getName());
+            nameLabel.setFont(new Font("MS ゴシック", Font.BOLD, 14));
+            nameLabel.setBounds(20, y, 130, 35);
+            selectDialog.add(nameLabel);
+
+            String eq1Name = (p.getEquip1() != null) ? p.getEquip1().getName() : "なし";
+            JButton slot1Btn = new JButton("枠1: " + eq1Name);
+            slot1Btn.setFont(new Font("MS ゴシック", Font.PLAIN, 12));
+            slot1Btn.setBounds(155, y, 145, 35);
+            slot1Btn.addActionListener(e -> {
+                executeEquip(p, 1, newEquip, itemIndex, selectDialog, detailDialog, boxDialog);
+            });
+            selectDialog.add(slot1Btn);
+
+            String eq2Name = (p.getEquip2() != null) ? p.getEquip2().getName() : "なし";
+            JButton slot2Btn = new JButton("枠2: " + eq2Name);
+            slot2Btn.setFont(new Font("MS ゴシック", Font.PLAIN, 12));
+            slot2Btn.setBounds(305, y, 145, 35);
+            slot2Btn.addActionListener(e -> {
+                executeEquip(p, 2, newEquip, itemIndex, selectDialog, detailDialog, boxDialog);
+            });
+            selectDialog.add(slot2Btn);
+
+            y += 48;
+        }
+
+        JButton cancelBtn = new JButton("キャンセル");
+        cancelBtn.setFont(new Font("MS ゴシック", Font.BOLD, 14));
+        cancelBtn.setBounds(180, 260, 110, 30);
+        cancelBtn.addActionListener(e -> selectDialog.dispose());
+        selectDialog.add(cancelBtn);
+
+        selectDialog.setVisible(true);
+    }
+
+    // 実際の装備装着・交換＆ウィズダムポーチ枠更新＆DB保存を実行するメソッド
+    private void executeEquip(Player targetPlayer, int slotNo, EquipmentItem newEquip, int itemIndex,
+                              JDialog selectDialog, JDialog detailDialog, JDialog boxDialog) {
+        int oldMax = getMaxBoxSize();
+
+        // 装備を装着（すでに装備があれば oldEquip に返ってくる）
+        EquipmentItem oldEquip = (slotNo == 1)
+                ? targetPlayer.equipSlot1(newEquip)
+                : targetPlayer.equipSlot2(newEquip);
+
+        int newMax = getMaxBoxSize();
+
+        // ウィズダムポーチを外して枠が減る場合、減る枠にアイテムが残っていないかチェック
+        if (newMax < oldMax) {
+            for (int i = newMax; i < oldMax; i++) {
+                if (itembox[i] != null) {
+                    // 元の装備に戻して中断
+                    if (slotNo == 1) targetPlayer.equipSlot1(oldEquip);
+                    else targetPlayer.equipSlot2(oldEquip);
+
+                    JOptionPane.showMessageDialog(selectDialog,
+                            "アイテムボックスの拡張枠（" + (newMax + 1) + "枠目以降）にアイテムが入っているため外せません！",
+                            "装備変更不可", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+        }
+
+        // アイテムボックスの元の位置に、外れた装備（なければnull）を入れる
+        itembox[itemIndex] = oldEquip;
+
+        // DBにも即時反映（currentSvNo は現在のセーブスロット番号の変数名に合わせてください）
+        if (currentSaveSlot > 0) {
+            if (newMax > oldMax) {
+                GameSaveManager.expandInventorySlots(currentSaveSlot, oldMax, newMax);
+            } else if (newMax < oldMax) {
+                GameSaveManager.shrinkInventorySlots(currentSaveSlot, newMax, oldMax);
+            }
+            GameSaveManager.updateInventorySlot(currentSaveSlot, itemIndex + 1, oldEquip);
+            GameSaveManager.savePartyData(currentSaveSlot, party);
+        }
+
+        JOptionPane.showMessageDialog(selectDialog,
+                targetPlayer.getName() + " に " + newEquip.getName() + " を装備しました！");
+
+        selectDialog.dispose();
+        detailDialog.dispose();
+        boxDialog.dispose();
+
+        // 枠数の変化やボックスの中身を最新状態で再表示
+        showItemBox();
     }
 
     //マップ用のパーティー情報確認画面
@@ -2871,65 +2939,67 @@ public class BattleGame extends JFrame {
 
     //アイテムボックスの中身を表示するメソッド
     private void showItemBox() {
-        //1.ダイアログの設定
-        JDialog dialog = new JDialog((Frame) null, "アイテムボックス", true);
-        dialog.setSize(600, 400);
-        dialog.setLocationRelativeTo(this); // 画面中央に表示するコード
-        dialog.setLayout(null);//ボタンや文字の配置を自由に決めるようにするコード
-        dialog.getContentPane().setBackground(Color.WHITE);//背景色を白にするコード
+        int maxSlots = getMaxBoxSize(); // 未装備なら 10、ポーチ1個なら 15
+        int rows = maxSlots / 5;        // 10枠なら 2行、15枠なら 3行
 
-        //2.タイトルラベル
-        JLabel titleLabel = new JLabel("アイテムボックス", JLabel.CENTER);
-        titleLabel.setFont(new Font("MS ゴシック", Font.BOLD, 24));
-        titleLabel.setBounds(0, 10, 600, 30);
+        JDialog dialog = new JDialog((Frame) null, "アイテムボックス(ITEM BOX)", true);
+        dialog.setSize(620, 420);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(null);
+        dialog.getContentPane().setBackground(Color.WHITE);
+
+        JLabel titleLabel = new JLabel("アイテムボックス(ITEM BOX)", JLabel.CENTER);
+        titleLabel.setFont(new Font("MS ゴシック", Font.BOLD, 22));
+        titleLabel.setBounds(20, 15, 430, 30);
         dialog.add(titleLabel);
 
-        //3.アイテムボックスの中身を表示するパネル
+        //常に横5列に固定し、行だけ増やす
         JPanel itemBoxPanel = new JPanel();
-        itemBoxPanel.setLayout(new GridLayout(2, 5, 10, 10)); // 2行5列のグリッドレイアウト
-        itemBoxPanel.setBounds(20, 65, 540, 200);
-        itemBoxPanel.setBackground(Color.WHITE);
-
-        int maxSlots = getMaxBoxSize();
-        int rows = (maxSlots > 10) ? 3 : 2;
         itemBoxPanel.setLayout(new GridLayout(rows, 5, 10, 10));
+        itemBoxPanel.setBackground(Color.WHITE);
+        itemBoxPanel.setPreferredSize(new Dimension(540, rows * 105));
 
-        //4.アイテムボックスの中身をループで表示
+        //ループはmaxSlots(最初は10) まで
         for (int i = 0; i < maxSlots; i++) {
             Item item = itembox[i];
             JButton itemButton;
             if (item != null) {
                 itemButton = createItemButton(item.getImagePath(), String.valueOf(item.getPrice()));
-                int index = i; // ローカル変数にコピーして、ActionListener内で使用
+                int index = i;
                 itemButton.addActionListener(e -> {
-                    showUseItemDialog(item, index, dialog); // アイテム使用ダイアログを表示
+                    //マップ画面用の詳細メソッドを呼ぶ
+                    showMapItemDetailDialog(item, index, dialog);
                 });
             } else {
                 itemButton = new JButton("");
-                itemButton.setFont(new Font("MSゴシック", Font.PLAIN, 14));
+                itemButton.setFont(new Font("MS ゴシック", Font.PLAIN, 14));
                 itemButton.setBackground(Color.LIGHT_GRAY);
             }
             itemBoxPanel.add(itemButton);
         }
 
-        dialog.add(itemBoxPanel);
+        //15枠以上に増えたときは縦スクロールで見やすく表示
+        JScrollPane scrollPane = new JScrollPane(itemBoxPanel);
+        scrollPane.setBounds(25, 60, 560, 230);
+        scrollPane.setBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        dialog.add(scrollPane);
 
-        //5.閉じるボタン
+        //閉じるボタン
         JButton closeButton = new JButton("閉じる");
-        closeButton.setFont(new Font("MSゴシック", Font.BOLD, 16));
+        closeButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
         closeButton.setBackground(Color.BLUE);
         closeButton.setForeground(Color.WHITE);
-        closeButton.setBounds(460, 15, 100, 30);
+        closeButton.setBounds(475, 15, 110, 30);
         closeButton.addActionListener(e -> dialog.dispose());
         dialog.add(closeButton);
 
-        //6.所持コインを表示
+        //所持コイン
         JLabel coinLabel = new JLabel("所持コイン：" + gold + "コイン");
-        coinLabel.setFont(new Font("MSゴシック", Font.BOLD, 16));
-        coinLabel.setBounds(300, 325, 260, 30);
+        coinLabel.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        coinLabel.setBounds(300, 315, 260, 30);
         dialog.add(coinLabel);
 
-        //7.ダイアログを表示
         dialog.setVisible(true);
     }
 
@@ -3049,11 +3119,18 @@ public class BattleGame extends JFrame {
         itembox = loadedBox;
     }
 
+    //アイテムボックスの最大枠(知恵の袋)
     private int getMaxBoxSize() {
-        // 将来 WisdomPouch(EQNO=4) を装備しているキャラがいれば 50 を返す
-        return 10;
+        int pouchCount = 0;
+        if (party != null) {
+            for (Player p : party) {
+                pouchCount += p.getWisdomPouchCount();
+            }
+        }
+        return Math.min(50, 10 + pouchCount * 5);
     }
 
+    //アイテムボックスにアイテムを入れれるかの判定
     private boolean addItemToBox(Item item) {
         int maxSlots = getMaxBoxSize();
         for (int i = 0; i < maxSlots; i++) {
