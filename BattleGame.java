@@ -627,7 +627,7 @@ public class BattleGame extends JFrame {
         }
     }
 
-    //バトル画面の設定(技はここ、敵を倒したときの処理もここ)
+    //バトル画面の設定(敵を倒したときの処理もここ)
     private JPanel createBattlePanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -1141,7 +1141,7 @@ public class BattleGame extends JFrame {
                 player.guardFlg = 0;
 
                 //アイテムを使う処理
-                showItemBox();
+                showItemBox(true);
 
                 updateDisplay();
 
@@ -3100,10 +3100,15 @@ public class BattleGame extends JFrame {
 
     }
 
-    //アイテムボックスの中身を表示するメソッド
+    // マップ画面から呼ばれるメソッド（これまで通り）
     private void showItemBox() {
-        int maxSlots = getMaxBoxSize(); // 未装備なら 10、ポーチ1個なら 15
-        int rows = maxSlots / 5;        // 10枠なら 2行、15枠なら 3行
+        showItemBox(false);
+    }
+
+    // isBattle が true なら戦闘中、false ならマップ画面
+    private void showItemBox(boolean isBattle) {
+        int maxSlots = getMaxBoxSize();
+        int rows = maxSlots / 5;
 
         JDialog dialog = new JDialog((Frame) null, "アイテムボックス(ITEM BOX)", true);
         dialog.setSize(620, 420);
@@ -3116,13 +3121,11 @@ public class BattleGame extends JFrame {
         titleLabel.setBounds(20, 15, 430, 30);
         dialog.add(titleLabel);
 
-        //常に横5列に固定し、行だけ増やす
         JPanel itemBoxPanel = new JPanel();
         itemBoxPanel.setLayout(new GridLayout(rows, 5, 10, 10));
         itemBoxPanel.setBackground(Color.WHITE);
         itemBoxPanel.setPreferredSize(new Dimension(540, rows * 105));
 
-        //ループはmaxSlots(最初は10) まで
         for (int i = 0; i < maxSlots; i++) {
             Item item = itembox[i];
             JButton itemButton;
@@ -3130,8 +3133,19 @@ public class BattleGame extends JFrame {
                 itemButton = createItemButton(item.getImagePath(), String.valueOf(item.getPrice()));
                 int index = i;
                 itemButton.addActionListener(e -> {
-                    //マップ画面用の詳細メソッドを呼ぶ
-                    showMapItemDetailDialog(item, index, dialog);
+                    if (isBattle) {
+                        // ★戦闘中の場合
+                        if (item instanceof EquipmentItem) {
+                            // 装備品は戦闘中に装備変更できないので「閉じる」のみ表示
+                            showBattleEquipDetailDialog(item);
+                        } else {
+                            // 通常アイテムは元の戦闘用「使う」ダイアログを開く
+                            showUseItemDialog(item, index, dialog);
+                        }
+                    } else {
+                        // ★マップ画面の場合（通常アイテムは閉じるのみ、装備は装備するボタン）
+                        showMapItemDetailDialog(item, index, dialog);
+                    }
                 });
             } else {
                 itemButton = new JButton("");
@@ -3141,14 +3155,12 @@ public class BattleGame extends JFrame {
             itemBoxPanel.add(itemButton);
         }
 
-        //15枠以上に増えたときは縦スクロールで見やすく表示
         JScrollPane scrollPane = new JScrollPane(itemBoxPanel);
         scrollPane.setBounds(25, 60, 560, 230);
         scrollPane.setBorder(null);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         dialog.add(scrollPane);
 
-        //閉じるボタン
         JButton closeButton = new JButton("閉じる");
         closeButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
         closeButton.setBackground(Color.BLUE);
@@ -3157,11 +3169,53 @@ public class BattleGame extends JFrame {
         closeButton.addActionListener(e -> dialog.dispose());
         dialog.add(closeButton);
 
-        //所持コイン
         JLabel coinLabel = new JLabel("所持コイン：" + gold + "コイン");
         coinLabel.setFont(new Font("MS ゴシック", Font.BOLD, 16));
         coinLabel.setBounds(300, 315, 260, 30);
         dialog.add(coinLabel);
+
+        dialog.setVisible(true);
+    }
+
+    // 戦闘中に装備品をクリックしたときの確認ダイアログ（「閉じる」のみ）
+    private void showBattleEquipDetailDialog(Item item) {
+        JDialog dialog = new JDialog((Frame) null, "装備確認", true);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(null);
+        dialog.getContentPane().setBackground(Color.WHITE);
+
+        JLabel imageLabel = new JLabel();
+        if (item.getImagePath() != null && !item.getImagePath().isEmpty()) {
+            ImageIcon originalIcon = new ImageIcon(item.getImagePath());
+            Image scaledImage = originalIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(scaledImage));
+        }
+        imageLabel.setBounds(20, 20, 100, 100);
+        dialog.add(imageLabel);
+
+        JLabel nameLabel = new JLabel(item.getName());
+        nameLabel.setFont(new Font("MS ゴシック", Font.BOLD, 20));
+        nameLabel.setBounds(140, 20, 230, 30);
+        dialog.add(nameLabel);
+
+        JLabel effectLabel = new JLabel("効果（戦闘中は装備変更不可）");
+        effectLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 14));
+        effectLabel.setBounds(140, 60, 230, 30);
+        dialog.add(effectLabel);
+
+        JLabel descriptionLabel = new JLabel("<html>" + getItemDescriptionText(item) + "</html>");
+        descriptionLabel.setFont(new Font("MS ゴシック", Font.PLAIN, 14));
+        descriptionLabel.setBounds(140, 90, 230, 95);
+        dialog.add(descriptionLabel);
+
+        JButton closeButton = new JButton("閉じる");
+        closeButton.setFont(new Font("MS ゴシック", Font.BOLD, 16));
+        closeButton.setBackground(Color.BLUE);
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setBounds(250, 200, 110, 30);
+        closeButton.addActionListener(e -> dialog.dispose());
+        dialog.add(closeButton);
 
         dialog.setVisible(true);
     }
