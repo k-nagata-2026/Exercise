@@ -101,6 +101,14 @@ public class BattleGame extends JFrame implements KeyListener {
 
     private Clip bgmClip;
 
+    // --- 言語の設定 (Language) ---
+    // "ja" = 日本語 / "en" = English。⚙ 設定 から切り替える。選んだ言語はパソコンに保存され、次に起動したときも使われる。
+    private static final java.util.prefs.Preferences PREFS =
+            java.util.prefs.Preferences.userNodeForPackage(BattleGame.class);
+    private String language = loadSavedLanguage();
+    private JButton titleStartBtnRef; // スタート画面の START ボタン（言語で見た目を切り替える）
+    private JButton titleExitBtnRef;  // スタート画面の EXIT ボタン
+
 
 
 
@@ -234,15 +242,10 @@ public BattleGame() {
         int imgWidth = 570;
         int imgHeight = 970;
 
-        try {
-            ImageIcon startIcon = new ImageIcon("start.png");
-            Image scaledStart = startIcon.getImage().getScaledInstance(imgWidth, imgHeight, Image.SCALE_SMOOTH);
-            startScreenLabel.setIcon(new ImageIcon(scaledStart));
-            startScreenLabel.setPreferredSize(new Dimension(imgWidth, imgHeight));
-            startScreenLabel.setSize(imgWidth, imgHeight);
-        } catch (Exception e) {
-            System.out.println("start.png not found");
-        }
+        // スタート画面の背景は、start.png の代わりにプログラムで描く（言語に合わせてタイトルも変わる）
+        startScreenLabel.setIcon(createStartBackground());
+        startScreenLabel.setPreferredSize(new Dimension(imgWidth, imgHeight));
+        startScreenLabel.setSize(imgWidth, imgHeight);
 
         // ⭕️ START ボタン領域用 (透明 JButton)
         JButton invisibleStartBtn = new JButton();
@@ -262,11 +265,15 @@ public BattleGame() {
                 // 2. Oracle DB बाट Save ID तान्ने
                 List<Integer> idList = GameSaveManager.getSaveIdList();
                 List<Object> optionsList = new ArrayList<>();
+                java.util.Map<String, Integer> labelToId = new java.util.HashMap<>();
                 optionsList.add("0: 新しいゲームで始める (New Game)");
 
                 if (idList != null && !idList.isEmpty()) {
                     for (int id : idList) {
-                        optionsList.add(id);
+                        // 「セーブ1 : ゆうしゃ (Lv.3) / 200G」のように、誰のデータか分かる名前を表示する
+                        String label = makeSaveLabel(id);
+                        labelToId.put(label, id);
+                        optionsList.add(label);
                     }
                 }
 
@@ -288,9 +295,9 @@ public BattleGame() {
                     return;
                 }
 
-                if (loadSelected instanceof Integer) {
+                if (labelToId.containsKey(loadSelected)) {
                     // --- 続きから始める (Load Game) ---
-                    int chosenId = (Integer) loadSelected;
+                    int chosenId = labelToId.get(loadSelected);
                     currentSaveId = chosenId;
                     int[] loadedData = GameSaveManager.loadGameDataById(chosenId);
 
@@ -367,11 +374,16 @@ public BattleGame() {
         startScreenLabel.add(invisibleStartBtn);
         startScreenLabel.add(invisibleExitBtn);
 
+        // 言語に合わせて START / EXIT ボタンの表示を切り替える
+        titleStartBtnRef = invisibleStartBtn;
+        titleExitBtnRef = invisibleExitBtn;
+        applyTitleLanguage();
+
         // ⚙ 設定ボタン（スタート画面の左上）
         JButton titleSettingsBtn = new JButton("⚙ 設定");
         titleSettingsBtn.setBounds(10, 10, 120, 36);
         titleSettingsBtn.setFocusable(false);
-        titleSettingsBtn.addActionListener(e -> showSettingsDialog());
+        titleSettingsBtn.addActionListener(e -> showSettingsDialog(false)); // スタート画面: 保存アイテムの削除は出さない
         startScreenLabel.add(titleSettingsBtn);
 
         // 2. メインパネルにラベルを追加
@@ -689,7 +701,7 @@ public BattleGame() {
         settingsButton.setFont(btnFont);
         settingsButton.setFocusPainted(false);
         settingsButton.setFocusable(false);
-        settingsButton.addActionListener(e -> showSettingsDialog());
+        settingsButton.addActionListener(e -> showSettingsDialog(true)); // ゲーム中: 保存アイテムの削除も出す
         buttonPanel.add(settingsButton);
 
         bottomPanel.add(statusLabel, BorderLayout.NORTH);
@@ -790,7 +802,8 @@ public BattleGame() {
         javax.swing.JPanel panel = new javax.swing.JPanel(new java.awt.BorderLayout(0, 10));
 
         // Text Area
-        javax.swing.JTextArea textArea = new javax.swing.JTextArea(rulesJa, 10, 35);
+        // 設定で選んだ言語のルールを表示する（日本語 → 日本語 / English → English）
+        javax.swing.JTextArea textArea = new javax.swing.JTextArea("en".equals(language) ? rulesEn : rulesJa, 10, 35);
         textArea.setEditable(false);
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
@@ -798,6 +811,7 @@ public BattleGame() {
 
         // Language Toggle Checkbox
         javax.swing.JCheckBox langCheckBox = new javax.swing.JCheckBox("English で表示 / Show in English");
+        langCheckBox.setSelected("en".equals(language));
         langCheckBox.addActionListener(e -> {
             if (langCheckBox.isSelected()) {
                 textArea.setText(rulesEn);
@@ -1309,15 +1323,74 @@ public BattleGame() {
         }
     }
 
+    // キャラクター選択ダイアログ（名前 + キャラクターの絵）。戻り値: 0=ゆうしゃ, 1=wizard, 2=human, ×で閉じたら -1
+    private int showCharacterSelectDialog(String option1, String option2, String option3) {
+        final int[] result = { JOptionPane.CLOSED_OPTION };
+
+        JDialog dialog = new JDialog(this, "キャラクター選択", true);
+        dialog.setLayout(new BorderLayout(10, 10));
+
+        JLabel title = new JLabel("使用するキャラクターを選択してください", SwingConstants.CENTER);
+        title.setBorder(BorderFactory.createEmptyBorder(12, 12, 0, 12));
+        dialog.add(title, BorderLayout.NORTH);
+
+        String[] names = { option1, option2, option3 };
+        String[] images = { "hero.png", "wizard player.png", "human.png" };
+        boolean[] unlocked = { true, isWizardUnlocked, isHumanUnlocked };
+
+        JPanel panel = new JPanel(new GridLayout(1, 3, 12, 12));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 12, 12, 12));
+
+        for (int i = 0; i < 3; i++) {
+            final int index = i;
+            JButton btn = new JButton("<html><div style='text-align:center'>" + names[i] + "</div></html>");
+            btn.setFocusPainted(false);
+            btn.setVerticalTextPosition(SwingConstants.BOTTOM);
+            btn.setHorizontalTextPosition(SwingConstants.CENTER);
+
+            // ロック中のキャラクターも絵を出す（暗くして、選べないことが分かるようにする）
+            ImageIcon icon = new ImageIcon(images[i]);
+            if (icon.getIconWidth() > 0) {
+                Image scaled = icon.getImage().getScaledInstance(-1, 170, Image.SCALE_SMOOTH);
+                if (unlocked[i]) {
+                    btn.setIcon(new ImageIcon(scaled));
+                } else {
+                    int w = new ImageIcon(scaled).getIconWidth();
+                    int h = new ImageIcon(scaled).getIconHeight();
+                    java.awt.image.BufferedImage dark =
+                            new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D g2 = dark.createGraphics();
+                    g2.drawImage(scaled, 0, 0, null);
+                    g2.setComposite(AlphaComposite.SrcAtop);
+                    g2.setColor(new Color(0, 0, 0, 170)); // 暗くする
+                    g2.fillRect(0, 0, w, h);
+                    g2.dispose();
+                    btn.setIcon(new ImageIcon(dark));
+                }
+            }
+
+            btn.addActionListener(ev -> {
+                result[0] = index;
+                dialog.dispose();
+            });
+            panel.add(btn);
+        }
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true); // モーダルなので、選ぶまでここで待つ
+        return result[0];
+    }
+
     private void choicePlayer() {
         String option1 = "ゆうしゃ (Lv." + heroLevel + ") [開放済み]";
         String option2 = isWizardUnlocked ? "wizard (Lv." + wizardLevel + ") [開放済み]" : "🔒 wizard (ゆうしゃLv.3で開放)";
         String option3 = isHumanUnlocked ? "human (Lv." + humanLevel + ") [開放済み]" : "🔒 human (wizardLv.4で開放)";
 
         while (true) {
-            int choice = JOptionPane.showOptionDialog(this, "使用するキャラクターを選択してください", "キャラクター選択",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null,
-                    new String[] { option1, option2, option3 }, null);
+            // キャラクターの名前だけでなく、ゲームの中のキャラクターの絵も表示する
+            int choice = showCharacterSelectDialog(option1, option2, option3);
 
             if (choice == JOptionPane.CLOSED_OPTION || choice == 0) {
                 int calculatedHp = 100 + (heroLevel - 1) * 20;
@@ -1410,7 +1483,7 @@ public BattleGame() {
             // ★ 追加の敵その2: Goblin（ドラゴンの1つ前）
             int hp = (int) (850 * levelMultiplier);
             int atk = (int) (58 * levelMultiplier);
-            enemy = new Enemy("Goblin (Lv." + currentMaxLevel + ")", hp, atk, 25, 20, "gobling.png");
+            enemy = new Enemy("Goblin (Lv." + currentMaxLevel + ")", hp, atk, 25, 20, "goblin.png");
             setBackgroundImage("second backgroud.png");
         } else {
             // 最終ボス: プレイヤーの強さに合わせて決める（レベルが高くても低くても「強いけど倒せる」）
@@ -1520,26 +1593,222 @@ public BattleGame() {
     // ==========================================
     // ⚙ 設定 (Settings): セーブデータ・保存アイテムの削除
     // ==========================================
-    private void showSettingsDialog() {
-        String[] options = { "セーブデータを削除", "保存アイテムを削除", "すべて削除", "閉じる" };
+    // inGame = true: ゲーム中の設定（「保存アイテムを削除」も出す） / false: スタート画面の設定（出さない）
+    private void showSettingsDialog(boolean inGame) {
+        String[] options = inGame
+                ? new String[] { "言語 / Language", "セーブデータを削除", "保存アイテムを削除", "すべて削除", "閉じる" }
+                : new String[] { "言語 / Language", "セーブデータを削除", "すべて削除", "閉じる" };
 
         while (true) {
             int choice = JOptionPane.showOptionDialog(this,
                     "削除したいものを選んでください",
                     "⚙ 設定 (Settings)",
-                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[3]);
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[options.length - 1]);
 
-            if (choice == 0) {
+            String selected = (choice >= 0) ? options[choice] : "閉じる";
+
+            if ("言語 / Language".equals(selected)) {
+                changeLanguageFromSettings();
+            } else if ("セーブデータを削除".equals(selected)) {
                 deleteOneSaveFromSettings();
-            } else if (choice == 1) {
+            } else if ("保存アイテムを削除".equals(selected)) {
                 deleteSavedItemsFromSettings();
-            } else if (choice == 2) {
+            } else if ("すべて削除".equals(selected)) {
                 deleteAllSavesFromSettings();
             } else {
                 break; // 閉じる / ×ボタン
             }
         }
         this.requestFocusInWindow();
+    }
+
+    // ==========================================
+    // 🌐 言語 (Language): 日本語 / English
+    // ==========================================
+    private static String loadSavedLanguage() {
+        try {
+            return "en".equals(PREFS.get("language", "ja")) ? "en" : "ja";
+        } catch (Exception e) {
+            return "ja";
+        }
+    }
+
+    private void saveLanguage() {
+        try {
+            PREFS.put("language", language);
+        } catch (Exception e) {
+            System.out.println("Language save failed: " + e.getMessage());
+        }
+    }
+
+    // 言語を選ぶダイアログ
+    private void changeLanguageFromSettings() {
+        String[] langs = { "日本語", "English" };
+        int current = "en".equals(language) ? 1 : 0;
+
+        int choice = JOptionPane.showOptionDialog(this,
+                "言語を選んでください / Select a language",
+                "言語 / Language",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, langs, langs[current]);
+
+        if (choice == 0 || choice == 1) {
+            language = (choice == 1) ? "en" : "ja";
+            saveLanguage();
+            applyTitleLanguage();
+            JOptionPane.showMessageDialog(this,
+                    choice == 1 ? "Language: English" : "言語：日本語");
+        }
+    }
+
+    // スタート画面（背景の絵・タイトル・START / EXIT ボタン）を、言語に合わせて切り替える
+    //   日本語: 「スタート」「終了」 / English: 「START」「EXIT」
+    private void applyTitleLanguage() {
+        if (titleStartBtnRef == null || titleExitBtnRef == null) {
+            return;
+        }
+        boolean ja = !"en".equals(language);
+        startScreenLabel.setIcon(createStartBackground()); // タイトルの文字も言語に合わせて描き直す
+        styleTitleButton(titleStartBtnRef, ja ? "スタート" : "START", new Color(150, 45, 45), ja);
+        styleTitleButton(titleExitBtnRef, ja ? "終　了" : "EXIT", new Color(42, 48, 80), ja);
+    }
+
+    // スタート画面のボタンの見た目（暗い背景 + 金色の枠。マウスを乗せると少し明るくなる）
+    private void styleTitleButton(JButton btn, String text, Color base, boolean ja) {
+        btn.setText(text);
+        btn.setFont(ja ? new Font("MS ゴシック", Font.BOLD, 34) : new Font("Arial", Font.BOLD, 36));
+        btn.setForeground(Color.WHITE);
+        btn.putClientProperty("baseColor", base);
+        btn.setBackground(base);
+        btn.setBorder(BorderFactory.createLineBorder(new Color(230, 200, 120), 3));
+        btn.setOpaque(true);
+        btn.setContentAreaFilled(true);
+        btn.setBorderPainted(true);
+        btn.setFocusPainted(false);
+
+        if (btn.getClientProperty("hoverInit") == null) { // マウスを乗せたときの動きは1回だけ登録する
+            btn.putClientProperty("hoverInit", Boolean.TRUE);
+            btn.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseEntered(java.awt.event.MouseEvent e) {
+                    Color b = (Color) btn.getClientProperty("baseColor");
+                    btn.setBackground(b.brighter());
+                }
+
+                @Override
+                public void mouseExited(java.awt.event.MouseEvent e) {
+                    btn.setBackground((Color) btn.getClientProperty("baseColor"));
+                }
+            });
+        }
+        btn.repaint();
+    }
+
+    // 画像ファイルを、はば・たかさの枠におさまるように（たて横の比率は変えずに）描く。ファイルが無いときは何もしない
+    private void drawFitted(Graphics2D g, String file, int x, int y, int boxW, int boxH) {
+        ImageIcon icon = new ImageIcon(file);
+        int iw = icon.getIconWidth();
+        int ih = icon.getIconHeight();
+        if (iw <= 0 || ih <= 0) {
+            return;
+        }
+        double scale = Math.min((double) boxW / iw, (double) boxH / ih);
+        int dw = (int) (iw * scale);
+        int dh = (int) (ih * scale);
+        int dx = x + (boxW - dw) / 2;
+        int dy = y + (boxH - dh); // 枠の下にそろえる
+
+        g.setColor(new Color(0, 0, 0, 90)); // 足もとのかげ
+        g.fillOval(x + boxW / 6, y + boxH - 8, boxW * 2 / 3, 14);
+
+        Object old = g.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g.drawImage(icon.getImage(), dx, dy, dw, dh, null);
+        if (old != null) {
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, old);
+        }
+    }
+
+    // スタート画面の背景の絵を、プログラムで描く（570 x 970）
+    private ImageIcon createStartBackground() {
+        final int w = 570;
+        final int h = 970;
+        final boolean ja = !"en".equals(language);
+
+        java.awt.image.BufferedImage img =
+                new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+        // 夜空のグラデーション
+        g.setPaint(new GradientPaint(0, 0, new Color(16, 18, 34), 0, h, new Color(62, 30, 72)));
+        g.fillRect(0, 0, w, h);
+
+        // 星
+        java.util.Random rnd = new java.util.Random(7);
+        for (int i = 0; i < 120; i++) {
+            int x = rnd.nextInt(w);
+            int y = rnd.nextInt(h - 320);
+            int size = 1 + rnd.nextInt(3);
+            g.setColor(new Color(255, 255, 255, 70 + rnd.nextInt(160)));
+            g.fillOval(x, y, size, size);
+        }
+
+        // キャラクターたちのうしろの光
+        int cx = w / 2;
+        RadialGradientPaint glow = new RadialGradientPaint(
+                new java.awt.geom.Point2D.Float(cx, 480), 300,
+                new float[] { 0f, 1f },
+                new Color[] { new Color(255, 205, 120, 100), new Color(255, 205, 120, 0) });
+        g.setPaint(glow);
+        g.fillRect(0, 200, w, 540);
+
+        // ゲームに出てくる敵とプレイヤーを、全員まとめて並べる（画像ファイルがあるものだけ描く）
+        //   drawFitted(g, ファイル名, x, y, はばの上限, たかさの上限)
+        //   敵（うしろ）
+        drawFitted(g, "dargon.png",        155, 245, 260, 260); // 魔王（最終ボス）
+        drawFitted(g, "smile enamy.png",     5, 275, 150, 150); // スライム
+        drawFitted(g, "Demon enamy.png",     5, 425, 150, 150); // オークキング
+        drawFitted(g, "dargon enamy.png",  415, 275, 150, 150); // ゴブリン
+        drawFitted(g, "lion.png",          415, 425, 150, 150); // Lion
+        drawFitted(g, "goblin.png",        210, 490, 150, 110); // Goblin
+        //   プレイヤー（まえ）
+        drawFitted(g, "hero.png",           10, 590, 175, 145); // ゆうしゃ
+        drawFitted(g, "wizard player.png", 197, 590, 175, 145); // wizard
+        drawFitted(g, "human.png",         385, 590, 175, 145); // human
+
+        // タイトル
+        String title = ja ? "本格RPG" : "BATTLE RPG";
+        String sub = ja ? "ハイブリッド・アンロック　バトル" : "Hybrid Unlock Battle System";
+        Font titleFont = ja ? new Font("MS ゴシック", Font.BOLD, 80) : new Font("Arial", Font.BOLD, 70);
+        g.setFont(titleFont);
+        FontMetrics fm = g.getFontMetrics();
+        int tx = (w - fm.stringWidth(title)) / 2;
+        g.setColor(new Color(0, 0, 0, 150));
+        g.drawString(title, tx + 4, 154); // かげ
+        g.setPaint(new GradientPaint(0, 100, new Color(255, 232, 150), 0, 160, new Color(230, 160, 60)));
+        g.drawString(title, tx, 150);
+
+        g.setFont(ja ? new Font("MS ゴシック", Font.PLAIN, 22) : new Font("Arial", Font.PLAIN, 22));
+        fm = g.getFontMetrics();
+        g.setColor(new Color(220, 225, 245));
+        g.drawString(sub, (w - fm.stringWidth(sub)) / 2, 205);
+
+        // 飾りの線
+        g.setColor(new Color(230, 195, 110, 200));
+        g.drawLine(60, 235, cx - 20, 235);
+        g.drawLine(cx + 20, 235, w - 60, 235);
+        g.fillPolygon(new int[] { cx, cx + 9, cx, cx - 9 }, new int[] { 226, 235, 244, 235 }, 4);
+
+        g.dispose();
+        return new ImageIcon(img);
+    }
+
+    // 「セーブ1 : ゆうしゃ (Lv.3) / 200G」のように、誰のデータか分かる表示名を作る
+    private String makeSaveLabel(int id) {
+        int[] data = GameSaveManager.loadGameDataById(id); // [0]: PLAYER_NO, [1]: LVL, [2]: BALANCE
+        String name = data[0] == 2 ? "wizard" : (data[0] == 3 ? "human" : "ゆうしゃ");
+        return "セーブ" + id + " : " + name + " (Lv." + data[1] + ") / " + data[2] + "G";
     }
 
     // セーブIDを選ぶダイアログ。キャンセルや、セーブが無いときは -1 を返す
@@ -1552,10 +1821,7 @@ public BattleGame() {
 
         String[] labels = new String[idList.size()];
         for (int i = 0; i < idList.size(); i++) {
-            int id = idList.get(i);
-            int[] data = GameSaveManager.loadGameDataById(id); // [0]: PLAYER_NO, [1]: LVL, [2]: BALANCE
-            String name = data[0] == 2 ? "wizard" : (data[0] == 3 ? "human" : "ゆうしゃ");
-            labels[i] = "セーブID " + id + " : " + name + " Lv." + data[1] + " / " + data[2] + "G";
+            labels[i] = makeSaveLabel(idList.get(i));
         }
 
         Object selected = JOptionPane.showInputDialog(this, message, "⚙ 設定 (Settings)",
